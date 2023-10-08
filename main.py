@@ -10,8 +10,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Registers and merges two gaussian splatting point clouds.")
 
-    parser.add_argument("--path_first", default="inputs/point_cloud2.ply")
-    parser.add_argument("--path_second", default="inputs/point_cloud3.ply")
+    parser.add_argument("--path_first", default="inputs/point_cloud1.ply")
+    parser.add_argument("--path_second", default="inputs/point_cloud2.ply")
     parser.add_argument("--output_path", default="output/merged.ply")
     parser.add_argument("--skip_global", type=bool, default=True)
     parser.add_argument("--global_type", default="default", choices=["default", "fast"])
@@ -101,6 +101,18 @@ def execute_global_registration_fast(source_down, target_down, source_fpfh, targ
     return result
 
 
+# Calculates the chamfer distance between two point clouds
+def get_distance_between_pcs(pcd1, pcd2, transformation):
+    source_temp = copy.deepcopy(pcd1)
+    target_temp = copy.deepcopy(pcd2)
+    target_temp.transform(transformation)
+    distances = source_temp.compute_point_cloud_distance(target_temp)
+    distances.extend(target_temp.compute_point_cloud_distance(source_temp))
+
+    chamfer_dist = sum(map(lambda n: n * n, distances))
+    return chamfer_dist
+
+
 if __name__ == '__main__':
     args = parse_args()
     PC_PATH_FIRST = args.path_first
@@ -138,13 +150,15 @@ if __name__ == '__main__':
 
     # Local registration methods
     # Point-to-Point ICP
-    print("Point-to-Point")
+    """print("Point-to-Point")
     reg_p2p = o3d.pipelines.registration.registration_icp(
         o3d_pc_first, o3d_pc_second, threshold, trans_init,
         o3d.pipelines.registration.TransformationEstimationPointToPoint())
 
     print("Transformation is:")
     print(reg_p2p.transformation)
+    dist = get_distance_between_pcs(o3d_pc_first, o3d_pc_second, reg_p2p.transformation)
+    print("Distance:", dist)
     draw_registration_result(o3d_pc_first, o3d_pc_second, reg_p2p.transformation)
 
     # Point-to-Plane
@@ -154,4 +168,23 @@ if __name__ == '__main__':
         o3d.pipelines.registration.TransformationEstimationPointToPlane())
     print("Transformation is:")
     print(reg_p2l.transformation)
-    draw_registration_result(o3d_pc_first, o3d_pc_second, reg_p2l.transformation)
+    dist = get_distance_between_pcs(o3d_pc_first, o3d_pc_second, reg_p2l.transformation)
+    print("Distance:", dist)
+    draw_registration_result(o3d_pc_first, o3d_pc_second, reg_p2l.transformation)"""
+
+    # Point-to-Plane with robust kernel optimization
+    print("Point-to-plane with robust kernel")
+    sigma = 6  # standard deviation
+    loss = o3d.pipelines.registration.TukeyLoss(k=sigma)
+    print("Using robust loss:", loss)
+    p2l = o3d.pipelines.registration.TransformationEstimationPointToPlane(loss)
+    reg_p2l_kernel = o3d.pipelines.registration.registration_icp(o3d_pc_first, o3d_pc_second,
+                                                                 threshold, trans_init,
+                                                                 p2l)
+    print("Transformation is:")
+    print(reg_p2l_kernel.transformation)
+    dist = get_distance_between_pcs(o3d_pc_first, o3d_pc_second, reg_p2l_kernel.transformation)
+    print("Distance:", dist)
+
+    draw_registration_result(o3d_pc_first, o3d_pc_second, reg_p2l_kernel.transformation)
+
