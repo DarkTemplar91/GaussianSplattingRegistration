@@ -21,7 +21,7 @@ def _convert_scaling_fac_to_matrix(scaling_fac):
 def _convert_to_covariance_matrix(scaling_factors, quaternion):
     scaling_matrix = _convert_scaling_fac_to_matrix(scaling_factors)
     rotation_matrix = _convert_quaternions_to_rot_matrix(quaternion)
-    transform_matrix = np.dot(scaling_matrix, rotation_matrix)
+    transform_matrix = scaling_matrix @ rotation_matrix
     return transform_matrix
 
 
@@ -36,6 +36,9 @@ def _get_normals_from_covariance(covariance_mat):
     # Normal corresponding to the smallest semi-axis (smallest eigenvalue)
     smallest_semiaxis_normal = normals[:, 0]
 
+    imaginary_parts = np.imag(smallest_semiaxis_normal)
+    if np.any(imaginary_parts != 0):
+        smallest_semiaxis_normal = np.zeros(3)
     return smallest_semiaxis_normal
 
 
@@ -57,7 +60,7 @@ def convert_pc_to_open3d_pc(pc):
     o3d_pc.covariances.extend(map(_convert_to_covariance_matrix, scaling, quaternions))
 
     # get the normals from the covariance matrices
-    # o3d_pc.normals.extend(map(_get_normals_from_covariance, o3d_pc.covariances))
+    o3d_pc.normals.extend(map(_get_normals_from_covariance, o3d_pc.covariances))
 
-    o3d_pc.estimate_normals()
+    o3d_pc.orient_normals_consistent_tangent_plane(30)
     return o3d_pc
