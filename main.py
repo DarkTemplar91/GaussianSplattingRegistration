@@ -185,6 +185,20 @@ if __name__ == '__main__':
     print(reg_p2l_kernel.transformation)
     dist = get_distance_between_pcs(o3d_pc_first, o3d_pc_second, reg_p2l_kernel.transformation)
     print("Distance:", dist)
-
     draw_registration_result(o3d_pc_first, o3d_pc_second, reg_p2l_kernel.transformation)
 
+    # colored icp
+    result_icp = o3d.pipelines.registration.registration_colored_icp(
+        o3d_pc_first, o3d_pc_second, threshold, trans_init,
+        o3d.pipelines.registration.TransformationEstimationForColoredICP(),
+        o3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-6,
+                                                          relative_rmse=1e-6,
+                                                          max_iteration=50))
+
+    print("Transformation is:")
+    print(result_icp.transformation)
+    dist = get_distance_between_pcs(o3d_pc_first, o3d_pc_second, result_icp.transformation)
+    print("Distance:", dist)
+
+    draw_registration_result(o3d_pc_first, o3d_pc_second,
+                             result_icp.transformation)
