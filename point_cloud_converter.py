@@ -42,6 +42,27 @@ def _get_normals_from_covariance(covariance_mat):
     return smallest_semiaxis_normal
 
 
+def convert_input_pc_to_open3d_pc(pc):
+    o3d_pc = o3d.geometry.PointCloud()
+
+    # Convert coordinates
+    vertices = pc["vertex"]
+    points = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
+    o3d_pc.points.extend(points)
+    reds = list(map(lambda x: x/255, vertices['red']))
+    greens = list(map(lambda x: x/255, vertices['green']))
+    blues = list(map(lambda x: x/255, vertices['blue']))
+
+    # Convert color data
+    colors = np.vstack([reds, greens, blues]).T
+    o3d_pc.colors.extend(colors)
+
+    o3d_pc.estimate_normals()
+
+    o3d_pc.orient_normals_consistent_tangent_plane(30)
+    return o3d_pc
+
+
 def convert_pc_to_open3d_pc(pc):
     o3d_pc = o3d.geometry.PointCloud()
 
@@ -51,7 +72,7 @@ def convert_pc_to_open3d_pc(pc):
     o3d_pc.points.extend(points)
 
     # Convert color data
-    colors = np.vstack([vertices['f_dc_0'], vertices['f_dc_1'], vertices['f_dc_2']]).T
+    colors = colors = np.vstack([vertices['f_dc_0'], vertices['f_dc_1'], vertices['f_dc_2']]).T
     o3d_pc.colors.extend(colors)
 
     # convert scaling factors and quaternions to covariance matrix
