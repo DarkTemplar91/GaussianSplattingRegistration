@@ -4,42 +4,64 @@ Converts PLYFILE Point Clouds to the Open3D format
 
 import open3d as o3d
 import numpy as np
-from scipy.spatial.transform import Rotation
 
 
-def _convert_quaternions_to_rot_matrix(quaternion):
-    rotation = Rotation.from_quat(quaternion)
-    return rotation.as_matrix()
+def _convert_quaternions_to_rot_matrix(quaternions):
+    # find normals of the quaternions
+    norm = np.sqrt(quaternions[:, 0] ** 2 + quaternions[:, 1] ** 2 +
+                   quaternions[:, 2] ** 2 + quaternions[:, 3] ** 2)
 
+    # normalize quaternions
+    q = quaternions / norm[:, None]
 
-def _convert_scaling_fac_to_matrix(scaling_fac):
-    translate_mat = np.eye(3)
-    np.fill_diagonal(translate_mat, scaling_fac)
-    return translate_mat
+    rotation_mat = np.zeros((q.shape[0], 3, 3))
+
+    r = q[:, 0]
+    x = q[:, 1]
+    y = q[:, 2]
+    z = q[:, 3]
+
+    # convert quaternions to rotation mat
+    rotation_mat[:, 0, 0] = 1 - 2 * (y * y + z * z)
+    rotation_mat[:, 0, 1] = 2 * (x * y - r * z)
+    rotation_mat[:, 0, 2] = 2 * (x * z + r * y)
+    rotation_mat[:, 1, 0] = 2 * (x * y + r * z)
+    rotation_mat[:, 1, 1] = 1 - 2 * (x * x + z * z)
+    rotation_mat[:, 1, 2] = 2 * (y * z - r * x)
+    rotation_mat[:, 2, 0] = 2 * (x * z - r * y)
+    rotation_mat[:, 2, 1] = 2 * (y * z + r * x)
+    rotation_mat[:, 2, 2] = 1 - 2 * (x * x + y * y)
+
+    return rotation_mat
 
 
 def _convert_to_covariance_matrix(scaling_factors, quaternion):
-    scaling_matrix = _convert_scaling_fac_to_matrix(scaling_factors)
-    rotation_matrix = _convert_quaternions_to_rot_matrix(quaternion)
-    transform_matrix = scaling_matrix @ rotation_matrix
-    return transform_matrix
+    scaling_matrices = np.zeros((scaling_factors.shape[0], 3, 3), dtype=float)
+    rotation_matrices = _convert_quaternions_to_rot_matrix(quaternion)
+
+    scaling_matrices[:, 0, 0] = scaling_factors[:, 0]
+    scaling_matrices[:, 1, 1] = scaling_factors[:, 1]
+    scaling_matrices[:, 2, 2] = scaling_factors[:, 2]
+
+    scaling_matrices = rotation_matrices @ scaling_matrices
+
+    covariance_matrix = scaling_matrices @ scaling_matrices.transpose(0, 2, 1)
+    return covariance_matrix
 
 
 def _get_normals_from_covariance(covariance_mat):
-    # Perform eigendecomposition
-    eig_values, eig_vectors = np.linalg.eig(covariance_mat)
+    normal_vectors_per_slice = []
 
-    # Sort eigenvectors by corresponding eigenvalues
-    sorted_indices = np.argsort(eig_values)
-    normals = eig_vectors[:, sorted_indices]
+    for i in range(covariance_mat.shape[0]):
+        # Perform eigendecomposition
+        eig_values, eig_vectors = np.linalg.eig(covariance_mat[i, :, :])
 
-    # Normal corresponding to the smallest semi-axis (smallest eigenvalue)
-    smallest_semiaxis_normal = normals[:, 0]
+        # Sort eigenvectors by corresponding eigenvalues
+        min_eigenvalue_index = np.argmin(eig_values)
 
-    imaginary_parts = np.imag(smallest_semiaxis_normal)
-    if np.any(imaginary_parts != 0):
-        smallest_semiaxis_normal = np.zeros(3)
-    return smallest_semiaxis_normal
+        normal_vectors_per_slice.append(eig_vectors[min_eigenvalue_index])
+
+    return normal_vectors_per_slice
 
 
 def convert_input_pc_to_open3d_pc(pc):
@@ -49,9 +71,9 @@ def convert_input_pc_to_open3d_pc(pc):
     vertices = pc["vertex"]
     points = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
     o3d_pc.points.extend(points)
-    reds = list(map(lambda x: x/255, vertices['red']))
-    greens = list(map(lambda x: x/255, vertices['green']))
-    blues = list(map(lambda x: x/255, vertices['blue']))
+    reds = list(map(lambda x: x / 255, vertices['red']))
+    greens = list(map(lambda x: x / 255, vertices['green']))
+    blues = list(map(lambda x: x / 255, vertices['blue']))
 
     # Convert color data
     colors = np.vstack([reds, greens, blues]).T
@@ -68,20 +90,33 @@ def convert_pc_to_open3d_pc(pc):
 
     # Convert coordinates
     vertices = pc["vertex"]
-    points = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
+    points = np.stack((np.asarray(pc.elements[0]["x"]),
+                       np.asarray(pc.elements[0]["y"]),
+                       np.asarray(pc.elements[0]["z"])), axis=1)
     o3d_pc.points.extend(points)
 
     # Convert color data
     colors = colors = np.vstack([vertices['f_dc_0'], vertices['f_dc_1'], vertices['f_dc_2']]).T
     o3d_pc.colors.extend(colors)
 
-    # convert scaling factors and quaternions to covariance matrix
-    scaling = np.vstack([vertices['scale_0'], vertices['scale_1'], vertices['scale_2']]).T
-    quaternions = np.vstack([vertices['rot_0'], vertices['rot_1'], vertices['rot_2'], vertices['rot_3']]).T
-    o3d_pc.covariances.extend(map(_convert_to_covariance_matrix, scaling, quaternions))
+    scale_names = [p.name for p in vertices.properties if p.name.startswith("scale_")]
+    scale_names = sorted(scale_names, key=lambda x: int(x.split('_')[-1]))
+    scaling = np.zeros((points.shape[0], len(scale_names)))
+    for idx, attr_name in enumerate(scale_names):
+        scaling[:, idx] = np.asarray(vertices[attr_name])
+
+    rot_names = [p.name for p in vertices.properties if p.name.startswith("rot")]
+    rot_names = sorted(rot_names, key=lambda x: int(x.split('_')[-1]))
+    quaternions = np.zeros((points.shape[0], len(rot_names)))
+    for idx, attr_name in enumerate(rot_names):
+        quaternions[:, idx] = np.asarray(pc.elements[0][attr_name])
+
+    covariance_matrices = _convert_to_covariance_matrix(scaling, quaternions)
+    o3d_pc.covariances.extend(covariance_matrices)
 
     # get the normals from the covariance matrices
-    o3d_pc.normals.extend(map(_get_normals_from_covariance, o3d_pc.covariances))
+    normal_matrices = _get_normals_from_covariance(np.asarray(o3d_pc.covariances))
+    o3d_pc.normals.extend(normal_matrices)
 
     o3d_pc.orient_normals_consistent_tangent_plane(30)
     return o3d_pc
