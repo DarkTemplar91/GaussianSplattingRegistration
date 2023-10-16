@@ -8,13 +8,7 @@ def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
 
     # calculate the new positions for the transformation if needed
     if transformation_matrix is not None:
-        points = np.vstack([vertex_data2['x'], vertex_data2['y'], vertex_data2['z'], np.ones(len(vertex_data2['x']))]).T
-        transformed_points = np.dot(transformation_matrix, points.T).T[:, :3]
-
-        # Update the coordinates in the PLY data
-        vertex_data2['x'] = transformed_points[:, 0]
-        vertex_data2['y'] = transformed_points[:, 1]
-        vertex_data2['z'] = transformed_points[:, 2]
+        transform_point_cloud(vertex_data2, transformation_matrix)
 
     out_vertex_data = np.concatenate([vertex_data1, vertex_data2])
     out_vertex_element = plyfile.PlyElement.describe(out_vertex_data, "vertex", len_types={}, val_types={}, comments=[])
@@ -22,3 +16,15 @@ def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
                                    byte_order='<',  # < stands for little endian
                                    elements=[out_vertex_element])
     plyfile.PlyData.write(out_ply_data, output_path)
+
+
+# TODO: Change rotation as well (possibly the FPFHs as well)
+# Maybe it's easier to actually convert back to plyfile format, instead of manipulating that directly
+def transform_point_cloud(vertex_data, transformation_matrix):
+    points = np.vstack([vertex_data['x'], vertex_data['y'], vertex_data['z'], np.ones(len(vertex_data['x']))]).T
+    transformed_points = np.dot(transformation_matrix, points.T).T[:, :3]
+
+    # Update the coordinates in the PLY data
+    vertex_data['x'] = transformed_points[:, 0]
+    vertex_data['y'] = transformed_points[:, 1]
+    vertex_data['z'] = transformed_points[:, 2]

@@ -4,7 +4,7 @@ import plyfile
 import numpy as np
 import copy
 from point_cloud_converter import convert_pc_to_open3d_pc, convert_input_pc_to_open3d_pc
-from point_cloud_merger import merge_point_clouds
+import point_cloud_merger
 
 
 def parse_args():
@@ -106,6 +106,14 @@ def get_distance_between_pcs(pcd1, pcd2, transformation):
     chamfer_dist = sum(map(lambda n: n * n, distances))
     return chamfer_dist
 
+# TODO: Lay out the main pipeline in code:
+# 1. Read in files
+# 2. Convert them to the proper format
+# (1-2.) If possible use cached results
+# 3. If enabled do registration on input data
+# 4. Do registration on output data
+# 5. Merge the point clouds
+
 
 if __name__ == '__main__':
     args = parse_args()
@@ -131,7 +139,7 @@ if __name__ == '__main__':
                             [0, 0, -1, -5],
                             [0, 0, 0, 1]])
 
-    R = o3d_pc_first_input.get_rotation_matrix_from_xyz((0, 3*np.pi / 4, 0))
+    R = o3d_pc_first_input.get_rotation_matrix_from_xyz((0, 3 * np.pi / 4, 0))
     rotation_matrix = np.eye(4)
     rotation_matrix[:3, :3] = R
     transform_matrix = rotation_matrix.dot(flip_matrix)
@@ -146,17 +154,17 @@ if __name__ == '__main__':
     # global registration step
     global_transformation = np.identity(4)
     if not SKIP_GLOBAL_REGISTRATION:
-        global_transformation = get_transformation_via_global_registration(o3d_pc_first_input, o3d_pc_second_input, voxel_size,
+        global_transformation = get_transformation_via_global_registration(o3d_pc_first_input, o3d_pc_second_input,
+                                                                           voxel_size,
                                                                            GLOBAL_REGISTRATION_TYPE)
     trans_init = global_transformation
     # colored icp
-    """result_icp = o3d.pipelines.registration.registration_colored_icp(
+    result_icp = o3d.pipelines.registration.registration_colored_icp(
         o3d_pc_first_input, o3d_pc_second_input, threshold, trans_init,
         o3d.pipelines.registration.TransformationEstimationForColoredICP(),
         o3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-6,
                                                           relative_rmse=1e-6,
                                                           max_iteration=50))
-
 
     print("Transformation is:")
     print(result_icp.transformation)
@@ -164,14 +172,14 @@ if __name__ == '__main__':
     print("Distance:", dist)
 
     draw_registration_result(o3d_pc_first_input, o3d_pc_second_input,
-                             result_icp.transformation)"""
+                             result_icp.transformation)
 
     ######################################################################################################
 
     # Read in point clouds data with Plyfile
     pc_trained_first = plyfile.PlyData.read(PC_TRAINED_PATH_FIRST)
     pc_trained_second = plyfile.PlyData.read(PC_TRAINED_PATH_SECOND)
-
+    print(pc_trained_first)
     # merge_point_clouds(pc_trained_first, pc_trained_first,OUTPUT_PATH, transform_matrix )
     o3d_pc_first_trained = convert_pc_to_open3d_pc(pc_trained_first)
     o3d_pc_second_trained = convert_pc_to_open3d_pc(pc_trained_second)
@@ -179,8 +187,8 @@ if __name__ == '__main__':
     o3d_pc_first_trained.transform(flip_matrix)
     o3d_pc_first_trained.rotate(R, center=(0, 0, 0))
     print("Use transformation of input point cloud: ")
-    draw_registration_result(o3d_pc_first_trained, o3d_pc_second_trained,
-                             trans_init)
+    var = (o3d_pc_first_trained, o3d_pc_second_trained,
+           trans_init)
 
     # Local registration methods
     # Point-to-Point ICP
