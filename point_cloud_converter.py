@@ -50,18 +50,9 @@ def _convert_to_covariance_matrix(scaling_factors, quaternion):
 
 
 def _get_normals_from_covariance(covariance_mat):
-    normal_vectors_per_slice = []
-
-    for i in range(covariance_mat.shape[0]):
-        # Perform eigendecomposition
-        eig_values, eig_vectors = np.linalg.eig(covariance_mat[i, :, :])
-
-        # Sort eigenvectors by corresponding eigenvalues
-        min_eigenvalue_index = np.argmin(eig_values)
-
-        normal_vectors_per_slice.append(eig_vectors[min_eigenvalue_index])
-
-    return normal_vectors_per_slice
+    eigen_values, eigen_vectors = np.linalg.eigh(covariance_mat)
+    min_eigenvalue_index = np.argmin(eigen_values, axis=1)
+    return eigen_vectors[np.arange(len(eigen_values)), :, min_eigenvalue_index]
 
 
 def convert_input_pc_to_open3d_pc(pc):
