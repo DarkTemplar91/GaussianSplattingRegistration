@@ -11,11 +11,14 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="Registers and merges two gaussian splatting point clouds.")
 
-    parser.add_argument("--path_input_first", default="inputs/point_cloud_input_1_4.ply")
-    parser.add_argument("--path_input_second", default="inputs/point_cloud_input_4_4.ply")
-    parser.add_argument("--path_trained_first", default="inputs/point_cloud_output_1_4.ply")
-    parser.add_argument("--path_trained_second", default="inputs/point_cloud_output_4_4.ply")
-    parser.add_argument("--output_path", default="output/merged.ply")
+    parser.add_argument("--path_input_first", default=r"inputs/point_cloud_input_1_4.ply")
+    parser.add_argument("--path_input_second", default=r"inputs/point_cloud_input_4_1.ply")
+    parser.add_argument("--path_trained_first",
+                        default=r"inputs/point_cloud_output_1_4.ply")
+    parser.add_argument("--path_trained_second",
+                        default=r"inputs/point_cloud_output_4_1.ply")
+    parser.add_argument("--output_path",
+                        default=r"D:\Egyetem\Szakdoga\Data\merged\point_cloud\iteration_30000\point_cloud.ply")
     parser.add_argument("--skip_global", type=bool, default=True)
     parser.add_argument("--global_type", default="default", choices=["default", "fast"])
 
@@ -106,6 +109,7 @@ def get_distance_between_pcs(pcd1, pcd2, transformation):
     chamfer_dist = sum(map(lambda n: n * n, distances))
     return chamfer_dist
 
+
 # TODO: Lay out the main pipeline in code:
 # 1. Read in files
 # 2. Convert them to the proper format
@@ -134,11 +138,10 @@ if __name__ == '__main__':
     o3d_pc_second_input = convert_input_pc_to_open3d_pc(pc_input_second)
 
     # Flip one of the point clouds on the vertical axis
-    flip_matrix = np.array([[-1, 0, 0, -10],
+    """ flip_matrix = np.array([[-1, 0, 0, -10],
                             [0, 1, 0, 0],
                             [0, 0, -1, -5],
                             [0, 0, 0, 1]])
-
     R = o3d_pc_first_input.get_rotation_matrix_from_xyz((0, 3 * np.pi / 4, 0))
     rotation_matrix = np.eye(4)
     rotation_matrix[:3, :3] = R
@@ -172,23 +175,36 @@ if __name__ == '__main__':
     print("Distance:", dist)
 
     draw_registration_result(o3d_pc_first_input, o3d_pc_second_input,
-                             result_icp.transformation)
+                             result_icp.transformation)"""
 
     ######################################################################################################
 
+    init_trans = np.array([[1, 0, 0, -10],
+                           [0, 1, 0, 0],
+                           [0, 0, 1, -5],
+                           [0, 0, 0, 1]])
+    R = [[-0.7071067811865475, 0, 0.7071067811865476],
+         [0, 1, 0],
+         [-0.7071067811865475, 0, -0.7071067811865475]]
+    rotation_matrix = np.eye(4)
+    rotation_matrix[:3, :3] = R
+    rotation_matrix[3, 3] = 1
+    init_trans = np.dot(init_trans, rotation_matrix)
     # Read in point clouds data with Plyfile
-    pc_trained_first = plyfile.PlyData.read(PC_TRAINED_PATH_FIRST)
+    # pc_trained_first = plyfile.PlyData.read(PC_TRAINED_PATH_FIRST)
     pc_trained_second = plyfile.PlyData.read(PC_TRAINED_PATH_SECOND)
-    print(pc_trained_first)
-    # merge_point_clouds(pc_trained_first, pc_trained_first,OUTPUT_PATH, transform_matrix )
-    o3d_pc_first_trained = convert_pc_to_open3d_pc(pc_trained_first)
-    o3d_pc_second_trained = convert_pc_to_open3d_pc(pc_trained_second)
+    point_cloud_merger.transform_point_cloud(pc_trained_second, init_trans)
 
-    o3d_pc_first_trained.transform(flip_matrix)
-    o3d_pc_first_trained.rotate(R, center=(0, 0, 0))
-    print("Use transformation of input point cloud: ")
-    var = (o3d_pc_first_trained, o3d_pc_second_trained,
-           trans_init)
+    plyfile.PlyData.write(pc_trained_second, OUTPUT_PATH)
+    # merge_point_clouds(pc_trained_first, pc_trained_first,OUTPUT_PATH, transform_matrix )
+    # o3d_pc_first_trained = convert_pc_to_open3d_pc(pc_trained_first)
+    # o3d_pc_second_trained = convert_pc_to_open3d_pc(pc_trained_second)
+
+    # o3d_pc_second_trained.transform(transform_matrix)
+
+    # print("Use transformation of input point cloud: ")
+    """draw_registration_result(o3d_pc_first_trained, o3d_pc_second_trained,
+                             trans_init)
 
     # Local registration methods
     # Point-to-Point ICP
@@ -230,6 +246,7 @@ if __name__ == '__main__':
     draw_registration_result(o3d_pc_first_trained, o3d_pc_second_trained, reg_p2l_kernel.transformation)
 
     # colored icp
+    print("Colored ICP")
     result_icp = o3d.pipelines.registration.registration_colored_icp(
         o3d_pc_first_trained, o3d_pc_second_trained, threshold, trans_init,
         o3d.pipelines.registration.TransformationEstimationForColoredICP(),
@@ -244,3 +261,20 @@ if __name__ == '__main__':
 
     draw_registration_result(o3d_pc_first_trained, o3d_pc_second_trained,
                              result_icp.transformation)
+
+    # Generalized icp
+    print("Generalized ICP")
+    result_icp = o3d.pipelines.registration.registration_generalized_icp(
+        o3d_pc_first_trained, o3d_pc_second_trained, threshold, trans_init,
+        o3d.pipelines.registration.TransformationEstimationForGeneralizedICP(),
+        o3d.pipelines.registration.ICPConvergenceCriteria(relative_fitness=1e-6,
+                                                          relative_rmse=1e-6,
+                                                          max_iteration=50))
+
+    print("Transformation is:")
+    print(result_icp.transformation)
+    dist = get_distance_between_pcs(o3d_pc_first_trained, o3d_pc_second_trained, result_icp.transformation)
+    print("Distance:", dist)
+
+    draw_registration_result(o3d_pc_first_trained, o3d_pc_second_trained,
+                             result_icp.transformation)"""
