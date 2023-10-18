@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument("--path_trained_first",
                         default=r"inputs/point_cloud_output_1_4.ply")
     parser.add_argument("--path_trained_second",
-                        default=r"inputs/point_cloud_output_4_1.ply")
+                        default=r"inputs/lego_full.ply")
     parser.add_argument("--output_path",
                         default=r"D:\Egyetem\Szakdoga\Data\merged\point_cloud\iteration_30000\point_cloud.ply")
     parser.add_argument("--skip_global", type=bool, default=True)
@@ -183,9 +183,9 @@ if __name__ == '__main__':
                            [0, 1, 0, 0],
                            [0, 0, 1, -5],
                            [0, 0, 0, 1]])
-    R = [[-0.7071067811865475, 0, 0.7071067811865476],
+    R = np.array([[-0.7071067811865475, 0, 0.7071067811865476],
          [0, 1, 0],
-         [-0.7071067811865475, 0, -0.7071067811865475]]
+         [-0.7071067811865475, 0, -0.7071067811865475]])
     rotation_matrix = np.eye(4)
     rotation_matrix[:3, :3] = R
     rotation_matrix[3, 3] = 1
@@ -193,7 +193,7 @@ if __name__ == '__main__':
     # Read in point clouds data with Plyfile
     # pc_trained_first = plyfile.PlyData.read(PC_TRAINED_PATH_FIRST)
     pc_trained_second = plyfile.PlyData.read(PC_TRAINED_PATH_SECOND)
-    point_cloud_merger.transform_point_cloud(pc_trained_second, init_trans)
+    point_cloud_merger.transform_point_cloud(pc_trained_second, R)
 
     plyfile.PlyData.write(pc_trained_second, OUTPUT_PATH)
     # merge_point_clouds(pc_trained_first, pc_trained_first,OUTPUT_PATH, transform_matrix )

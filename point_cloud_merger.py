@@ -2,7 +2,7 @@ import numpy as np
 import plyfile
 from scipy.spatial.transform import Rotation
 
-from point_cloud_converter import _convert_quaternions_to_rot_matrix
+from math_util import matrices_to_quaternions, convert_quaternions_to_rot_matrix, get_wigner_from_rotation
 
 
 def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
@@ -21,12 +21,50 @@ def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
     plyfile.PlyData.write(out_ply_data, output_path)
 
 
-# TODO: Change rotation as well (possibly the FPFHs as well)
-# Maybe it's easier to actually convert back to plyfile format, instead of manipulating that directly
+# Not sure if this is actually needed.
+def rotate_sh(pc, points, transformation_matrix):
+    vertex_data = pc["vertex"].data
+
+    # Read in the SH
+    extra_f_names = [p.name for p in pc["vertex"].properties if p.name.startswith("f_rest_")]
+    extra_f_names = sorted(extra_f_names, key=lambda x: int(x.split('_')[-1]))
+    features_extra = np.zeros((points.shape[0], len(extra_f_names)))
+    for idx, attr_name in enumerate(extra_f_names):
+        features_extra[:, idx] = np.asarray(pc.elements[0][attr_name])
+    # Reshape (P,F*SH_coeffs) to (P, F, SH_coeffs except DC)
+    features_extra = features_extra.reshape((features_extra.shape[0], 3, 4 ** 2 - 1))
+
+    # Calculate second and third order and multiply them by the rotation
+    d_1 = transformation_matrix
+    d_2 = get_wigner_from_rotation(2, transformation_matrix)
+    d_3 = get_wigner_from_rotation(3, transformation_matrix)
+
+    # Select the corresponding parts of the spherical harmonics matrix for each order
+    spherical_harmonics_order1 = features_extra[:, :, :3]  # For J = 1
+    spherical_harmonics_order2 = features_extra[:, :, 3:8]  # For J = 2
+    spherical_harmonics_order3 = features_extra[:, :, 8:]  # For J = 3
+
+    # Multiply each part with the corresponding Wigner D matrix
+    rotated_harmonics_order1 = np.einsum('nij,jk->nik', spherical_harmonics_order1, d_1)
+    rotated_harmonics_order2 = np.einsum('nij,jk->nik', spherical_harmonics_order2, d_2)
+    rotated_harmonics_order3 = np.einsum('nij,jk->nik', spherical_harmonics_order3, d_3)
+
+    features_extra = np.concatenate((rotated_harmonics_order1,
+                                     rotated_harmonics_order2,
+                                     rotated_harmonics_order3), axis=2)
+
+    features_transposed = np.transpose(features_extra, (0, 2, 1))
+    features_flattened = features_transposed.reshape(features_transposed.shape[0], -1)
+
+    for idx, attr_name in enumerate(extra_f_names):
+        vertex_data[attr_name] = features_flattened[:, idx]
+
+
+# TODO: Fix for whole transformation
 def transform_point_cloud(pc, transformation_matrix):
     vertex_data = pc["vertex"].data
 
-    points = np.vstack([vertex_data['x'], vertex_data['y'], vertex_data['z'], np.ones(len(vertex_data['x']))]).T
+    points = np.vstack([vertex_data['x'], vertex_data['y'], vertex_data['z']]).T
     transformed_points = np.dot(transformation_matrix, points.T).T[:, :3]
 
     # Update the coordinates in the PLY data
@@ -41,21 +79,15 @@ def transform_point_cloud(pc, transformation_matrix):
     for idx, attr_name in enumerate(rot_names):
         quaternions[:, idx] = np.asarray(pc.elements[0][attr_name])
 
-    rotation_matrices = _convert_quaternions_to_rot_matrix(quaternions)
-
-    # Extract the upper-left 3x3 submatrix of the affine transformation matrix (potential rotation matrix)
-    potential_rotation_matrix = transformation_matrix[:3, :3]
-
-    # Ensure it represents a rotation (orthogonalization)
-    rotation_matrix = np.linalg.qr(potential_rotation_matrix)[0]
-    rotation_matrices = np.dot(rotation_matrices, rotation_matrix)
+    new_rotation = convert_quaternions_to_rot_matrix(quaternions)
+    new_rotation = transformation_matrix @ new_rotation
 
     # Get back new quaternions
-    rotations = Rotation.from_matrix(rotation_matrices)
-    quaternions = rotations.as_quat(False)
+    quaternions = matrices_to_quaternions(new_rotation)
 
-    vertex_data['rot_0'] = quaternions[:, 3]
-    vertex_data['rot_1'] = quaternions[:, 2]
-    vertex_data['rot_2'] = quaternions[:, 1]
-    vertex_data['rot_3'] = quaternions[:, 0]
+    vertex_data['rot_0'] = quaternions[:, 0]
+    vertex_data['rot_1'] = quaternions[:, 1]
+    vertex_data['rot_2'] = quaternions[:, 2]
+    vertex_data['rot_3'] = quaternions[:, 3]
+
 
