@@ -1,8 +1,7 @@
 import numpy as np
 import plyfile
-from scipy.spatial.transform import Rotation
 
-from math_util import matrices_to_quaternions, convert_quaternions_to_rot_matrix, get_wigner_from_rotation
+from utils.math_util import matrices_to_quaternions, convert_quaternions_to_rot_matrix, get_wigner_from_rotation
 
 
 def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):

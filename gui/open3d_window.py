@@ -38,3 +38,8 @@ class Open3DWindow(QMainWindow):
         # self.vis.update_geometry()
         self.vis.poll_events()
         self.vis.update_renderer()
+
+    def load_point_clouds(self, point_cloud_first, point_cloud_second):
+        self.vis.clear_geometries()
+        self.vis.add_geometry(point_cloud_first)
+        self.vis.add_geometry(point_cloud_second)

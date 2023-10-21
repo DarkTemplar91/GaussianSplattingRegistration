@@ -26,7 +26,6 @@ class FileSelector(QWidget):
         layout.addStretch()
 
     def button_clicked(self):
-        print("hello")
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.AnyFile)
         dialog.setNameFilter("*.ply *.stl *.obj *.off")

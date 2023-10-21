@@ -1,10 +1,11 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
-    QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton
+    QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton, QProgressDialog
 
 from gui.file_selector_widget import FileSelector
 from gui.open3d_window import Open3DWindow
 from gui.transformation_widget import Transformation3DPicker
+from utils.file_loader import load_sparse_pc
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -27,7 +28,7 @@ class RegistrationMainWindow(QMainWindow):
 
         # Create splitter and two planes
         splitter = QSplitter(self)
-        pane_open3d = Open3DWindow()
+        self.pane_open3d = Open3DWindow()
         pane_data = QWidget()
 
         layout_pane = QVBoxLayout()
@@ -44,7 +45,7 @@ class RegistrationMainWindow(QMainWindow):
         layout_pane.addWidget(group_input_data)
         layout_pane.addWidget(group_registration)
 
-        splitter.addWidget(pane_open3d)
+        splitter.addWidget(self.pane_open3d)
         splitter.addWidget(pane_data)
 
         splitter.setOrientation(1)
@@ -122,7 +123,7 @@ class RegistrationMainWindow(QMainWindow):
 
         layout.addStretch()
 
-        bt_sparse.clicked.connect(self.gaussian_button_pressed)
+        bt_sparse.clicked.connect(self.sparse_button_pressed)
         bt_gaussian.clicked.connect(self.gaussian_button_pressed)
 
         return pane
@@ -154,12 +155,23 @@ class RegistrationMainWindow(QMainWindow):
 
     # Event handlers
     def sparse_button_pressed(self):
+        # TODO: Set up loading bar
+        progress_dialog = QProgressDialog()
+        progress_dialog.setModal(Qt.WindowModal)
+        progress_dialog.show()
+
         path_first = self.fs_input1.text()
         path_second = self.fs_input1.text()
 
-        # TODO validate data
-        
-        return
+        pc_first = load_sparse_pc(path_first)
+        pc_second = load_sparse_pc(path_second)
+
+        if not pc_first or not pc_second:
+            # TODO: Throw error, error dialog?
+            return
+
+        progress_dialog.close()
+        self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
     def gaussian_button_pressed(self):
         return
