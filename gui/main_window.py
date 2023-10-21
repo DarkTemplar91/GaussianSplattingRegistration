@@ -1,7 +1,6 @@
-from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
-    QTabWidget, QSizePolicy, QCheckBox, QLabel, QHBoxLayout, QPushButton
-
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
+    QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton
 
 from gui.file_selector_widget import FileSelector
 from gui.open3d_window import Open3DWindow
@@ -12,6 +11,12 @@ class RegistrationMainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(RegistrationMainWindow, self).__init__(parent)
+        self.fs_cache = None
+        self.checkbox_cache = None
+        self.fs_input1 = None
+        self.fs_input2 = None
+        self.fs_pc1 = None
+        self.fs_pc2 = None
         self.setWindowTitle("Gaussian Splatting Registration")
 
         # Set window size to screen size
@@ -76,13 +81,13 @@ class RegistrationMainWindow(QMainWindow):
         label_sparse.setStyleSheet(
             "QLabel {"
             "    font-size: 14px;"
-            "    font-weight: bold;"  # Bold font
-            "    padding: 8px;"  # Padding
+            "    font-weight: bold;"
+            "    padding: 8px;"
             "}"
         )
 
-        fs_input1 = FileSelector(text="First sparse input:")
-        fs_input2 = FileSelector(text="Second sparse input:")
+        self.fs_input1 = FileSelector(text="First sparse input:")
+        self.fs_input2 = FileSelector(text="Second sparse input:")
         bt_sparse = QPushButton("Import sparse point cloud")
         bt_sparse.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                 "padding-top: 2px; padding-bottom: 2px;")
@@ -93,12 +98,12 @@ class RegistrationMainWindow(QMainWindow):
         label_pc.setStyleSheet(
             "QLabel {"
             "    font-size: 14px;"
-            "    font-weight: bold;"  # Bold font
-            "    padding: 8px;"  # Padding
+            "    font-weight: bold;"
+            "    padding: 8px;"
             "}"
         )
-        fs_pc1 = FileSelector(text="First point cloud:")
-        fs_pc2 = FileSelector(text="First point cloud:")
+        self.fs_pc1 = FileSelector(text="First point cloud:")
+        self.fs_pc2 = FileSelector(text="First point cloud:")
         bt_gaussian = QPushButton("Import gaussian point cloud")
         bt_gaussian.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_gaussian.setStyleSheet("padding-left: 10px; padding-right: 10px;"
@@ -106,16 +111,19 @@ class RegistrationMainWindow(QMainWindow):
         bt_gaussian.setFixedSize(250, 30)
 
         layout.addWidget(label_sparse)
-        layout.addWidget(fs_input1)
-        layout.addWidget(fs_input2)
+        layout.addWidget(self.fs_input1)
+        layout.addWidget(self.fs_input2)
         layout.addWidget(bt_sparse)
         layout.addSpacing(40)
         layout.addWidget(label_pc)
-        layout.addWidget(fs_pc1)
-        layout.addWidget(fs_pc2)
+        layout.addWidget(self.fs_pc1)
+        layout.addWidget(self.fs_pc2)
         layout.addWidget(bt_gaussian)
 
         layout.addStretch()
+
+        bt_sparse.clicked.connect(self.gaussian_button_pressed)
+        bt_gaussian.clicked.connect(self.gaussian_button_pressed)
 
         return pane
 
@@ -124,21 +132,34 @@ class RegistrationMainWindow(QMainWindow):
         layout = QVBoxLayout()
         pane.setLayout(layout)
 
-        checkbox = QCheckBox()
-        checkbox.setText("Save converted point clouds to directory")
-        checkbox.setStyleSheet(
+        self.checkbox_cache = QCheckBox()
+        self.checkbox_cache.setText("Save/Use converted point clouds")
+        self.checkbox_cache.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"  # Adjust the width of the indicator (checkbox)
-            "    height: 20px;"  # Adjust the height of the indicator
+            "    width: 20px;" 
+            "    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"  # Adjust the left padding for the text
+            "    padding-left: 10px;"
             "}"
         )
 
-        layout.addWidget(checkbox)
-        layout.addWidget(FileSelector(text="Cache directory"))
+        self.fs_cache = FileSelector(text="Cache directory")
+        layout.addWidget(self.checkbox_cache)
+        layout.addWidget(self.fs_cache)
         layout.addStretch()
         layout.setAlignment(Qt.AlignTop)
 
         return pane
+
+    # Event handlers
+    def sparse_button_pressed(self):
+        path_first = self.fs_input1.text()
+        path_second = self.fs_input1.text()
+
+        # TODO validate data
+        
+        return
+
+    def gaussian_button_pressed(self):
+        return

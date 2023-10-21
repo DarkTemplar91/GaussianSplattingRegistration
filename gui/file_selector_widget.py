@@ -1,6 +1,4 @@
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton, QSizePolicy, QStyle
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton, QSizePolicy, QStyle, QFileDialog
 
 
 class FileSelector(QWidget):
@@ -20,8 +18,19 @@ class FileSelector(QWidget):
         layout.addWidget(self.inputField)
         layout.addWidget(self.button)
 
-        #self.inputField.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
+        self.button.clicked.connect(self.button_clicked)
+        self.file_path = str()
         layout.addStretch()
+
+    def button_clicked(self):
+        print("hello")
+        dialog = QFileDialog(self)
+        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setNameFilter("*.ply *.stl *.obj *.off")
+        dialog.setViewMode(QFileDialog.Detail)
+        if dialog.exec():
+            self.file_path = dialog.selectedFiles()[0]
+            self.inputField.setText(self.file_path)

@@ -72,4 +72,3 @@ class Transformation3DPicker(QWidget):
 
     def transformation_changed(self, row, col, value):
         self.transformation_matrix[row, col] = value
-        print(self.transformation_matrix)
