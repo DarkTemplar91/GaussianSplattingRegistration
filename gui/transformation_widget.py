@@ -25,8 +25,13 @@ class Transformation3DPicker(QWidget):
             self.textChanged.connect(self.update_cell_value)
 
         def update_cell_value(self, text):
-            self.value = float(text)
-            self.value_changed.emit(self.row, self.col, self.value)
+            try:
+                self.value = float(text)
+                self.value_changed.emit(self.row, self.col, self.value)
+            except ValueError:
+                pass
+
+    transformation_matrix_changed = QtCore.pyqtSignal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -72,3 +77,4 @@ class Transformation3DPicker(QWidget):
 
     def transformation_changed(self, row, col, value):
         self.transformation_matrix[row, col] = value
+        self.transformation_matrix_changed.emit(self.transformation_matrix)

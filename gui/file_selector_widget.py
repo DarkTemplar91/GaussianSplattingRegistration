@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton
 
 
 class FileSelector(QWidget):
-    def __init__(self, parent=None, text=None, base_path=None):
+    def __init__(self, parent=None, text="", base_path=None):
         super().__init__(parent)
 
         layout = QHBoxLayout()

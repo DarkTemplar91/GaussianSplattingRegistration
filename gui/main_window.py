@@ -5,16 +5,20 @@ from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGr
     QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton, QProgressDialog, QErrorMessage
 
 from gui.file_selector_widget import FileSelector
+from gui.merger_widget import MergerWidget
 from gui.open3d_window import Open3DWindow
 from gui.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian, PointCloudLoaderO3D, PointCloudSaver
 from gui.transformation_widget import Transformation3DPicker
-from utils.file_loader import save_point_clouds_to_cache
+from gui.visualizer_widget import VisualizerWidget
 
 
 class RegistrationMainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(RegistrationMainWindow, self).__init__(parent)
+        self.merger_widget = None
+        self.visualizer_widget = None
+        self.transformation_picker = None
         self.fs_cache1 = None
         self.fs_cache2 = None
         self.checkbox_cache = None
@@ -29,7 +33,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.cache_dir = os.path.join(parent_dir, "cache")
         self.input_dir = os.path.join(parent_dir, "inputs")
-
+        self.output_dir = os.path.join(parent_dir, "output")
 
         # Set window size to screen size
         screen = QDesktopWidget().screenGeometry()
@@ -60,7 +64,7 @@ class RegistrationMainWindow(QMainWindow):
         splitter.addWidget(pane_data)
 
         splitter.setOrientation(1)
-        splitter.setStretchFactor(0, 1)
+        splitter.setStretchFactor(0, 2)
         splitter.setStretchFactor(1, 0)
 
         self.setCentralWidget(splitter)
@@ -82,9 +86,16 @@ class RegistrationMainWindow(QMainWindow):
         tab_widget = QTabWidget()
         layout.addWidget(tab_widget)
 
+        self.transformation_picker = Transformation3DPicker()
+        self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
+        self.visualizer_widget = VisualizerWidget()
+        self.merger_widget = MergerWidget(self.output_dir, self.transformation_picker.transformation_matrix)
+
         tab_widget.addTab(self.setup_input_tab(), "I/O files")
         tab_widget.addTab(self.setup_cache_tab(), "Cache")
-        tab_widget.addTab(Transformation3DPicker(), "Transformation")
+        tab_widget.addTab(self.transformation_picker, "Transformation")
+        tab_widget.addTab(self.visualizer_widget, "Visualizer")
+        tab_widget.addTab(self.merger_widget, "Merging")
 
     def setup_registration_group(self, group_registration):
         group_registration.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -223,6 +234,9 @@ class RegistrationMainWindow(QMainWindow):
 
         worker.start()
         self.progress_dialog.exec()
+
+    def update_point_clouds(self, transformation_matrix):
+        self.pane_open3d.update_transform(transformation_matrix)
 
     def handle_result(self, pc_first, pc_second):
         self.progress_dialog.close()
