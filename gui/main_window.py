@@ -1,11 +1,12 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
-    QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton, QProgressDialog
+    QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton, QProgressDialog, QErrorMessage
 
 from gui.file_selector_widget import FileSelector
 from gui.open3d_window import Open3DWindow
+from gui.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian
 from gui.transformation_widget import Transformation3DPicker
-from utils.file_loader import load_sparse_pc
+from utils.file_loader import load_sparse_pc, load_gaussian_pc
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -53,6 +54,13 @@ class RegistrationMainWindow(QMainWindow):
         splitter.setStretchFactor(1, 0)
 
         self.setCentralWidget(splitter)
+
+        # TODO: Set up loading bar
+        self.progress_dialog = QProgressDialog()
+        self.progress_dialog.setModal(Qt.WindowModal)
+        self.progress_dialog.setWindowTitle("Loading")
+        self.progress_dialog.setLabel(QLabel("Loading point clouds..."))
+        self.progress_dialog.close()
 
     def setup_input_group(self, group_input_data):
         group_input_data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -137,7 +145,7 @@ class RegistrationMainWindow(QMainWindow):
         self.checkbox_cache.setText("Save/Use converted point clouds")
         self.checkbox_cache.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;" 
+            "    width: 20px;"
             "    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
@@ -155,23 +163,33 @@ class RegistrationMainWindow(QMainWindow):
 
     # Event handlers
     def sparse_button_pressed(self):
-        # TODO: Set up loading bar
-        progress_dialog = QProgressDialog()
-        progress_dialog.setModal(Qt.WindowModal)
-        progress_dialog.show()
+        path_first = self.fs_input1.file_path
+        path_second = self.fs_input2.file_path
 
-        path_first = self.fs_input1.text()
-        path_second = self.fs_input1.text()
+        worker = PointCloudLoaderInput(path_first, path_second)
+        worker.result_signal.connect(self.handle_result)
 
-        pc_first = load_sparse_pc(path_first)
-        pc_second = load_sparse_pc(path_second)
-
-        if not pc_first or not pc_second:
-            # TODO: Throw error, error dialog?
-            return
-
-        progress_dialog.close()
-        self.pane_open3d.load_point_clouds(pc_first, pc_second)
+        worker.start()
+        self.progress_dialog.exec()
 
     def gaussian_button_pressed(self):
-        return
+        path_first = self.fs_pc1.file_path
+        path_second = self.fs_pc2.file_path
+
+        worker = PointCloudLoaderGaussian(path_first, path_second)
+        worker.result_signal.connect(self.handle_result)
+
+        worker.start()
+        self.progress_dialog.exec()
+
+    def handle_result(self, pc_first, pc_second):
+        self.progress_dialog.close()
+        if not pc_first or not pc_second:
+            # TODO: Further error messages
+            dialog = QErrorMessage(self)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("Importing one or both of the point clouds failed.\nPlease check that you entered the "
+                               "correct path!")
+            return
+
+        self.pane_open3d.load_point_clouds(pc_first, pc_second)
