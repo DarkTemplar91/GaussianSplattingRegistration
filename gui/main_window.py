@@ -1,25 +1,35 @@
+import os
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
     QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton, QProgressDialog, QErrorMessage
 
 from gui.file_selector_widget import FileSelector
 from gui.open3d_window import Open3DWindow
-from gui.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian
+from gui.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian, PointCloudLoaderO3D, PointCloudSaver
 from gui.transformation_widget import Transformation3DPicker
-from utils.file_loader import load_sparse_pc, load_gaussian_pc
+from utils.file_loader import save_point_clouds_to_cache
 
 
 class RegistrationMainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(RegistrationMainWindow, self).__init__(parent)
-        self.fs_cache = None
+        self.fs_cache1 = None
+        self.fs_cache2 = None
         self.checkbox_cache = None
         self.fs_input1 = None
         self.fs_input2 = None
         self.fs_pc1 = None
         self.fs_pc2 = None
         self.setWindowTitle("Gaussian Splatting Registration")
+
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        parent_dir = os.path.abspath(os.path.join(dir_path, os.pardir))
+
+        self.cache_dir = os.path.join(parent_dir, "cache")
+        self.input_dir = os.path.join(parent_dir, "inputs")
+
 
         # Set window size to screen size
         screen = QDesktopWidget().screenGeometry()
@@ -65,7 +75,7 @@ class RegistrationMainWindow(QMainWindow):
     def setup_input_group(self, group_input_data):
         group_input_data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         group_input_data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        group_input_data.setTitle("Inputs")
+        group_input_data.setTitle("Inputs and settings")
         layout = QVBoxLayout()
         group_input_data.setLayout(layout)
 
@@ -95,8 +105,8 @@ class RegistrationMainWindow(QMainWindow):
             "}"
         )
 
-        self.fs_input1 = FileSelector(text="First sparse input:")
-        self.fs_input2 = FileSelector(text="Second sparse input:")
+        self.fs_input1 = FileSelector(text="First sparse input:", base_path=self.input_dir)
+        self.fs_input2 = FileSelector(text="Second sparse input:", base_path=self.input_dir)
         bt_sparse = QPushButton("Import sparse point cloud")
         bt_sparse.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                 "padding-top: 2px; padding-bottom: 2px;")
@@ -111,13 +121,25 @@ class RegistrationMainWindow(QMainWindow):
             "    padding: 8px;"
             "}"
         )
-        self.fs_pc1 = FileSelector(text="First point cloud:")
-        self.fs_pc2 = FileSelector(text="First point cloud:")
+        self.fs_pc1 = FileSelector(text="First point cloud:", base_path=self.input_dir)
+        self.fs_pc2 = FileSelector(text="First point cloud:", base_path=self.input_dir)
         bt_gaussian = QPushButton("Import gaussian point cloud")
         bt_gaussian.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_gaussian.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                   "padding-top: 2px; padding-bottom: 2px;")
         bt_gaussian.setFixedSize(250, 30)
+
+        self.checkbox_cache = QCheckBox()
+        self.checkbox_cache.setText("Save converted point clouds")
+        self.checkbox_cache.setStyleSheet(
+            "QCheckBox::indicator {"
+            "    width: 20px;"
+            "    height: 20px;"
+            "}"
+            "QCheckBox::indicator::text {"
+            "    padding-left: 10px;"
+            "}"
+        )
 
         layout.addWidget(label_sparse)
         layout.addWidget(self.fs_input1)
@@ -128,6 +150,7 @@ class RegistrationMainWindow(QMainWindow):
         layout.addWidget(self.fs_pc1)
         layout.addWidget(self.fs_pc2)
         layout.addWidget(bt_gaussian)
+        layout.addWidget(self.checkbox_cache)
 
         layout.addStretch()
 
@@ -141,21 +164,30 @@ class RegistrationMainWindow(QMainWindow):
         layout = QVBoxLayout()
         pane.setLayout(layout)
 
-        self.checkbox_cache = QCheckBox()
-        self.checkbox_cache.setText("Save/Use converted point clouds")
-        self.checkbox_cache.setStyleSheet(
-            "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
-            "}"
-            "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+        self.fs_cache1 = FileSelector(text="First point cloud:", base_path=self.cache_dir)
+        self.fs_cache2 = FileSelector(text="Second point cloud:", base_path=self.cache_dir)
+
+        label_cache = QLabel("Cached point clouds: ")
+        label_cache.setStyleSheet(
+            "QLabel {"
+            "    font-size: 14px;"
+            "    font-weight: bold;"
+            "    padding: 8px;"
             "}"
         )
 
-        self.fs_cache = FileSelector(text="Cache directory")
-        layout.addWidget(self.checkbox_cache)
-        layout.addWidget(self.fs_cache)
+        bt_cached = QPushButton("Import cached point clouds")
+        bt_cached.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_cached.setStyleSheet("padding-left: 10px; padding-right: 10px;"
+                                "padding-top: 2px; padding-bottom: 2px;")
+        bt_cached.setFixedSize(250, 30)
+
+        bt_cached.clicked.connect(self.cached_button_pressed)
+
+        layout.addWidget(label_cache)
+        layout.addWidget(self.fs_cache1)
+        layout.addWidget(self.fs_cache2)
+        layout.addWidget(bt_cached)
         layout.addStretch()
         layout.setAlignment(Qt.AlignTop)
 
@@ -182,6 +214,16 @@ class RegistrationMainWindow(QMainWindow):
         worker.start()
         self.progress_dialog.exec()
 
+    def cached_button_pressed(self):
+        path_first = self.fs_cache1.file_path
+        path_second = self.fs_cache2.file_path
+
+        worker = PointCloudLoaderO3D(path_first, path_second)
+        worker.result_signal.connect(self.handle_result)
+
+        worker.start()
+        self.progress_dialog.exec()
+
     def handle_result(self, pc_first, pc_second):
         self.progress_dialog.close()
         if not pc_first or not pc_second:
@@ -191,5 +233,9 @@ class RegistrationMainWindow(QMainWindow):
             dialog.showMessage("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                                "correct path!")
             return
+
+        if self.checkbox_cache.isChecked():
+            worker = PointCloudSaver(pc_first, pc_second)
+            worker.run()
 
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
