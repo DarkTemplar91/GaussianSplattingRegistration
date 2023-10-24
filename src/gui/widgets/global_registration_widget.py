@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QGroupBox, QComboBox
 
 
+# TODO: Finish
 class GlobalRegistrationGroup(QGroupBox):
     def __init__(self):
         super().__init__()

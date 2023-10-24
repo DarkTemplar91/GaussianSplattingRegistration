@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 
-from utils.file_loader import load_sparse_pc, load_gaussian_pc, load_o3d_pc, save_point_clouds_to_cache
+from src.utils.file_loader import load_sparse_pc, load_gaussian_pc, load_o3d_pc, save_point_clouds_to_cache
 
 
 class PointCloudLoaderInput(QThread):

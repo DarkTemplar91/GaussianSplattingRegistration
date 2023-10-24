@@ -9,7 +9,5 @@
 *.png
 *.json
 /.idea/
-/__pycache__/
+__pycache__/
 *.ply
-gui/__pycache__/
-utils/__pycache__/

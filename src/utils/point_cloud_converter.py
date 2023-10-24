@@ -5,7 +5,7 @@ Converts PLYFILE Point Clouds to the Open3D format
 import open3d as o3d
 import numpy as np
 
-from utils.math_util import get_normals_from_covariance, convert_to_covariance_matrix
+from src.utils.math_util import get_normals_from_covariance, convert_to_covariance_matrix
 
 
 def convert_input_pc_to_open3d_pc(pc):

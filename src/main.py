@@ -5,11 +5,10 @@ import open3d as o3d
 
 import sys
 
-import PyQt5
 import qdarkstyle
-from PyQt5.QtWidgets import QApplication, QLabel
+from PyQt5.QtWidgets import QApplication
 
-from gui.main_window import RegistrationMainWindow
+from src.gui.windows.main_window import RegistrationMainWindow
 
 
 def parse_args():

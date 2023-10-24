@@ -1,8 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy
 
-from gui.color_picker_widget import ColorPicker
-from gui.file_selector_widget import FileSelector
-from gui.vector_widget import VectorWidget
+from src.gui.widgets.file_selector_widget import FileSelector
 
 
 class MergerWidget(QWidget):

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy
 
-from gui.color_picker_widget import ColorPicker
-from gui.vector_widget import VectorWidget
+from src.gui.widgets.color_picker_widget import ColorPicker
+from src.gui.widgets.vector_widget import VectorWidget
 
 
 class VisualizerWidget(QWidget):
