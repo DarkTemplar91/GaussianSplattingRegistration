@@ -5,6 +5,8 @@ from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGr
     QTabWidget, QSizePolicy, QCheckBox, QLabel, QPushButton, QProgressDialog, QErrorMessage
 
 from gui.file_selector_widget import FileSelector
+from gui.global_registration_widget import GlobalRegistrationGroup
+from gui.local_registration_widget import LocalRegistrationGroup
 from gui.merger_widget import MergerWidget
 from gui.open3d_window import Open3DWindow
 from gui.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian, PointCloudLoaderO3D, PointCloudSaver
@@ -53,9 +55,7 @@ class RegistrationMainWindow(QMainWindow):
         self.setup_input_group(group_input_data)
 
         group_registration = QGroupBox()
-        group_registration.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        group_registration.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        group_registration.setTitle("Registration")
+        self.setup_registration_group(group_registration)
 
         layout_pane.addWidget(group_input_data)
         layout_pane.addWidget(group_registration)
@@ -100,7 +100,11 @@ class RegistrationMainWindow(QMainWindow):
     def setup_registration_group(self, group_registration):
         group_registration.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         group_registration.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        group_registration.setTitle("Registration")
+        layout = QVBoxLayout()
+        group_registration.setLayout(layout)
+
+        layout.addWidget(GlobalRegistrationGroup())
+        layout.addWidget(LocalRegistrationGroup())
 
     def setup_input_tab(self):
         pane = QWidget()
