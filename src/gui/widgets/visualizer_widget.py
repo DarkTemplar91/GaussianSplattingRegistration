@@ -96,8 +96,8 @@ class VisualizerWidget(QWidget):
 
     def assign_new_values(self, zoom, front, lookat, up):
         self.zoom_lineedit.setText(str(zoom))
-        self.front_widget.set_values(lookat)
-        self.lookat_widget.set_values(front)
+        self.front_widget.set_values(front)
+        self.lookat_widget.set_values(lookat)
         self.up_widget.set_values(up)
 
     def get_use_debug_color(self):

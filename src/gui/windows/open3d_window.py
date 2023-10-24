@@ -95,7 +95,6 @@ class Open3DWindow(QMainWindow):
         view_control.set_lookat(lookat)
         view_control.set_up(up)
 
-    # TODO: Fix conversion error
     def get_current_view(self):
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
