@@ -1,3 +1,4 @@
+import numpy as np
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QColorDialog, QLineEdit
 
@@ -5,7 +6,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QColorDia
 class ColorPicker(QWidget):
     def __init__(self, label_text=""):
         super().__init__()
-        self.color_debug = None
+        self.color_debug = np.zeros(3, dtype=float)
 
         layout = QHBoxLayout()
         self.setLayout(layout)
@@ -34,4 +35,5 @@ class ColorPicker(QWidget):
         color = QColorDialog.getColor()
         if color.isValid():
             self.color_box.setStyleSheet(f"background-color: {color.name()};")
-            self.color_debug = color.getRgbF()
+            self.color_debug = color.getRgbF()[0:3]
+            print(self.color_debug)

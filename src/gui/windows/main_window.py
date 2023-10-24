@@ -1,6 +1,5 @@
 import os
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
     QTabWidget, QSizePolicy, QErrorMessage
 
@@ -81,6 +80,8 @@ class RegistrationMainWindow(QMainWindow):
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.input_tab.result_signal.connect(self.handle_result)
         self.cache_tab.result_signal.connect(self.handle_result)
+        self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
+        self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
 
         tab_widget.addTab(self.input_tab, "I/O files")
         tab_widget.addTab(self.cache_tab, "Cache")
@@ -97,8 +98,17 @@ class RegistrationMainWindow(QMainWindow):
         layout.addWidget(GlobalRegistrationGroup())
         layout.addWidget(LocalRegistrationGroup())
 
+    # Event Handlers
     def update_point_clouds(self, transformation_matrix):
-        self.pane_open3d.update_transform(transformation_matrix)
+        if self.visualizer_widget.get_use_debug_color():
+            dc1, dc2 = self.visualizer_widget.get_debug_colors()
+            self.pane_open3d.update_transform_with_colors(dc1, dc2, transformation_matrix)
+        else:
+            self.pane_open3d.update_transform(transformation_matrix)
+
+        zoom, front, lookat, up = self.visualizer_widget.get_current_transformations()
+        self.pane_open3d.update_visualizer(zoom, front, lookat, up)
+
 
     def handle_result(self, pc_first, pc_second, save_point_clouds):
         if not pc_first or not pc_second:
@@ -114,3 +124,13 @@ class RegistrationMainWindow(QMainWindow):
             worker.run()
 
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
+
+    def change_visualizer(self, use_debug_color, dc1, dc2, zoom, front, lookat, up):
+        if use_debug_color:
+            self.pane_open3d.update_transform_with_colors(dc1, dc2, self.transformation_picker.transformation_matrix)
+
+        self.pane_open3d.update_visualizer(zoom, front, lookat, up)
+
+    def get_current_view(self):
+        zoom, front, lookat, up = self.pane_open3d.get_current_view()
+        self.visualizer_widget.assign_new_values(zoom, front, lookat, up)

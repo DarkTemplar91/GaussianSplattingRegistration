@@ -1,13 +1,42 @@
 import numpy as np
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QColorDialog, QLineEdit, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
 
 
 class VectorWidget(QWidget):
-    def __init__(self, label_text=""):
+    class VectorCell(QLineEdit):
+
+        value_changed = QtCore.pyqtSignal(int, float)
+
+        def __init__(self, value, id):
+            super().__init__()
+
+            self.id = id
+
+            self.setFixedWidth(60)
+            self.setAlignment(Qt.AlignLeft)
+            self.value = value
+            self.setText(str(self.value))
+            self.textChanged.connect(self.update_cell_value)
+
+        def update_cell_value(self, text):
+            try:
+                self.value = float(text)
+                self.value_changed.emit(self.id, self.value)
+            except ValueError:
+                pass
+
+    def __init__(self, label_text="", cell_count=3, initial_values=None):
         super().__init__()
-        self.values = np.array(3)
+
+        if len(initial_values) is not cell_count:
+            initial_values = [0] * cell_count
+            assert True
+
+        self.vector_length = cell_count
+        self.cells = []
+        self.values = np.zeros(cell_count, dtype=float)
 
         layout = QHBoxLayout()
         self.setLayout(layout)
@@ -15,20 +44,23 @@ class VectorWidget(QWidget):
         label = QLabel(label_text)
         label.setFixedWidth(50)
 
-        self.lineedit1 = QLineEdit("0.0")
-        self.lineedit2 = QLineEdit("0.0")
-        self.lineedit3 = QLineEdit("0.0")
-
-        self.lineedit1.setAlignment(Qt.AlignLeft)
-        self.lineedit2.setAlignment(Qt.AlignLeft)
-        self.lineedit3.setAlignment(Qt.AlignLeft)
-
-        self.lineedit1.setFixedWidth(60)
-        self.lineedit2.setFixedWidth(60)
-        self.lineedit3.setFixedWidth(60)
-
         layout.addWidget(label)
-        layout.addWidget(self.lineedit1)
-        layout.addWidget(self.lineedit2)
-        layout.addWidget(self.lineedit3)
+
+        for i in range(cell_count):
+            line_edit = self.VectorCell(initial_values[i], i)
+            self.values[i] = initial_values[i]
+            self.cells.append(line_edit)
+            line_edit.value_changed.connect(self.cell_value_changed)
+            layout.addWidget(line_edit)
+
         layout.addStretch()
+
+    def cell_value_changed(self, cell_id, value):
+        self.values[cell_id] = value
+        print(self.values)
+
+    def set_values(self, values):
+        for i in range(self.vector_length):
+            self.cells[i].setText(str(values[i]))
+            self.values[i] = values[i]
+
