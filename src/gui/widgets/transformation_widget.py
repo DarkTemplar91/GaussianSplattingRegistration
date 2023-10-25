@@ -1,6 +1,7 @@
 import numpy as np
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QLocale
+from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, \
     QTableWidget, QGridLayout, QLineEdit
 

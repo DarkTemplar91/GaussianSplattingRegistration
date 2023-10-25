@@ -30,6 +30,8 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_originalFirst = None
         self.pc_originalSecond = None
 
+        self.local_registration_widget = None
+
         working_dir = os.getcwd()
         self.cache_dir = os.path.join(working_dir, "cache")
         self.input_dir = os.path.join(working_dir, "inputs")
@@ -100,8 +102,11 @@ class RegistrationMainWindow(QMainWindow):
         layout = QVBoxLayout()
         group_registration.setLayout(layout)
 
-        layout.addWidget(GlobalRegistrationGroup())
-        layout.addWidget(LocalRegistrationGroup())
+        self.local_registration_widget = LocalRegistrationGroup()
+        self.local_registration_widget.signal_do_registration.connect(self.do_local_registration)
+        # TODO: Implement Global registration
+        #layout.addWidget(GlobalRegistrationGroup())
+        layout.addWidget(self.local_registration_widget)
 
     # Event Handlers
     def update_point_clouds(self, transformation_matrix):
@@ -151,18 +156,9 @@ class RegistrationMainWindow(QMainWindow):
             merge_point_clouds(pc_first, pc_second, merge_path, self.transformation_picker.transformation_matrix)
             return
 
-        # TODO: Check if original point clouds are loaded
         error_message = ("There were no preloaded point clouds found! Load a point cloud before merging, or check the "
                          "\"corresponding inputs\" option and select the point clouds you wish to merge.")
         if self.check_if_none_and_throw_error(self.pc_originalFirst, self.pc_originalSecond, error_message):
-            return
-
-        error_message = ("One or both of the point clouds preloaded are not of the correct format. Make sure to load "
-                         "non-cached, gaussian output point clouds or use the \"corresponding inputs\" option and "
-                         "select the point clouds you wish to merge.")
-        if check_point_cloud_type(self.pc_originalFirst) != PointCloudType.gaussian or check_point_cloud_type(
-                self.pc_originalSecond) != PointCloudType.gaussian:
-            self.check_if_none_and_throw_error(None, None, error_message)
             return
 
         merge_point_clouds(self.pc_originalFirst, self.pc_originalSecond,
@@ -177,3 +173,9 @@ class RegistrationMainWindow(QMainWindow):
             return True
 
         return False
+
+    def do_local_registration(self, registration_type, max_correspondence,
+                              relative_fitness, relative_rmse,max_iteration):
+        print("Do registration")
+        return
+
