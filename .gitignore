@@ -11,3 +11,4 @@
 /.idea/
 __pycache__/
 *.ply
+*.log

@@ -1,6 +1,6 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale
-from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy, \
     QGroupBox, QComboBox
 
@@ -9,7 +9,7 @@ from src.utils.local_registration_util import LocalRegistrationType
 
 class LocalRegistrationGroup(QGroupBox):
 
-    signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, float)
+    signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int)
 
     def __init__(self):
         super().__init__()
@@ -26,8 +26,12 @@ class LocalRegistrationGroup(QGroupBox):
         double_validator.setRange(0.0, 9999.0)
         double_validator.setDecimals(10)
 
+        int_validator = QIntValidator()
+        int_validator.setLocale(locale)
+        int_validator.setRange(0, 9999)
+
         for enum_member in LocalRegistrationType:
-            self.combo_box_icp.addItem(enum_member.name)
+            self.combo_box_icp.addItem(enum_member.instance_name)
 
         # Max correspondence
         layout_correspondence = QHBoxLayout()
@@ -90,7 +94,7 @@ class LocalRegistrationGroup(QGroupBox):
         iteration_label.setFixedWidth(100)
         self.iteration_lineedit = QLineEdit("30")
         self.iteration_lineedit.setFixedWidth(60)
-        self.iteration_lineedit.setValidator(double_validator)
+        self.iteration_lineedit.setValidator(int_validator)
         layout_iteration.addWidget(iteration_label)
         layout_iteration.addWidget(self.iteration_lineedit)
         layout_iteration.addStretch()
@@ -121,6 +125,6 @@ class LocalRegistrationGroup(QGroupBox):
         max_correspondence = float(self.correspondence_lineedit.text())
         relative_fitness = float(self.fitness_lineedit.text())
         relative_rmse = float(self.rmse_lineedit.text())
-        max_iteration = float(self.iteration_lineedit.text())
+        max_iteration = int(self.iteration_lineedit.text())
         self.signal_do_registration.emit(registration_type,
                                          max_correspondence, relative_fitness, relative_rmse, max_iteration)

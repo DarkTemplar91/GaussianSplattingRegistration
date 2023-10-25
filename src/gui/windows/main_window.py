@@ -1,18 +1,20 @@
 import os
+import time
 
+from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
-    QTabWidget, QSizePolicy, QErrorMessage
+    QTabWidget, QSizePolicy, QErrorMessage, QMessageBox
 
 from src.gui.widgets.cache_tab_widget import CacheTab
-from src.gui.widgets.global_registration_widget import GlobalRegistrationGroup
 from src.gui.widgets.input_tab_widget import InputTab
 from src.gui.widgets.local_registration_widget import LocalRegistrationGroup
 from src.gui.widgets.merger_widget import MergerWidget
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.widgets.visualizer_widget import VisualizerWidget
 from src.gui.windows.open3d_window import Open3DWindow
+from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_workers import PointCloudSaver
-from src.utils.file_loader import load_plyfile_pc, check_point_cloud_type, PointCloudType
+from src.utils.file_loader import load_plyfile_pc
 from src.utils.point_cloud_merger import merge_point_clouds
 
 
@@ -22,14 +24,18 @@ class RegistrationMainWindow(QMainWindow):
         super(RegistrationMainWindow, self).__init__(parent)
         self.setWindowTitle("Gaussian Splatting Registration")
 
+        # Point cloud output of the 3D Gaussian Splatting
+        self.pc_originalFirst = None
+        self.pc_originalSecond = None
+
+        # Tabs for the settings page
         self.cache_tab = None
         self.input_tab = None
         self.merger_widget = None
         self.visualizer_widget = None
         self.transformation_picker = None
-        self.pc_originalFirst = None
-        self.pc_originalSecond = None
 
+        # Registration widgets
         self.local_registration_widget = None
 
         working_dir = os.getcwd()
@@ -105,7 +111,7 @@ class RegistrationMainWindow(QMainWindow):
         self.local_registration_widget = LocalRegistrationGroup()
         self.local_registration_widget.signal_do_registration.connect(self.do_local_registration)
         # TODO: Implement Global registration
-        #layout.addWidget(GlobalRegistrationGroup())
+        # layout.addWidget(GlobalRegistrationGroup())
         layout.addWidget(self.local_registration_widget)
 
     # Event Handlers
@@ -175,7 +181,35 @@ class RegistrationMainWindow(QMainWindow):
         return False
 
     def do_local_registration(self, registration_type, max_correspondence,
-                              relative_fitness, relative_rmse,max_iteration):
-        print("Do registration")
-        return
+                              relative_fitness, relative_rmse, max_iteration):
+        # Create worker for local registration
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
+        init_trans = self.transformation_picker.transformation_matrix
+        local_registrator = LocalRegistrator(pc1, pc2, init_trans, registration_type, max_correspondence,
+                                             relative_fitness, relative_rmse, max_iteration)
 
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        local_registrator.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(local_registrator.do_registration)
+        local_registrator.signal_registration_done.connect(self.handle_local_registration_result)
+        local_registrator.signal_finished.connect(thread.quit)
+        local_registrator.signal_finished.connect(local_registrator.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        time.sleep(1)
+
+    def handle_local_registration_result(self, registration_result):
+        message_dialog = QMessageBox()
+        message_dialog.setWindowTitle("Successful registration")
+        message_dialog.setText(f"The registration of the point clouds is finished.\n"
+                               f"The transformation will be applied.\n\n"
+                               f"Fitness: {registration_result.fitness}\n"
+                               f"RMSE: {registration_result.inlier_rmse}\n")
+        message_dialog.exec()
+        # TODO: Dialog for registration_result, align point clouds
+        pass

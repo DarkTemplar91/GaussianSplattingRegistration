@@ -64,29 +64,29 @@ class Open3DWindow(QMainWindow):
         if not self.pc1 or not self.pc2:
             return
 
-        source_temp = copy.deepcopy(self.pc1)
-        target_temp = copy.deepcopy(self.pc2)
-        target_temp.transform(transformation)
+        self.pc1_copy = copy.deepcopy(self.pc1)
+        self.pc2_copy = copy.deepcopy(self.pc2)
+        self.pc2_copy.transform(transformation)
 
         self.vis.clear_geometries()
-        self.vis.add_geometry(source_temp)
-        self.vis.add_geometry(target_temp)
+        self.vis.add_geometry(self.pc1_copy)
+        self.vis.add_geometry(self.pc2_copy)
 
     def update_transform_with_colors(self, debug_color1, debug_color2, transformation):
         if not self.pc1 or not self.pc2:
             return
 
-        source_temp = copy.deepcopy(self.pc1)
-        target_temp = copy.deepcopy(self.pc2)
+        self.pc1_copy = copy.deepcopy(self.pc1)
+        self.pc2_copy = copy.deepcopy(self.pc2)
 
-        source_temp.paint_uniform_color(debug_color1)
-        target_temp.paint_uniform_color(debug_color2)
+        self.pc1_copy.paint_uniform_color(debug_color1)
+        self.pc2_copy.paint_uniform_color(debug_color2)
 
-        target_temp.transform(transformation)
+        self.pc2_copy.transform(transformation)
 
         self.vis.clear_geometries()
-        self.vis.add_geometry(source_temp)
-        self.vis.add_geometry(target_temp)
+        self.vis.add_geometry(self.pc1_copy)
+        self.vis.add_geometry(self.pc2_copy)
 
     def update_visualizer(self, zoom, front, lookat, up):
         view_control = self.vis.get_view_control()
@@ -96,6 +96,7 @@ class Open3DWindow(QMainWindow):
         view_control.set_up(up)
 
     def get_current_view(self):
+
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
         extrinsic = parameters.extrinsic
@@ -105,14 +106,7 @@ class Open3DWindow(QMainWindow):
         front = -extrinsic[2:3, 0:3].transpose()
         eye = np.linalg.inv(extrinsic[0:3, 0:3]) @ (extrinsic[0:3, 3:4] * -1.0)
 
-        # Calculate the aab
-        combined_vertices = np.vstack((np.asarray(self.pc1_copy.points), np.asarray(self.pc2_copy.points)))
-        # Compute the minimum and maximum coordinates to find the extents of the AABB
-        aabb_min = np.min(combined_vertices, axis=0)
-        aabb_max = np.max(combined_vertices, axis=0)
-        # Create a new AABB geometry
-        aabb = o3d.geometry.AxisAlignedBoundingBox(aabb_min, aabb_max)
-
+        aabb = self.calculate_aabb()
         fov = view_control.get_field_of_view()
 
         bb_center = aabb.get_center()
@@ -131,3 +125,17 @@ class Open3DWindow(QMainWindow):
         except AttributeError:
             zoom_float = zoom
         return zoom_float, front.flatten(), lookat.flatten(), up.flatten()
+
+    def calculate_aabb(self):
+        points1 = np.array((0, 0, 0))
+        points2 = np.array((0, 0, 0))
+        if self.pc1_copy and self.pc2_copy:
+            points1 = np.asarray(self.pc1_copy.points)
+            points2 = np.asarray(self.pc2_copy.points)
+
+        combined_vertices = np.vstack((points1, points2))
+        # Compute the minimum and maximum coordinates to find the extents of the AABB
+        aabb_min = np.min(combined_vertices, axis=0)
+        aabb_max = np.max(combined_vertices, axis=0)
+        # Create a new AABB geometry
+        return o3d.geometry.AxisAlignedBoundingBox(aabb_min, aabb_max)
