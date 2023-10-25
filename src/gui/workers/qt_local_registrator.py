@@ -28,4 +28,4 @@ class LocalRegistrator(QObject):
                                       self.relative_rmse, self.max_iteration)
 
         self.signal_registration_done.emit(results)
-        #self.signal_finished.emit()
+        self.signal_finished.emit()

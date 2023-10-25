@@ -40,7 +40,7 @@ def convert_pc_to_open3d_pc(pc):
     o3d_pc.points.extend(points)
 
     # Convert color data
-    colors = colors = np.vstack([vertices['f_dc_0'], vertices['f_dc_1'], vertices['f_dc_2']]).T
+    colors = np.vstack([vertices['f_dc_0'], vertices['f_dc_1'], vertices['f_dc_2']]).T
     o3d_pc.colors.extend(colors)
 
     scale_names = [p.name for p in vertices.properties if p.name.startswith("scale_")]

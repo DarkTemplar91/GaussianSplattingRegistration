@@ -1,4 +1,5 @@
-from enum import Enum, auto
+from enum import Enum
+
 import open3d as o3d
 
 

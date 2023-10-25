@@ -9,10 +9,10 @@ class VectorWidget(QWidget):
 
         value_changed = QtCore.pyqtSignal(int, float)
 
-        def __init__(self, value, id):
+        def __init__(self, value, cell_id):
             super().__init__()
 
-            self.id = id
+            self.id = cell_id
 
             self.setFixedWidth(60)
             self.setAlignment(Qt.AlignLeft)
