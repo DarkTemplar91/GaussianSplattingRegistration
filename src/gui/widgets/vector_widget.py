@@ -57,10 +57,10 @@ class VectorWidget(QWidget):
 
     def cell_value_changed(self, cell_id, value):
         self.values[cell_id] = value
-        print(self.values)
 
     def set_values(self, values):
         for i in range(self.vector_length):
             self.cells[i].setText(str(values[i]))
             self.values[i] = values[i]
+            self.cells[i].setCursorPosition(0)
 

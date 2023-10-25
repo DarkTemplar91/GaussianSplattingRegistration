@@ -35,4 +35,3 @@ class ColorPicker(QWidget):
         if color.isValid():
             self.color_box.setStyleSheet(f"background-color: {color.name()};")
             self.color_debug = color.getRgbF()[0:3]
-            print(self.color_debug)

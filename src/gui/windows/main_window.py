@@ -219,5 +219,6 @@ class RegistrationMainWindow(QMainWindow):
                                f"Fitness: {registration_result.fitness}\n"
                                f"RMSE: {registration_result.inlier_rmse}\n")
         message_dialog.exec()
-        # TODO: Dialog for registration_result, align point clouds
+
+        self.transformation_picker.set_transformation(registration_result.transformation)
         pass

@@ -19,10 +19,10 @@ class Transformation3DPicker(QWidget):
             Transformation3DPicker.MatrixCell.cell_number += 1
 
             self.setFixedSize(50, 50)
-            self.setAlignment(Qt.AlignCenter)
+            self.setAlignment(Qt.AlignLeft)
             self.value = value
             self.setText(str(self.value))
-            self.textChanged.connect(self.update_cell_value)
+            self.textEdited.connect(self.update_cell_value)
 
         def update_cell_value(self, text):
             try:
@@ -77,4 +77,13 @@ class Transformation3DPicker(QWidget):
 
     def transformation_changed(self, row, col, value):
         self.transformation_matrix[row, col] = value
+        self.transformation_matrix_changed.emit(self.transformation_matrix)
+
+    def set_transformation(self, transformation_matrix):
+        for cell in self.cells:
+            self.transformation_matrix[cell.row][cell.col] = transformation_matrix[cell.row][cell.col]
+            value = transformation_matrix[cell.row][cell.col]
+            cell.setText(str(value))
+            cell.setCursorPosition(0)
+
         self.transformation_matrix_changed.emit(self.transformation_matrix)
