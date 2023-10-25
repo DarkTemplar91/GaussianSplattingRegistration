@@ -1,9 +1,8 @@
 import os
-import time
 
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
-    QTabWidget, QSizePolicy, QErrorMessage, QMessageBox
+    QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog, QLabel
 
 from src.gui.widgets.cache_tab_widget import CacheTab
 from src.gui.widgets.input_tab_widget import InputTab
@@ -42,6 +41,13 @@ class RegistrationMainWindow(QMainWindow):
         self.cache_dir = os.path.join(working_dir, "cache")
         self.input_dir = os.path.join(working_dir, "inputs")
         self.output_dir = os.path.join(working_dir, "output")
+
+        # Loading bar for registration
+        self.progress_dialog = QProgressDialog()
+        self.progress_dialog.setModal(Qt.WindowModal)
+        self.progress_dialog.setWindowTitle("Loading")
+        self.progress_dialog.setLabel(QLabel("Registering point clouds..."))
+        self.progress_dialog.close()
 
         # Set window size to screen size
         screen = QDesktopWidget().screenGeometry()
@@ -201,9 +207,11 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
-        time.sleep(1)
+        # time.sleep(1)
+        self.progress_dialog.exec()
 
     def handle_local_registration_result(self, registration_result):
+        self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setWindowTitle("Successful registration")
         message_dialog.setText(f"The registration of the point clouds is finished.\n"
