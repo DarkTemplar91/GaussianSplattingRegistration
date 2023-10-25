@@ -21,7 +21,7 @@ class PointCloudLoaderInput(QThread):
 
 class PointCloudLoaderGaussian(QThread):
     progress_signal = pyqtSignal(int)
-    result_signal = pyqtSignal(object, object)
+    result_signal = pyqtSignal(object, object, object, object)
 
     def __init__(self, point_cloud1, point_cloud2):
         super().__init__()
@@ -29,10 +29,10 @@ class PointCloudLoaderGaussian(QThread):
         self.point_cloud2 = point_cloud2
 
     def run(self):
-        result1 = load_gaussian_pc(self.point_cloud1)
-        result2 = load_gaussian_pc(self.point_cloud2)
+        result1, original1 = load_gaussian_pc(self.point_cloud1)
+        result2, original2 = load_gaussian_pc(self.point_cloud2)
 
-        self.result_signal.emit(result1, result2)
+        self.result_signal.emit(result1, result2, original1, original2)
 
 
 class PointCloudLoaderO3D(QThread):

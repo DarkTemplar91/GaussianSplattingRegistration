@@ -25,6 +25,21 @@ def load_sparse_pc(pc_path):
 
 # TODO: Add tracing
 def load_gaussian_pc(pc_path):
+    point_cloud_plyfile = load_plyfile_pc(pc_path)
+    if not point_cloud_plyfile:
+        return None, None
+
+    return convert_pc_to_open3d_pc(point_cloud_plyfile), point_cloud_plyfile
+
+
+def load_o3d_pc(pc_path):
+    if not os.path.isfile(pc_path):
+        return None
+
+    return o3d.io.read_point_cloud(pc_path)
+
+
+def load_plyfile_pc(pc_path):
     if not os.path.isfile(pc_path):
         return None
 
@@ -34,14 +49,7 @@ def load_gaussian_pc(pc_path):
     if pc_type is not PointCloudType.gaussian:
         return None
 
-    return convert_pc_to_open3d_pc(point_cloud_plyfile)
-
-
-def load_o3d_pc(pc_path):
-    if not os.path.isfile(pc_path):
-        return None
-
-    return o3d.io.read_point_cloud(pc_path)
+    return point_cloud_plyfile
 
 
 def check_point_cloud_type(point_cloud):
@@ -54,6 +62,10 @@ def check_point_cloud_type(point_cloud):
         return PointCloudType.gaussian
 
     return PointCloudType.unkown
+
+
+def is_point_cloud_gaussian(point_cloud):
+    return check_point_cloud_type(point_cloud) == PointCloudType.gaussian
 
 
 def save_point_clouds_to_cache(pc_first, pc_second):

@@ -59,7 +59,7 @@ def rotate_sh(pc, points, transformation_matrix):
         vertex_data[attr_name] = features_flattened[:, idx]
 
 
-# TODO: Fix for whole transformation
+# TODO: Fix for whole 4x4 transformation
 def transform_point_cloud(pc, transformation_matrix):
     vertex_data = pc["vertex"].data
 

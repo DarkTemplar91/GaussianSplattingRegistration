@@ -7,7 +7,7 @@ from src.gui.workers.qt_workers import PointCloudLoaderInput, PointCloudLoaderGa
 
 
 class InputTab(QWidget):
-    result_signal = pyqtSignal(object, object, bool)
+    result_signal = pyqtSignal(object, object, bool, object, object)
 
     def __init__(self, input_dir):
         super().__init__()
@@ -103,6 +103,6 @@ class InputTab(QWidget):
         worker.start()
         self.progress_dialog.exec()
 
-    def handle_result(self, pc_first, pc_second):
+    def handle_result(self, pc_first, pc_second, original1=None, original2=None):
         self.progress_dialog.close()
-        self.result_signal.emit(pc_first, pc_second, self.checkbox_cache.isChecked())
+        self.result_signal.emit(pc_first, pc_second, self.checkbox_cache.isChecked(), original1, original2)
