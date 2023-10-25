@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QColorDia
 class ColorPicker(QWidget):
     def __init__(self, label_text=""):
         super().__init__()
-        self.color_debug = np.zeros(3, dtype=float)
+        self.color_debug = np.ones(3, dtype=float)
 
         layout = QHBoxLayout()
         self.setLayout(layout)
