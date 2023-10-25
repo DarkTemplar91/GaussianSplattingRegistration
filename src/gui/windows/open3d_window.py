@@ -37,10 +37,15 @@ class Open3DWindow(QMainWindow):
         timer.start(1)
 
         # Example data
-        knot_mesh = o3d.data.KnotMesh()
-        mesh = o3d.io.read_triangle_mesh(knot_mesh.path)
-        mesh.compute_vertex_normals()
-        self.vis.add_geometry(mesh)
+        demo_icp_pcds = o3d.data.DemoICPPointClouds()
+        source = o3d.io.read_point_cloud(demo_icp_pcds.paths[0])
+        target = o3d.io.read_point_cloud(demo_icp_pcds.paths[1])
+        self.pc1_copy = source
+        self.pc2_copy = target
+        self.pc1 = source
+        self.pc2 = target
+        self.vis.add_geometry(self.pc1_copy)
+        self.vis.add_geometry(self.pc2_copy)
 
     def update_vis(self):
         self.vis.poll_events()

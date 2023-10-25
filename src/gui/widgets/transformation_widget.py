@@ -2,7 +2,7 @@ import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, \
-    QTableWidget, QGridLayout, QLineEdit
+    QTableWidget, QGridLayout, QLineEdit, QPushButton, QSizePolicy
 
 
 class Transformation3DPicker(QWidget):
@@ -72,8 +72,16 @@ class Transformation3DPicker(QWidget):
         for cell in self.cells:
             cell.value_changed.connect(self.transformation_changed)
 
-            layout.addWidget(label)
-            layout.addWidget(self.matrix_widget)
+        button_reset = QPushButton("Reset transformation matrix")
+        button_reset.setStyleSheet("padding-left: 10px; padding-right: 10px;"
+                                   "padding-top: 2px; padding-bottom: 2px;")
+        button_reset.setFixedSize(250, 30)
+        button_reset.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        button_reset.clicked.connect(self.reset_transformation)
+
+        layout.addWidget(label)
+        layout.addWidget(self.matrix_widget)
+        layout.addWidget(button_reset, alignment=Qt.AlignCenter)
 
     def transformation_changed(self, row, col, value):
         self.transformation_matrix[row, col] = value
@@ -87,3 +95,6 @@ class Transformation3DPicker(QWidget):
             cell.setCursorPosition(0)
 
         self.transformation_matrix_changed.emit(self.transformation_matrix)
+
+    def reset_transformation(self):
+        self.set_transformation(np.eye(4))

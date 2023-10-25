@@ -157,23 +157,23 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_widget.assign_new_values(zoom, front, lookat, up)
 
     def merge_point_clouds(self, is_checked, pc_path1, pc_path2, merge_path):
+        pc_first = self.pc_originalFirst
+        pc_second = self.pc_originalSecond
+
         if is_checked:
             pc_first = load_plyfile_pc(pc_path1)
             pc_second = load_plyfile_pc(pc_path2)
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
-                             "correct path!")
+                             "correct path and the point clouds selected are Gaussian point clouds!")
             if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
                 return
 
-            merge_point_clouds(pc_first, pc_second, merge_path, self.transformation_picker.transformation_matrix)
+        error_message = ("There were no preloaded point clouds found! Load a Gaussian point cloud before merging, "
+                         "or check the \"corresponding inputs\" option and select the point clouds you wish to merge.")
+        if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        error_message = ("There were no preloaded point clouds found! Load a point cloud before merging, or check the "
-                         "\"corresponding inputs\" option and select the point clouds you wish to merge.")
-        if self.check_if_none_and_throw_error(self.pc_originalFirst, self.pc_originalSecond, error_message):
-            return
-
-        merge_point_clouds(self.pc_originalFirst, self.pc_originalSecond,
+        merge_point_clouds(pc_first, pc_first,
                            merge_path, self.transformation_picker.transformation_matrix)
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):

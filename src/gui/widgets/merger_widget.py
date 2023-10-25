@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage
 
 from src.gui.widgets.file_selector_widget import FileSelector
 
@@ -73,6 +73,12 @@ class MergerWidget(QWidget):
         self.fs_input2.file_path = ""
 
     def merge_point_clouds(self):
+        if not self.fs_merge.file_path:
+            dialog = QErrorMessage(self)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("Please select location to save the merged point cloud!")
+            return
+
         is_checked = self.input_checkbox.isChecked()
         pc_path1 = self.fs_input1.file_path
         pc_path2 = self.fs_input2.file_path
