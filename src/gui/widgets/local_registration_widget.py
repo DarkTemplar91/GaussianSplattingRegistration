@@ -4,11 +4,11 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy, \
     QComboBox
 
+from src.gui.widgets.registration_input_field_widget import RegistrationInputField
 from src.utils.local_registration_util import LocalRegistrationType
 
 
 class LocalRegistrationTab(QWidget):
-
     signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int)
 
     def __init__(self):
@@ -33,17 +33,8 @@ class LocalRegistrationTab(QWidget):
             self.combo_box_icp.addItem(enum_member.instance_name)
 
         # Max correspondence
-        layout_correspondence = QHBoxLayout()
-        correspondence_widget = QWidget()
-        correspondence_widget.setLayout(layout_correspondence)
-        correspondence_label = QLabel("Max correspondence: ")
-        correspondence_label.setFixedWidth(150)
-        self.correspondence_lineedit = QLineEdit("5.0")
-        self.correspondence_lineedit.setFixedWidth(60)
-        self.correspondence_lineedit.setValidator(double_validator)
-        layout_correspondence.addWidget(correspondence_label)
-        layout_correspondence.addWidget(self.correspondence_lineedit)
-        layout_correspondence.addStretch()
+        self.correspondence_widget = RegistrationInputField("Max correspondence:", "5.0", 150, 60,
+                                                            double_validator)
 
         convergence_layout = QVBoxLayout()
         convergence_widget = QWidget()
@@ -60,47 +51,20 @@ class LocalRegistrationTab(QWidget):
         )
 
         # Relative fitness
-        layout_fitness = QHBoxLayout()
-        fitness_widget = QWidget()
-        fitness_widget.setLayout(layout_fitness)
-        fitness_label = QLabel("Relative fitness: ")
-        fitness_label.setFixedWidth(100)
-        self.fitness_lineedit = QLineEdit("0.000001")
-        self.fitness_lineedit.setFixedWidth(60)
-        self.fitness_lineedit.setValidator(double_validator)
-        layout_fitness.addWidget(fitness_label)
-        layout_fitness.addWidget(self.fitness_lineedit)
-        layout_fitness.addStretch()
+        self.fitness_widget = RegistrationInputField("Relative fitness:", "0.000001", 100, 60,
+                                                     double_validator)
 
         # Relative RMSE
-        layout_rmse = QHBoxLayout()
-        rmse_widget = QWidget()
-        rmse_widget.setLayout(layout_rmse)
-        rmse_label = QLabel("Relative RMSE: ")
-        rmse_label.setFixedWidth(100)
-        self.rmse_lineedit = QLineEdit("0.000001")
-        self.rmse_lineedit.setFixedWidth(60)
-        self.rmse_lineedit.setValidator(double_validator)
-        layout_rmse.addWidget(rmse_label)
-        layout_rmse.addWidget(self.rmse_lineedit)
-        layout_rmse.addStretch()
+        self.rmse_widget = RegistrationInputField("Relative RMSE:", "0.000001", 100, 60,
+                                                  double_validator)
 
         # Max iterations
-        layout_iteration = QHBoxLayout()
-        iteration_widget = QWidget()
-        iteration_widget.setLayout(layout_iteration)
-        iteration_label = QLabel("Max iteration: ")
-        iteration_label.setFixedWidth(100)
-        self.iteration_lineedit = QLineEdit("30")
-        self.iteration_lineedit.setFixedWidth(60)
-        self.iteration_lineedit.setValidator(int_validator)
-        layout_iteration.addWidget(iteration_label)
-        layout_iteration.addWidget(self.iteration_lineedit)
-        layout_iteration.addStretch()
+        self.iteration_widget = RegistrationInputField("Max iteration:", "30", 100, 60,
+                                                       int_validator)
 
-        convergence_layout.addWidget(fitness_widget)
-        convergence_layout.addWidget(rmse_widget)
-        convergence_layout.addWidget(iteration_widget)
+        convergence_layout.addWidget(self.fitness_widget)
+        convergence_layout.addWidget(self.rmse_widget)
+        convergence_layout.addWidget(self.iteration_widget)
 
         bt_apply = QPushButton("Start local registration")
         bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
@@ -110,7 +74,7 @@ class LocalRegistrationTab(QWidget):
 
         layout.addWidget(type_label)
         layout.addWidget(self.combo_box_icp)
-        layout.addWidget(correspondence_widget)
+        layout.addWidget(self.correspondence_widget)
         layout.addSpacing(5)
         layout.addWidget(conv_label)
         layout.addWidget(convergence_widget)
@@ -121,9 +85,9 @@ class LocalRegistrationTab(QWidget):
 
     def registration_button_pressed(self):
         registration_type = LocalRegistrationType(self.combo_box_icp.currentIndex())
-        max_correspondence = float(self.correspondence_lineedit.text())
-        relative_fitness = float(self.fitness_lineedit.text())
-        relative_rmse = float(self.rmse_lineedit.text())
-        max_iteration = int(self.iteration_lineedit.text())
+        max_correspondence = float(self.correspondence_widget.lineedit.text())
+        relative_fitness = float(self.fitness_widget.lineedit.text())
+        relative_rmse = float(self.rmse_widget.lineedit.text())
+        max_iteration = int(self.iteration_widget.lineedit.text())
         self.signal_do_registration.emit(registration_type,
                                          max_correspondence, relative_fitness, relative_rmse, max_iteration)

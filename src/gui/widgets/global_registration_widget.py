@@ -72,7 +72,7 @@ class GlobalRegistrationTab(QScrollArea):
             self.combo_box_global.addItem(enum_member.instance_name)
 
         # Voxel size for downsampling
-        self.voxel_size_widget = RegistrationInputField("Voxel size for downsampling:", "5.0",
+        self.voxel_size_widget = RegistrationInputField("Voxel size for downsampling:", "0.05",
                                                         validator=self.double_validator)
 
         # Stack for RANSAC
