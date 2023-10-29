@@ -61,6 +61,24 @@ def do_ransac_registration(point_cloud_first, point_cloud_second, voxel_size, mu
     return result
 
 
+def do_fgr_registration(point_cloud_first, point_cloud_second, voxel_size, division_factor=1.4, use_absolute_scale=False,
+                        decrease_mu=False, maximum_correspondence=0.025,
+                        max_iterations=64, tuple_scale=0.95, max_tuple_count=1000, tuple_test=True):
+    source_down, source_fpfh = preprocess_point_cloud(point_cloud_first, voxel_size)
+    target_down, target_fpfh = preprocess_point_cloud(point_cloud_second, voxel_size)
+
+    options = o3d.pipelines.registration.FastGlobalRegistrationOption(division_factor, use_absolute_scale,
+                                                                      decrease_mu,maximum_correspondence,
+                                                                      max_iterations, tuple_scale,
+                                                                      max_tuple_count, tuple_test)
+
+    result = o3d.pipelines.registration.registration_fgr_based_on_feature_matching(source_down, target_down,
+                                                                                   source_fpfh,
+                                                                                   target_fpfh, options)
+
+    return result
+
+
 def preprocess_point_cloud(pcd, voxel_size):
     print(":: Downsample with a voxel size %.3f." % voxel_size)
     pcd_down = pcd.voxel_down_sample(voxel_size)
