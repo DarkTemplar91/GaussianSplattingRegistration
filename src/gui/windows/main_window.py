@@ -184,7 +184,7 @@ class RegistrationMainWindow(QMainWindow):
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        merge_point_clouds(pc_first, pc_first,
+        merge_point_clouds(pc_first, pc_second,
                            merge_path, self.transformation_picker.transformation_matrix)
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):

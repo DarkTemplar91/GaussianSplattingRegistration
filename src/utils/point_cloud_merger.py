@@ -10,7 +10,7 @@ def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
 
     # calculate the new positions for the transformation if needed
     if transformation_matrix is not None:
-        transform_point_cloud(pc1, transformation_matrix)
+        transform_point_cloud(pc2, transformation_matrix)
 
     out_vertex_data = np.concatenate([vertex_data1, vertex_data2])
     out_vertex_element = plyfile.PlyElement.describe(out_vertex_data, "vertex", len_types={}, val_types={}, comments=[])
@@ -63,7 +63,7 @@ def rotate_sh(pc, points, transformation_matrix):
 def transform_point_cloud(pc, transformation_matrix):
     vertex_data = pc["vertex"].data
 
-    points = np.vstack([vertex_data['x'], vertex_data['y'], vertex_data['z']]).T
+    points = np.vstack([vertex_data['x'], vertex_data['y'], vertex_data['z'], np.ones(vertex_data["x"].shape)]).T
     transformed_points = np.dot(transformation_matrix, points.T).T[:, :3]
 
     # Update the coordinates in the PLY data
@@ -79,7 +79,7 @@ def transform_point_cloud(pc, transformation_matrix):
         quaternions[:, idx] = np.asarray(pc.elements[0][attr_name])
 
     new_rotation = convert_quaternions_to_rot_matrix(quaternions)
-    new_rotation = transformation_matrix @ new_rotation
+    new_rotation = transformation_matrix[:3, :3] @ new_rotation
 
     # Get back new quaternions
     quaternions = matrices_to_quaternions(new_rotation)
