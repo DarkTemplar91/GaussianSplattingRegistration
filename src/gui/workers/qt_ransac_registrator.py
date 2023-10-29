@@ -10,13 +10,14 @@ class RANSACRegistrator(QObject):
     signal_finished = pyqtSignal()
     signal_registration_done = pyqtSignal(object)
 
-    def __init__(self, pc1, pc2,
+    def __init__(self, pc1, pc2, init_transformation,
                  voxel_size, mutual_filter, max_correspondence, estimation_method,
                  ransac_n, checkers, max_iteration, confidence):
         super().__init__()
 
         self.pc1 = copy.deepcopy(pc1)
         self.pc2 = copy.deepcopy(pc2)
+        self.pc2.transform(init_transformation)
 
         self.voxel_size = voxel_size
         self.mutual_filter = mutual_filter

@@ -225,7 +225,8 @@ class RegistrationMainWindow(QMainWindow):
         pc1 = self.pane_open3d.pc1
         pc2 = self.pane_open3d.pc2
 
-        ransac_registrator = RANSACRegistrator(pc1, pc2, voxel_size, mutual_filter, max_correspondence,
+        ransac_registrator = RANSACRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                               voxel_size, mutual_filter, max_correspondence,
                                                estimation_method, ransac_n, checkers, max_iteration, confidence)
 
         # Create thread
