@@ -5,13 +5,16 @@ from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGr
     QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog, QLabel
 
 from src.gui.widgets.cache_tab_widget import CacheTab
+from src.gui.widgets.global_registration_widget import GlobalRegistrationTab
 from src.gui.widgets.input_tab_widget import InputTab
-from src.gui.widgets.local_registration_widget import LocalRegistrationGroup
+from src.gui.widgets.local_registration_widget import LocalRegistrationTab
 from src.gui.widgets.merger_widget import MergerWidget
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.widgets.visualizer_widget import VisualizerWidget
 from src.gui.windows.open3d_window import Open3DWindow
+from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_local_registrator import LocalRegistrator
+from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_workers import PointCloudSaver
 from src.utils.file_loader import load_plyfile_pc
 from src.utils.point_cloud_merger import merge_point_clouds
@@ -36,6 +39,7 @@ class RegistrationMainWindow(QMainWindow):
 
         # Registration widgets
         self.local_registration_widget = None
+        self.global_registration_widget = None
 
         working_dir = os.getcwd()
         self.cache_dir = os.path.join(working_dir, "cache")
@@ -114,11 +118,18 @@ class RegistrationMainWindow(QMainWindow):
         layout = QVBoxLayout()
         group_registration.setLayout(layout)
 
-        self.local_registration_widget = LocalRegistrationGroup()
+        registration_tab = QTabWidget()
+
+        self.local_registration_widget = LocalRegistrationTab()
         self.local_registration_widget.signal_do_registration.connect(self.do_local_registration)
-        # TODO: Implement Global registration
-        # layout.addWidget(GlobalRegistrationGroup())
-        layout.addWidget(self.local_registration_widget)
+
+        self.global_registration_widget = GlobalRegistrationTab()
+        self.global_registration_widget.signal_do_ransac.connect(self.do_ransac_registration)
+        self.global_registration_widget.signal_do_fgr.connect(self.do_fgr_registration)
+
+        registration_tab.addTab(self.global_registration_widget, "Global Registration")
+        registration_tab.addTab(self.local_registration_widget, "Local Registration")
+        layout.addWidget(registration_tab)
 
     # Event Handlers
     def update_point_clouds(self, transformation_matrix):
@@ -201,7 +212,7 @@ class RegistrationMainWindow(QMainWindow):
         local_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(local_registrator.do_registration)
-        local_registrator.signal_registration_done.connect(self.handle_local_registration_result)
+        local_registrator.signal_registration_done.connect(self.handle_registration_result)
         local_registrator.signal_finished.connect(thread.quit)
         local_registrator.signal_finished.connect(local_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -210,7 +221,55 @@ class RegistrationMainWindow(QMainWindow):
         # time.sleep(1)
         self.progress_dialog.exec()
 
-    def handle_local_registration_result(self, registration_result):
+    def do_ransac_registration(self, voxel_size, mutual_filter, max_correspondence, estimation_method,
+                               ransac_n, checkers, max_iteration, confidence):
+
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
+
+        ransac_registrator = RANSACRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                               voxel_size, mutual_filter, max_correspondence,
+                                               estimation_method, ransac_n, checkers, max_iteration, confidence)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        ransac_registrator.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(ransac_registrator.do_registration)
+        ransac_registrator.signal_registration_done.connect(self.handle_registration_result)
+        ransac_registrator.signal_finished.connect(thread.quit)
+        ransac_registrator.signal_finished.connect(ransac_registrator.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        self.progress_dialog.exec()
+
+    def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
+                            max_iterations, tuple_scale, max_tuple_count, tuple_test):
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
+
+        fgr_registrator = FGRRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                         voxel_size, division_factor, use_absolute_scale, decrease_mu,
+                                         maximum_correspondence,
+                                         max_iterations, tuple_scale, max_tuple_count, tuple_test)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        fgr_registrator.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(fgr_registrator.do_registration)
+        fgr_registrator.signal_registration_done.connect(self.handle_registration_result)
+        fgr_registrator.signal_finished.connect(thread.quit)
+        fgr_registrator.signal_finished.connect(fgr_registrator.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        self.progress_dialog.exec()
+
+    def handle_registration_result(self, registration_result):
         self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setWindowTitle("Successful registration")
@@ -221,4 +280,3 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.exec()
 
         self.transformation_picker.set_transformation(registration_result.transformation)
-        pass
