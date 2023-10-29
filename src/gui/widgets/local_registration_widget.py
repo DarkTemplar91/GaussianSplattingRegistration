@@ -2,12 +2,12 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy, \
-    QGroupBox, QComboBox
+    QComboBox
 
 from src.utils.local_registration_util import LocalRegistrationType
 
 
-class LocalRegistrationGroup(QGroupBox):
+class LocalRegistrationTab(QWidget):
 
     signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int)
 
@@ -15,7 +15,6 @@ class LocalRegistrationGroup(QGroupBox):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
-        self.setTitle("Local registration")
 
         type_label = QLabel("Local registration type")
         self.combo_box_icp = QComboBox()
@@ -99,7 +98,6 @@ class LocalRegistrationGroup(QGroupBox):
         layout_iteration.addWidget(self.iteration_lineedit)
         layout_iteration.addStretch()
 
-        convergence_layout.addWidget(conv_label)
         convergence_layout.addWidget(fitness_widget)
         convergence_layout.addWidget(rmse_widget)
         convergence_layout.addWidget(iteration_widget)
@@ -114,6 +112,7 @@ class LocalRegistrationGroup(QGroupBox):
         layout.addWidget(self.combo_box_icp)
         layout.addWidget(correspondence_widget)
         layout.addSpacing(5)
+        layout.addWidget(conv_label)
         layout.addWidget(convergence_widget)
         layout.addWidget(bt_apply)
         layout.addStretch()
