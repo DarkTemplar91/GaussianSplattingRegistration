@@ -29,7 +29,7 @@ class Open3DWindow(QMainWindow):
         opt = self.vis.get_render_option()
         opt.background_color = background_color
 
-        hwnd = self.get_hwnd()
+        hwnd = None
         platform = sys.platform
         if platform.startswith("win"):
             hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
