@@ -1,4 +1,6 @@
 import copy
+import sys
+from subprocess import Popen, PIPE
 
 import numpy as np
 import open3d as o3d
@@ -27,8 +29,13 @@ class Open3DWindow(QMainWindow):
         opt = self.vis.get_render_option()
         opt.background_color = background_color
 
-        # TODO: Find workaround for linux/mac
-        hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
+        hwnd = self.get_hwnd()
+        platform = sys.platform
+        if platform.startswith("win"):
+            hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
+        elif platform.startswith("linux"):
+            hwnd = self.get_hwnd()
+
         self.window = QtGui.QWindow.fromWinId(hwnd)
         self.window_container = self.createWindowContainer(self.window, widget)
         layout.addWidget(self.window_container, 0, 0)
@@ -144,3 +151,14 @@ class Open3DWindow(QMainWindow):
         aabb_max = np.max(combined_vertices, axis=0)
         # Create a new AABB geometry
         return o3d.geometry.AxisAlignedBoundingBox(aabb_min, aabb_max)
+
+    @staticmethod
+    def get_hwnd():
+        hwnd = None
+        while hwnd is None:
+            proc = Popen('wmctrl -l', stdin=None, stdout=PIPE, stderr=None, shell=True)
+            out, err = proc.communicate()
+            for window in out.decode('utf-8').split('\n'):
+                if 'Open3D' in window:
+                    hwnd = int(window.split(' ')[0], 16)
+                    return hwnd
