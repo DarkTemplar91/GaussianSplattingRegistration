@@ -4,7 +4,10 @@ from subprocess import Popen, PIPE
 
 import numpy as np
 import open3d as o3d
-import win32gui
+
+if sys.platform.startswith('win'):
+    import win32gui
+
 from PyQt5 import QtGui, QtWidgets, QtCore
 from PyQt5.QtWidgets import QMainWindow
 
