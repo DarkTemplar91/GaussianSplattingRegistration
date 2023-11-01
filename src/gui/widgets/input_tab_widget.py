@@ -48,7 +48,7 @@ class InputTab(QWidget):
             "}"
         )
         self.fs_pc1 = FileSelector(text="First point cloud:", base_path=input_dir)
-        self.fs_pc2 = FileSelector(text="First point cloud:", base_path=input_dir)
+        self.fs_pc2 = FileSelector(text="Second point cloud:", base_path=input_dir)
         bt_gaussian = QPushButton("Import gaussian point cloud")
         bt_gaussian.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_gaussian.setStyleSheet("padding-left: 10px; padding-right: 10px;"
