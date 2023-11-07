@@ -108,11 +108,11 @@ class MultiScaleRegistrationTab(QWidget):
         if state:
             return
 
-        self.fs_input1.inputField.setText("")
-        self.fs_input1.file_path = ""
+        self.fs_sparse1.inputField.setText("")
+        self.fs_sparse1.file_path = ""
 
-        self.fs_input2.inputField.setText("")
-        self.fs_input2.file_path = ""
+        self.fs_sparse2.inputField.setText("")
+        self.fs_sparse2.file_path = ""
 
     def registration_button_pressed(self):
         use_corresponding = self.sparse_checkbox.isChecked()
@@ -122,8 +122,8 @@ class MultiScaleRegistrationTab(QWidget):
         relative_fitness = float(self.fitness_widget.lineedit.text())
         relative_rmse = float(self.rmse_widget.lineedit.text())
 
-        voxel_values = list(filter(None, self.voxel_values.lineedit.text().split(",")))
-        iter_values = list(filter(None, self.iter_values.lineedit.text().split(",")))
+        voxel_values = list(map(float, filter(None, self.voxel_values.lineedit.text().split(","))))
+        iter_values = list(map(int, filter(None, self.iter_values.lineedit.text().split(","))))
         self.signal_do_registration.emit(use_corresponding, sparse_first, sparse_second, registration_type,
                                          relative_fitness, relative_rmse, voxel_values, iter_values)
 
