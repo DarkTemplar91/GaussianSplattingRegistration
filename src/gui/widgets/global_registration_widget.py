@@ -133,6 +133,7 @@ class GlobalRegistrationTab(QScrollArea):
         estimation_widget.setLayout(estimation_layout)
         estimation_layout.addWidget(type_label)
         estimation_layout.addWidget(self.combobox_estimation_method)
+        estimation_layout.addStretch()
 
         self.ransac_iteration_widget = RegistrationInputField("RANSAC iterations:", "3",
                                                               validator=self.int_validator)
