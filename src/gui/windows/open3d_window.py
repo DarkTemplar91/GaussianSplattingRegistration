@@ -165,3 +165,13 @@ class Open3DWindow(QMainWindow):
                 if 'Open3D' in window:
                     hwnd = int(window.split(' ')[0], 16)
                     return hwnd
+
+    def get_camera_extrinsic(self):
+        view_control = self.vis.get_view_control()
+        parameters = view_control.convert_to_pinhole_camera_parameters()
+        return parameters.extrinsic
+
+    def get_camera_intrinsic(self):
+        view_control = self.vis.get_view_control()
+        parameters = view_control.convert_to_pinhole_camera_parameters()
+        return parameters.intrinsic.intrinsic_matrix

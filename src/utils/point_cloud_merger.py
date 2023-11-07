@@ -4,7 +4,12 @@ import plyfile
 from src.utils.math_util import matrices_to_quaternions, convert_quaternions_to_rot_matrix, get_wigner_from_rotation
 
 
-def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
+def save_merged_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
+    out_ply_data = merge_point_clouds(pc1, pc2, transformation_matrix)
+    plyfile.PlyData.write(out_ply_data, output_path)
+
+
+def merge_point_clouds(pc1, pc2, transformation_matrix=None):
     vertex_data1 = pc1["vertex"].data
     vertex_data2 = pc2["vertex"].data
 
@@ -13,11 +18,13 @@ def merge_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
         transform_point_cloud(pc2, transformation_matrix)
 
     out_vertex_data = np.concatenate([vertex_data1, vertex_data2])
-    out_vertex_element = plyfile.PlyElement.describe(out_vertex_data, "vertex", len_types={}, val_types={}, comments=[])
+    out_vertex_element = plyfile.PlyElement.describe(out_vertex_data, "vertex", len_types={}, val_types={},
+                                                     comments=[])
     out_ply_data = plyfile.PlyData(text=False,  # binary
                                    byte_order='<',  # < stands for little endian
                                    elements=[out_vertex_element])
-    plyfile.PlyData.write(out_ply_data, output_path)
+
+    return out_ply_data
 
 
 # Not sure if this is actually needed.
@@ -59,7 +66,6 @@ def rotate_sh(pc, points, transformation_matrix):
         vertex_data[attr_name] = features_flattened[:, idx]
 
 
-# TODO: Fix for whole 4x4 transformation
 def transform_point_cloud(pc, transformation_matrix):
     vertex_data = pc["vertex"].data
 
@@ -88,5 +94,3 @@ def transform_point_cloud(pc, transformation_matrix):
     vertex_data['rot_1'] = quaternions[:, 1]
     vertex_data['rot_2'] = quaternions[:, 2]
     vertex_data['rot_3'] = quaternions[:, 3]
-
-

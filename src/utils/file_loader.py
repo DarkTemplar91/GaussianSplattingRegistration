@@ -23,7 +23,6 @@ def load_sparse_pc(pc_path):
     return convert_input_pc_to_open3d_pc(point_cloud_plyfile)
 
 
-# TODO: Add tracing
 def load_gaussian_pc(pc_path):
     point_cloud_plyfile = load_plyfile_pc(pc_path)
     if not point_cloud_plyfile:

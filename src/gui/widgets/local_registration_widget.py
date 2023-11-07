@@ -4,7 +4,7 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, \
     QComboBox
 
-from src.gui.widgets.registration_input_field_widget import RegistrationInputField
+from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.utils.local_registration_util import LocalRegistrationType
 
 
@@ -34,8 +34,8 @@ class LocalRegistrationTab(QWidget):
             self.combo_box_icp.addItem(enum_member.instance_name)
 
         # Max correspondence
-        self.correspondence_widget = RegistrationInputField("Max correspondence:", "5.0", 150, 60,
-                                                            double_validator)
+        self.correspondence_widget = SimpleInputField("Max correspondence:", "5.0", 150, 60,
+                                                      double_validator)
 
         convergence_layout = QVBoxLayout()
         convergence_widget = QWidget()
@@ -52,16 +52,16 @@ class LocalRegistrationTab(QWidget):
         )
 
         # Relative fitness
-        self.fitness_widget = RegistrationInputField("Relative fitness:", "0.000001", 100, 60,
-                                                     double_validator)
+        self.fitness_widget = SimpleInputField("Relative fitness:", "0.000001", 100, 60,
+                                               double_validator)
 
         # Relative RMSE
-        self.rmse_widget = RegistrationInputField("Relative RMSE:", "0.000001", 100, 60,
-                                                  double_validator)
+        self.rmse_widget = SimpleInputField("Relative RMSE:", "0.000001", 100, 60,
+                                            double_validator)
 
         # Max iterations
-        self.iteration_widget = RegistrationInputField("Max iteration:", "30", 100, 60,
-                                                       int_validator)
+        self.iteration_widget = SimpleInputField("Max iteration:", "30", 100, 60,
+                                                 int_validator)
 
         convergence_layout.addWidget(self.fitness_widget)
         convergence_layout.addWidget(self.rmse_widget)

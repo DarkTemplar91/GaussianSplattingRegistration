@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
     QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog, QLabel
@@ -10,16 +11,19 @@ from src.gui.widgets.input_tab_widget import InputTab
 from src.gui.widgets.local_registration_widget import LocalRegistrationTab
 from src.gui.widgets.merger_widget import MergerWidget
 from src.gui.widgets.multi_scale_registration_widget import MultiScaleRegistrationTab
+from src.gui.widgets.rasterizer_tab_widget import RasterizerTab
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.widgets.visualizer_widget import VisualizerWidget
+from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
+from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.gui.workers.qt_workers import PointCloudSaver
 from src.utils.file_loader import load_plyfile_pc
-from src.utils.point_cloud_merger import merge_point_clouds
+from src.utils.point_cloud_merger import save_merged_point_clouds
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -37,7 +41,11 @@ class RegistrationMainWindow(QMainWindow):
         self.input_tab = None
         self.merger_widget = None
         self.visualizer_widget = None
+        self.rasterizer_tab = None
         self.transformation_picker = None
+
+        # Image viewer
+        self.raster_window = None
 
         working_dir = os.getcwd()
         self.cache_dir = os.path.join(working_dir, "cache")
@@ -94,6 +102,7 @@ class RegistrationMainWindow(QMainWindow):
         self.cache_tab = CacheTab(self.cache_dir)
         self.transformation_picker = Transformation3DPicker()
         self.visualizer_widget = VisualizerWidget()
+        self.rasterizer_tab = RasterizerTab()
         self.merger_widget = MergerWidget(self.output_dir, self.input_dir)
 
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
@@ -102,11 +111,13 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
+        self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
         tab_widget.addTab(self.input_tab, "I/O files")
         tab_widget.addTab(self.cache_tab, "Cache")
         tab_widget.addTab(self.transformation_picker, "Transformation")
         tab_widget.addTab(self.visualizer_widget, "Visualizer")
+        tab_widget.addTab(self.rasterizer_tab, "Rasterizer")
         tab_widget.addTab(self.merger_widget, "Merging")
 
     def setup_registration_group(self, group_registration):
@@ -185,8 +196,8 @@ class RegistrationMainWindow(QMainWindow):
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        merge_point_clouds(pc_first, pc_second,
-                           merge_path, self.transformation_picker.transformation_matrix)
+        save_merged_point_clouds(pc_first, pc_second,
+                                 merge_path, self.transformation_picker.transformation_matrix)
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:
@@ -305,3 +316,35 @@ class RegistrationMainWindow(QMainWindow):
 
         thread.start()
         self.progress_dialog.exec()
+
+    def rasterize_gaussians(self, width, height, scale, color):
+        pc1 = self.pc_originalFirst
+        pc2 = self.pc_originalSecond
+
+        extrinsic = self.pane_open3d.get_camera_extrinsic().astype(np.float32)
+        intrinsic = self.pane_open3d.get_camera_intrinsic().astype(np.float32)
+        rasterizer = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                      extrinsic, intrinsic, scale, color, height, width)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        rasterizer.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(rasterizer.do_rasterization)
+        rasterizer.signal_rasterization_done.connect(self.create_raster_window)
+        rasterizer.signal_finished.connect(thread.quit)
+        rasterizer.signal_finished.connect(rasterizer.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        # TODO: Change progress dialog text and title
+        self.progress_dialog.exec()
+
+    def create_raster_window(self, pix):
+        self.progress_dialog.close()
+        self.raster_window = RasterImageViewer()
+        self.raster_window.set_image(pix)
+        self.raster_window.setWindowTitle("Rasterized point clouds")
+        self.raster_window.setWindowModality(Qt.WindowModal)
+        self.raster_window.show()

@@ -4,7 +4,7 @@ from PyQt5.QtGui import QDoubleValidator, QRegularExpressionValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton
 
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.gui.widgets.registration_input_field_widget import RegistrationInputField
+from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.utils.local_registration_util import LocalRegistrationType
 
 
@@ -69,15 +69,15 @@ class MultiScaleRegistrationTab(QWidget):
             self.combo_box_icp.addItem(enum_member.instance_name)
 
         # Relative fitness
-        self.fitness_widget = RegistrationInputField("Relative fitness:", "0.000001", 90, 60,
-                                                     double_validator)
+        self.fitness_widget = SimpleInputField("Relative fitness:", "0.000001", 90, 60,
+                                               double_validator)
 
         # Relative RMSE
-        self.rmse_widget = RegistrationInputField("Relative RMSE:", "0.000001", 90, 60,
-                                                  double_validator)
+        self.rmse_widget = SimpleInputField("Relative RMSE:", "0.000001", 90, 60,
+                                            double_validator)
 
-        self.voxel_values = RegistrationInputField("Voxel values:", "5,2.5", 90, 150, double_list_validator)
-        self.iter_values = RegistrationInputField("Iteration values:", "50,30", 90, 150, int_list_validator)
+        self.voxel_values = SimpleInputField("Voxel values:", "5,2.5", 90, 150, double_list_validator)
+        self.iter_values = SimpleInputField("Iteration values:", "50,30", 90, 150, int_list_validator)
 
         bt_apply = QPushButton("Start multi-scale registration")
         bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"

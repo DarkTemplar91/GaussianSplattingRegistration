@@ -6,11 +6,10 @@ from open3d.cpu.pybind.pipelines.registration import CorrespondenceCheckerBasedO
     CorrespondenceCheckerBasedOnDistance, CorrespondenceCheckerBasedOnNormal
 
 from src.gui.widgets.optional_value_widget import OptionalInputField
-from src.gui.widgets.registration_input_field_widget import RegistrationInputField
+from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.utils.global_registration_util import GlobalRegistrationType, RANSACEstimationMethod
 
 
-# TODO: Finish
 class GlobalRegistrationTab(QScrollArea):
     signal_do_ransac = pyqtSignal(float, bool, float, RANSACEstimationMethod, int, list, int, float)
     signal_do_fgr = pyqtSignal(float, float, bool, bool, float, int, float, int, bool)
@@ -72,8 +71,8 @@ class GlobalRegistrationTab(QScrollArea):
             self.combo_box_global.addItem(enum_member.instance_name)
 
         # Voxel size for downsampling
-        self.voxel_size_widget = RegistrationInputField("Voxel size for downsampling:", "0.05",
-                                                        validator=self.double_validator)
+        self.voxel_size_widget = SimpleInputField("Voxel size for downsampling:", "0.05",
+                                                  validator=self.double_validator)
 
         # Stack for RANSAC
         self.ransac_widget = self.create_ransac_stack_widget()
@@ -119,8 +118,8 @@ class GlobalRegistrationTab(QScrollArea):
             "}"
         )
 
-        self.max_correspondence_ransac_widget = RegistrationInputField("Maximum correspondence:", "5.0",
-                                                                       validator=self.double_validator)
+        self.max_correspondence_ransac_widget = SimpleInputField("Maximum correspondence:", "5.0",
+                                                                 validator=self.double_validator)
 
         type_label = QLabel("Estimation type: ")
         self.combobox_estimation_method = QComboBox()
@@ -135,8 +134,8 @@ class GlobalRegistrationTab(QScrollArea):
         estimation_layout.addWidget(self.combobox_estimation_method)
         estimation_layout.addStretch()
 
-        self.ransac_iteration_widget = RegistrationInputField("RANSAC iterations:", "3",
-                                                              validator=self.int_validator)
+        self.ransac_iteration_widget = SimpleInputField("RANSAC iterations:", "3",
+                                                        validator=self.int_validator)
 
         # Checkers
         checker_label = QLabel("Alignment checker")
@@ -171,9 +170,9 @@ class GlobalRegistrationTab(QScrollArea):
         convergence_widget = QWidget()
         convergence_layout = QVBoxLayout()
         convergence_widget.setLayout(convergence_layout)
-        self.confidence_widget = RegistrationInputField("Confidence:", "0.999", 100, validator=self.double_validator)
-        self.max_iterations_ransac_widget = RegistrationInputField("Max iterations:", "100000", 100,
-                                                                   validator=self.int_validator)
+        self.confidence_widget = SimpleInputField("Confidence:", "0.999", 100, validator=self.double_validator)
+        self.max_iterations_ransac_widget = SimpleInputField("Max iterations:", "100000", 100,
+                                                             validator=self.int_validator)
         convergence_layout.addWidget(self.confidence_widget)
         convergence_layout.addWidget(self.max_iterations_ransac_widget)
 
@@ -214,7 +213,7 @@ class GlobalRegistrationTab(QScrollArea):
         maximum_correspondence_distance: float = 0.025, iteration_number: int = 64, tuple_scale: float = 0.95, 
         maximum_tuple_count: int = 1000, tuple_test: bool = True"""
 
-        self.division_factor_widget = RegistrationInputField("Division factor:", "1.4", validator=self.double_validator)
+        self.division_factor_widget = SimpleInputField("Division factor:", "1.4", validator=self.double_validator)
         self.checkbox_use_absolute_scale = QCheckBox()
         self.checkbox_use_absolute_scale.setText("Use absolute scale")
         self.checkbox_use_absolute_scale.setStyleSheet(
@@ -237,14 +236,14 @@ class GlobalRegistrationTab(QScrollArea):
             "    padding-left: 10px;"
             "}"
         )
-        self.maximum_correspondence_fgr_widget = RegistrationInputField("Maximum correspondence:",
-                                                                        "0.025", validator=self.double_validator)
-        self.max_iterations_fgr_widget = RegistrationInputField("Iteration number: ",
-                                                                "64", validator=self.int_validator)
-        self.tuple_scale_widget = RegistrationInputField("Tuple scale: ",
-                                                         "0.95", validator=self.double_validator)
-        self.max_tuple_count_widget = RegistrationInputField("Max tuple count: ",
-                                                             "1000", validator=self.int_validator)
+        self.maximum_correspondence_fgr_widget = SimpleInputField("Maximum correspondence:",
+                                                                  "0.025", validator=self.double_validator)
+        self.max_iterations_fgr_widget = SimpleInputField("Iteration number: ",
+                                                          "64", validator=self.int_validator)
+        self.tuple_scale_widget = SimpleInputField("Tuple scale: ",
+                                                   "0.95", validator=self.double_validator)
+        self.max_tuple_count_widget = SimpleInputField("Max tuple count: ",
+                                                       "1000", validator=self.int_validator)
 
         self.checkbox_tuple_test = QCheckBox()
         self.checkbox_tuple_test.setChecked(True)
