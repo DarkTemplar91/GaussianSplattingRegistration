@@ -18,6 +18,7 @@ class LocalRegistrationTab(QWidget):
 
         type_label = QLabel("Local registration type")
         self.combo_box_icp = QComboBox()
+        self.combo_box_icp.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         locale = QLocale(QLocale.English)
         double_validator = QDoubleValidator()
