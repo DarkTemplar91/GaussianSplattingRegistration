@@ -2,8 +2,7 @@ import copy
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from src.utils.global_registration_util import do_ransac_registration, do_fgr_registration
-from src.utils.local_registration_util import do_icp_registration
+from src.utils.global_registration_util import do_fgr_registration
 
 
 class FGRRegistrator(QObject):

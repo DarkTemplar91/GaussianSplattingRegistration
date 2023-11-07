@@ -1,8 +1,4 @@
 import argparse
-import copy
-
-import open3d as o3d
-
 import sys
 
 import qdarkstyle

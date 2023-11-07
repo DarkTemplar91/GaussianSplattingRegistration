@@ -237,10 +237,14 @@ class GlobalRegistrationTab(QScrollArea):
             "    padding-left: 10px;"
             "}"
         )
-        self.maximum_correspondence_fgr_widget = RegistrationInputField("Maximum correspondence:", "0.025", validator=self.double_validator)
-        self.max_iterations_fgr_widget = RegistrationInputField("Iteration number: ", "64", validator=self.int_validator)
-        self.tuple_scale_widget = RegistrationInputField("Tuple scale: ", "0.95", validator=self.double_validator)
-        self.max_tuple_count_widget = RegistrationInputField("Max tuple count: ", "1000", validator=self.int_validator)
+        self.maximum_correspondence_fgr_widget = RegistrationInputField("Maximum correspondence:",
+                                                                        "0.025", validator=self.double_validator)
+        self.max_iterations_fgr_widget = RegistrationInputField("Iteration number: ",
+                                                                "64", validator=self.int_validator)
+        self.tuple_scale_widget = RegistrationInputField("Tuple scale: ",
+                                                         "0.95", validator=self.double_validator)
+        self.max_tuple_count_widget = RegistrationInputField("Max tuple count: ",
+                                                             "1000", validator=self.int_validator)
 
         self.checkbox_tuple_test = QCheckBox()
         self.checkbox_tuple_test.setChecked(True)

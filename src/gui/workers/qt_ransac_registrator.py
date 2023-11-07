@@ -3,7 +3,6 @@ import copy
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from src.utils.global_registration_util import do_ransac_registration
-from src.utils.local_registration_util import do_icp_registration
 
 
 class RANSACRegistrator(QObject):

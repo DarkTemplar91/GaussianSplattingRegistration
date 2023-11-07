@@ -61,14 +61,14 @@ def do_ransac_registration(point_cloud_first, point_cloud_second, voxel_size, mu
     return result
 
 
-def do_fgr_registration(point_cloud_first, point_cloud_second, voxel_size, division_factor=1.4, use_absolute_scale=False,
-                        decrease_mu=False, maximum_correspondence=0.025,
+def do_fgr_registration(point_cloud_first, point_cloud_second, voxel_size, division_factor=1.4, use_absolute_scale=False
+                        , decrease_mu=False, maximum_correspondence=0.025,
                         max_iterations=64, tuple_scale=0.95, max_tuple_count=1000, tuple_test=True):
     source_down, source_fpfh = preprocess_point_cloud(point_cloud_first, voxel_size)
     target_down, target_fpfh = preprocess_point_cloud(point_cloud_second, voxel_size)
 
     options = o3d.pipelines.registration.FastGlobalRegistrationOption(division_factor, use_absolute_scale,
-                                                                      decrease_mu,maximum_correspondence,
+                                                                      decrease_mu, maximum_correspondence,
                                                                       max_iterations, tuple_scale,
                                                                       max_tuple_count, tuple_test)
 

@@ -1,7 +1,7 @@
 import os
 
 from PyQt5.QtCore import QThread, Qt
-from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
+from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
     QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog, QLabel
 
 from src.gui.widgets.cache_tab_widget import CacheTab

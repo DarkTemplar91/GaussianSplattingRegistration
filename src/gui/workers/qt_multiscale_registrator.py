@@ -7,6 +7,7 @@ from src.utils.local_registration_util import do_icp_registration
 
 import open3d as o3d
 
+
 class MultiScaleRegistrator(QObject):
     signal_finished = pyqtSignal()
     signal_registration_done = pyqtSignal(object)

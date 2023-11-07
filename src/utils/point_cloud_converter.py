@@ -35,13 +35,13 @@ def convert_pc_to_open3d_pc(pc):
     vertices = pc["vertex"]
     points = np.stack((np.asarray(pc.elements[0]["x"]),
                        np.asarray(pc.elements[0]["y"]),
-                       np.asarray(pc.elements[0]["z"])), axis=1,dtype=np.float64)
+                       np.asarray(pc.elements[0]["z"])), axis=1, dtype=np.float64)
     o3d_pc.points = o3d.utility.Vector3dVector(points)
 
     # Convert color data
     colors = np.vstack([np.asarray(vertices['f_dc_0']), 
                         np.asarray(vertices['f_dc_1']), 
-                        np.asarray(vertices['f_dc_2'])],dtype=np.float64).T
+                        np.asarray(vertices['f_dc_2'])], dtype=np.float64).T
     
     # Convert color data to C-contiguous array for speedup
     colors = np.ascontiguousarray(colors)
