@@ -52,8 +52,7 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.close()
 
         # Set window size to screen size
-        screen = QDesktopWidget().screenGeometry()
-        self.setGeometry(screen)
+        self.showMaximized()
 
         # Create splitter and two planes
         splitter = QSplitter(self)
