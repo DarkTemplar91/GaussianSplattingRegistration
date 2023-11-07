@@ -45,7 +45,7 @@ class MergerWidget(QWidget):
         layout_input.addWidget(self.fs_input1)
         layout_input.addWidget(self.fs_input2)
 
-        self.fs_merge = FileSelector(text="Save path:", base_path=merge_path)
+        self.fs_merge = FileSelector(text="Save path:", base_path=merge_path, label_width=70)
         bt_merge = QPushButton("Merge point clouds")
         bt_merge.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                "padding-top: 2px; padding-bottom: 2px;")
