@@ -9,11 +9,13 @@ from src.gui.widgets.global_registration_widget import GlobalRegistrationTab
 from src.gui.widgets.input_tab_widget import InputTab
 from src.gui.widgets.local_registration_widget import LocalRegistrationTab
 from src.gui.widgets.merger_widget import MergerWidget
+from src.gui.widgets.multi_scale_registration_widget import MultiScaleRegistrationTab
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.widgets.visualizer_widget import VisualizerWidget
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_local_registrator import LocalRegistrator
+from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_workers import PointCloudSaver
 from src.utils.file_loader import load_plyfile_pc
@@ -36,10 +38,6 @@ class RegistrationMainWindow(QMainWindow):
         self.merger_widget = None
         self.visualizer_widget = None
         self.transformation_picker = None
-
-        # Registration widgets
-        self.local_registration_widget = None
-        self.global_registration_widget = None
 
         working_dir = os.getcwd()
         self.cache_dir = os.path.join(working_dir, "cache")
@@ -120,15 +118,19 @@ class RegistrationMainWindow(QMainWindow):
 
         registration_tab = QTabWidget()
 
-        self.local_registration_widget = LocalRegistrationTab()
-        self.local_registration_widget.signal_do_registration.connect(self.do_local_registration)
+        local_registration_widget = LocalRegistrationTab()
+        local_registration_widget.signal_do_registration.connect(self.do_local_registration)
 
-        self.global_registration_widget = GlobalRegistrationTab()
-        self.global_registration_widget.signal_do_ransac.connect(self.do_ransac_registration)
-        self.global_registration_widget.signal_do_fgr.connect(self.do_fgr_registration)
+        global_registration_widget = GlobalRegistrationTab()
+        global_registration_widget.signal_do_ransac.connect(self.do_ransac_registration)
+        global_registration_widget.signal_do_fgr.connect(self.do_fgr_registration)
 
-        registration_tab.addTab(self.global_registration_widget, "Global Registration")
-        registration_tab.addTab(self.local_registration_widget, "Local Registration")
+        multi_scale_registration_widget = MultiScaleRegistrationTab(self.input_dir)
+        multi_scale_registration_widget.signal_do_registration.connect(self.do_multi_scale_registration)
+
+        registration_tab.addTab(global_registration_widget, "Global Registration")
+        registration_tab.addTab(local_registration_widget, "Local Registration")
+        registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
         layout.addWidget(registration_tab)
 
     # Event Handlers
@@ -280,3 +282,27 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.exec()
 
         self.transformation_picker.set_transformation(registration_result.transformation)
+
+    def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
+                                    relative_fitness, relative_rmse, voxel_values, iter_values):
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
+
+        multi_scale_registrator = MultiScaleRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                                        use_corresponding, sparse_first, sparse_second,
+                                                        registration_type, relative_fitness,
+                                                        relative_rmse, voxel_values, iter_values)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        multi_scale_registrator.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(multi_scale_registrator.do_registration)
+        multi_scale_registrator.signal_registration_done.connect(self.handle_registration_result)
+        multi_scale_registrator.signal_finished.connect(thread.quit)
+        multi_scale_registrator.signal_finished.connect(multi_scale_registrator.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        self.progress_dialog.exec()
