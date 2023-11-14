@@ -4,6 +4,7 @@ open3d==0.16.0
 plyfile==1.0.1
 PyQt5==5.15.10
 PyQt5_sip==12.13.0
-pywin32==306
+pywin32==306; platform_system == "Windows"
 QDarkStyle==3.1
-torch==2.1.0
+pillow~=10.1.0
+setuptools~=68.2.2

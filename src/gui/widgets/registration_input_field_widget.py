@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
 
 
-class RegistrationInputField(QWidget):
+class SimpleInputField(QWidget):
 
     def __init__(self, label_text, value, label_width=150, line_edit_width=60, validator=None):
         super().__init__()

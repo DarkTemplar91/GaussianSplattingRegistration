@@ -5,7 +5,7 @@ Converts PLYFILE Point Clouds to the Open3D format
 import open3d as o3d
 import numpy as np
 
-from src.utils.math_util import get_normals_from_covariance, convert_to_covariance_matrix
+from src.utils.math_util import get_normals_from_covariance, convert_to_covariance_matrix, sh2rgb
 
 
 def convert_input_pc_to_open3d_pc(pc):
@@ -39,12 +39,12 @@ def convert_pc_to_open3d_pc(pc):
     o3d_pc.points = o3d.utility.Vector3dVector(points)
 
     # Convert color data
-    colors = np.vstack([np.asarray(vertices['f_dc_0']), 
-                        np.asarray(vertices['f_dc_1']), 
+    colors = np.vstack([np.asarray(vertices['f_dc_0']),
+                        np.asarray(vertices['f_dc_1']),
                         np.asarray(vertices['f_dc_2'])], dtype=np.float64).T
-    
+
     # Convert color data to C-contiguous array for speedup
-    colors = np.ascontiguousarray(colors)
+    colors = sh2rgb(np.ascontiguousarray(colors))
     o3d_pc.colors = o3d.utility.Vector3dVector(colors)
 
     scale_names = [p.name for p in vertices.properties if p.name.startswith("scale_")]
@@ -52,6 +52,7 @@ def convert_pc_to_open3d_pc(pc):
     scaling = np.zeros((points.shape[0], len(scale_names)))
     for idx, attr_name in enumerate(scale_names):
         scaling[:, idx] = np.asarray(vertices[attr_name])
+    scaling = np.exp(scaling)
 
     rot_names = [p.name for p in vertices.properties if p.name.startswith("rot")]
     rot_names = sorted(rot_names, key=lambda x: int(x.split('_')[-1]))
@@ -66,3 +67,4 @@ def convert_pc_to_open3d_pc(pc):
     o3d_pc.normals = o3d.utility.Vector3dVector(normal_matrices)
     o3d_pc.orient_normals_consistent_tangent_plane(30)
     return o3d_pc
+

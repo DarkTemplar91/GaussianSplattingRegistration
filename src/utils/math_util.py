@@ -72,3 +72,7 @@ def get_wigner_from_rotation(order, rotation_matrix):
     wigner_d = o3.wigner_D(order, rot_angles[0], rot_angles[1], rot_angles[2])
 
     return wigner_d.numpy()
+
+
+def sh2rgb(sh):
+    return sh * 0.28209479177387814 + 0.5
