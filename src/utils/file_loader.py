@@ -64,6 +64,9 @@ def check_point_cloud_type(point_cloud):
 
 
 def is_point_cloud_gaussian(point_cloud):
+    if not point_cloud:
+        return False
+
     return check_point_cloud_type(point_cloud) == PointCloudType.gaussian
 
 

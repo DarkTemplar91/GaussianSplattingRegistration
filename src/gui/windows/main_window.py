@@ -22,7 +22,7 @@ from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.gui.workers.qt_workers import PointCloudSaver
-from src.utils.file_loader import load_plyfile_pc
+from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 from src.utils.point_cloud_merger import save_merged_point_clouds
 
 
@@ -56,7 +56,7 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog = QProgressDialog()
         self.progress_dialog.setModal(Qt.WindowModal)
         self.progress_dialog.setWindowTitle("Loading")
-        self.progress_dialog.setLabel(QLabel("Registering point clouds..."))
+        self.progress_dialog.setStyleSheet("text-align: center;")
         self.progress_dialog.close()
 
         # Set window size to screen size
@@ -230,7 +230,7 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
-        # time.sleep(1)
+        self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
     def do_ransac_registration(self, voxel_size, mutual_filter, max_correspondence, estimation_method,
@@ -255,7 +255,9 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
+        self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
+
 
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
@@ -279,6 +281,7 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
+        self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
     def handle_registration_result(self, registration_result):
@@ -315,11 +318,20 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
+        self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
     def rasterize_gaussians(self, width, height, scale, color):
         pc1 = self.pc_originalFirst
         pc2 = self.pc_originalSecond
+
+        error_message = ('One or both of the point clouds loaded are not of the correct type.'
+                         '\nLoad two Gaussian point clouds for rasterization!')
+        if not is_point_cloud_gaussian(pc1) or not is_point_cloud_gaussian(pc2):
+            dialog = QErrorMessage(self)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage(error_message)
+            return
 
         extrinsic = self.pane_open3d.get_camera_extrinsic().astype(np.float32)
         intrinsic = self.pane_open3d.get_camera_intrinsic().astype(np.float32)
@@ -338,7 +350,7 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
-        # TODO: Change progress dialog text and title
+        self.progress_dialog.setLabelText("Creating rasterized image...")
         self.progress_dialog.exec()
 
     def create_raster_window(self, pix):
