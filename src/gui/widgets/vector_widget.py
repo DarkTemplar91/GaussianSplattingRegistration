@@ -9,7 +9,7 @@ class VectorWidget(QWidget):
 
         value_changed = QtCore.pyqtSignal(int, float)
 
-        def __init__(self, value, cell_id):
+        def __init__(self, value, cell_id, validator):
             super().__init__()
 
             self.id = cell_id
@@ -18,6 +18,7 @@ class VectorWidget(QWidget):
             self.setAlignment(Qt.AlignLeft)
             self.value = value
             self.setText(str(self.value))
+            self.setValidator(validator)
             self.textChanged.connect(self.update_cell_value)
 
         def update_cell_value(self, text):
@@ -27,7 +28,7 @@ class VectorWidget(QWidget):
             except ValueError:
                 pass
 
-    def __init__(self, label_text="", cell_count=3, initial_values=None):
+    def __init__(self, label_text="", cell_count=3, initial_values=None, validator=None):
         super().__init__()
 
         if len(initial_values) is not cell_count:
@@ -47,7 +48,7 @@ class VectorWidget(QWidget):
         layout.addWidget(label)
 
         for i in range(cell_count):
-            line_edit = self.VectorCell(initial_values[i], i)
+            line_edit = self.VectorCell(initial_values[i], i, validator)
             self.values[i] = initial_values[i]
             self.cells.append(line_edit)
             line_edit.value_changed.connect(self.cell_value_changed)

@@ -1,6 +1,7 @@
 import numpy as np
 from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QLocale
+from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, \
     QTableWidget, QGridLayout, QLineEdit, QPushButton, QSizePolicy
 
@@ -14,6 +15,12 @@ class Transformation3DPicker(QWidget):
         def __init__(self, value=0.0):
             super().__init__()
 
+            locale = QLocale(QLocale.English)
+            double_validator = QDoubleValidator()
+            double_validator.setLocale(locale)
+            double_validator.setRange(-9999.0, 9999.0)
+            double_validator.setDecimals(10)
+
             self.row = int(Transformation3DPicker.MatrixCell.cell_number / 4)
             self.col = self.cell_number % 4
             Transformation3DPicker.MatrixCell.cell_number += 1
@@ -22,6 +29,7 @@ class Transformation3DPicker(QWidget):
             self.setAlignment(Qt.AlignLeft)
             self.value = value
             self.setText(str(self.value))
+            self.setValidator(double_validator)
             self.textEdited.connect(self.update_cell_value)
 
         def update_cell_value(self, text):
