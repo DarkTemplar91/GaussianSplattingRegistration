@@ -9,7 +9,7 @@ from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget
 
 
-class VisualizerWidget(QWidget):
+class VisualizerTab(QWidget):
     signal_change_vis = QtCore.pyqtSignal(bool, np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray)
     signal_get_current_view = QtCore.pyqtSignal()
 

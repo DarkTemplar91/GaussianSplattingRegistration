@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePoli
 from src.gui.widgets.file_selector_widget import FileSelector
 
 
-class MergerWidget(QWidget):
+class MergeTab(QWidget):
     signal_merge_point_clouds = QtCore.pyqtSignal(bool, str, str, str)
 
     def __init__(self, merge_path="", input_path=""):
