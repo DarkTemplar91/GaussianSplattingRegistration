@@ -1,3 +1,4 @@
+import copy
 import os
 
 import numpy as np
@@ -17,6 +18,7 @@ from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.tabs.visualizer_tab import VisualizerTab
 from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
+from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
@@ -141,6 +143,7 @@ class RegistrationMainWindow(QMainWindow):
 
         evaluator_widget = EvaluationTab()
         evaluator_widget.signal_camera_change.connect(self.loaded_camera_changed)
+        evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
         registration_tab.addTab(global_registration_widget, "Global Registration")
         registration_tab.addTab(local_registration_widget, "Local Registration")
@@ -209,6 +212,7 @@ class RegistrationMainWindow(QMainWindow):
         if not pc_first or not pc_second:
             # TODO: Further error messages. Tracing?
             dialog = QErrorMessage(self)
+            dialog.setModal(True)
             dialog.setWindowTitle("Error")
             dialog.showMessage(message)
             return True
@@ -263,7 +267,6 @@ class RegistrationMainWindow(QMainWindow):
         thread.start()
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
-
 
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
@@ -335,6 +338,7 @@ class RegistrationMainWindow(QMainWindow):
                          '\nLoad two Gaussian point clouds for rasterization!')
         if not is_point_cloud_gaussian(pc1) or not is_point_cloud_gaussian(pc2):
             dialog = QErrorMessage(self)
+            dialog.setModal(True)
             dialog.setWindowTitle("Error")
             dialog.showMessage(error_message)
             return
@@ -369,3 +373,35 @@ class RegistrationMainWindow(QMainWindow):
 
     def loaded_camera_changed(self, extrinsics):
         self.pane_open3d.apply_camera_transformation(extrinsics)
+
+    def evaluate_registration(self, camera_list, image_path, log_path):
+        pc1 = self.pc_originalFirst
+        pc2 = self.pc_originalSecond
+
+        if not pc1 or not pc2:
+            return
+
+        worker = RegistrationEvaluator(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                       camera_list, image_path, log_path)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        worker.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(worker.do_evaluation)
+        #worker.signal_evaluation_done.connect(self.handle_registration_result) # Maybe it should be handled here?
+        worker.signal_finished.connect(thread.quit)
+        worker.signal_finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+
+        # TODO: Update progress dialog
+        self.progress_dialog.setLabelText("Evaluating registration...")
+        self.progress_dialog.setRange(0, 100)
+        self.progress_dialog.canceled.connect(worker.cancel_evaluation)
+        worker.signal_update_progress.connect(self.progress_dialog.setValue)
+
+        thread.start()
+        self.progress_dialog.exec()
+

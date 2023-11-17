@@ -75,6 +75,7 @@ class MergeTab(QWidget):
     def merge_point_clouds(self):
         if not self.fs_merge.file_path:
             dialog = QErrorMessage(self)
+            dialog.setModal(True)
             dialog.setWindowTitle("Error")
             dialog.showMessage("Please select location to save the merged point cloud!")
             return

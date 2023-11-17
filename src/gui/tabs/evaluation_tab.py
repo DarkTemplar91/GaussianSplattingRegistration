@@ -1,21 +1,20 @@
 import json
 import os.path
-from time import sleep
 
 import numpy as np
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFileDialog, QGroupBox, QHBoxLayout, QLabel, \
-    QSpinBox, QLineEdit
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFileDialog, QGroupBox, QHBoxLayout,
+                             QLabel, QSpinBox, QLineEdit, QErrorMessage)
 
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.gui.windows.image_viewer_window import RasterImageViewer
-from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.models.cameras import Camera
-from src.utils.graphics_utils import focal2fov, fov2focal
+from src.utils.general_utils import convert_to_camera_transform
+from src.utils.graphics_utils import focal2fov
 
 
 class EvaluationTab(QWidget):
     signal_camera_change = pyqtSignal(np.ndarray)
+    signal_evaluate_registration = pyqtSignal(list, str, str)
 
     def __init__(self):
         super().__init__()
@@ -67,8 +66,8 @@ class EvaluationTab(QWidget):
         evaluation_layout = QVBoxLayout()
         self.evaluation_group.setLayout(evaluation_layout)
 
-        self.fs_images = FileSelector(text="Images: ", type=QFileDialog.Directory)
-        self.fs_log = FileSelector(text="Log file: ", name_filter="*.txt")
+        self.fs_images = FileSelector(text="Images folder: ", type=QFileDialog.Directory, label_width=80)
+        self.fs_log = FileSelector(text="Log file: ", name_filter="*.txt", label_width=80)
         self.button_evaluate = QPushButton("Evaluate registration")
         self.button_evaluate.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                            "padding-top: 2px; padding-bottom: 2px;")
@@ -83,9 +82,7 @@ class EvaluationTab(QWidget):
         layout.addWidget(self.evaluation_group)
 
         self.button_load_cameras.clicked.connect(self.load_cameras_clicked)
-
-        self.pc1 = None
-        self.pc2 = None
+        self.button_evaluate.clicked.connect(self.evaluate_registration)
 
     def load_cameras_clicked(self):
         self.cameras_list.clear()
@@ -93,6 +90,10 @@ class EvaluationTab(QWidget):
 
         cameras_path = self.fs_cameras.file_path
         if cameras_path == "" or not os.path.isfile(cameras_path):
+            dialog = QErrorMessage(self)
+            dialog.setWindowTitle("Error")
+            dialog.setModal(True)
+            dialog.showMessage("Select a valid path to your cameras JSON file!")
             return
 
         f = open(cameras_path)
@@ -107,7 +108,7 @@ class EvaluationTab(QWidget):
 
             rot = np.array([np.array(xi) for xi in camera_iter["rotation"]])
             pos = np.array([np.array(xi) for xi in camera_iter["position"]])
-            R, T = self.convert_to_camera_transform(rot, pos)
+            R, T = convert_to_camera_transform(rot, pos)
             image_name = camera_iter["img_name"]
             camera = Camera(R, T, fov_x, fov_y, image_name, width, height)
             self.cameras_list.append(camera)
@@ -117,20 +118,22 @@ class EvaluationTab(QWidget):
         self.spinbox.setValue(0)
         self.current_image_name.setText(self.cameras_list[0].image_name)
 
-
-    def convert_to_camera_transform(self, rot, pos):
-        W2C = np.zeros((4, 4))
-        W2C[:3, 3] = pos
-        W2C[:3, :3] = rot
-        W2C[3, 3] = 1.0
-
-        Rt = np.linalg.inv(W2C)
-        R = Rt[:3, :3].transpose()
-        T = Rt[:3, 3]
-
-        return R, T
-
     def current_camera_changed(self, camera_id):
         current_camera = self.cameras_list[camera_id-1]
         self.current_image_name.setText(current_camera.image_name)
         self.signal_camera_change.emit(current_camera.world_view_transform.detach().cpu().numpy().transpose())
+
+    def evaluate_registration(self):
+        image_path = self.fs_images.file_path
+        log_file = self.fs_log.file_path
+
+        if not len(self.cameras_list) > 0:
+            return
+
+        if not os.path.isdir(image_path):
+            return
+
+        if log_file == "":
+            return
+
+        self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file)

@@ -1,3 +1,4 @@
+import copy
 import math
 
 import numpy as np
@@ -11,6 +12,7 @@ from src.models.cameras import Camera
 from src.models.gaussian_model import GaussianModel
 from src.utils.graphics_utils import focal2fov, get_focal_from_intrinsics
 from src.utils.point_cloud_merger import merge_point_clouds
+from src.utils.rasterization_util import rasterize_image
 
 
 class RasterizerWorker(QObject):
@@ -21,8 +23,8 @@ class RasterizerWorker(QObject):
         super().__init__()
 
         self.device = torch.device("cuda:0")
-        self.pc1 = pc1
-        self.pc2 = pc2
+        self.pc1 = copy.deepcopy(pc1)
+        self.pc2 = copy.deepcopy(pc2)
 
         self.transformation = transformation
         self.width = img_width
@@ -46,49 +48,7 @@ class RasterizerWorker(QObject):
         camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
                         self.width, self.height)
 
-        # Create zero tensor. We will use it to make pytorch return gradients of the 2D (screen-space) means
-        screenspace_points = torch.zeros_like(point_cloud.get_xyz, dtype=point_cloud.get_xyz.dtype, requires_grad=True,
-                                              device=self.device) + 0
-        try:
-            screenspace_points.retain_grad()
-        except:
-            pass
-
-        bg_color = torch.tensor(self.color, dtype=torch.float32, device=self.device)
-
-        # Set up rasterization configuration
-        tan_fov_x = math.tan(self.fov_x * 0.5)
-        tan_fov_y = math.tan(self.fov_y * 0.5)
-
-        raster_settings = GaussianRasterizationSettings(
-            image_height=int(self.height),
-            image_width=int(self.width),
-            tanfovx=tan_fov_x,
-            tanfovy=tan_fov_y,
-            bg=bg_color,
-            scale_modifier=self.scale,
-            viewmatrix=camera.world_view_transform,
-            projmatrix=camera.full_proj_transform,
-            sh_degree=3,
-            campos=camera.camera_center,
-            prefiltered=False,
-            debug=True
-        )
-
-        rasterizer = GaussianRasterizer(raster_settings=raster_settings)
-
-        means3D = point_cloud.get_xyz
-        means2D = screenspace_points
-        opacity = point_cloud.get_opacity
-        cov3D_precomp = point_cloud.get_covariance(self.scale)
-        shs = point_cloud.get_features
-
-        image_tensor, radii = rasterizer(
-            means3D=means3D,
-            means2D=means2D,
-            shs=shs,
-            opacities=opacity,
-            cov3D_precomp=cov3D_precomp)
+        image_tensor, _ = rasterize_image(point_cloud, camera, self.color, self.device)
 
         pix = self.get_pixmap_from_tensor(image_tensor)
         self.signal_rasterization_done.emit(pix)
