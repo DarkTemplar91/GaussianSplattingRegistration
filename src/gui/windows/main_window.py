@@ -140,6 +140,7 @@ class RegistrationMainWindow(QMainWindow):
         multi_scale_registration_widget.signal_do_registration.connect(self.do_multi_scale_registration)
 
         evaluator_widget = EvaluationTab()
+        evaluator_widget.signal_camera_change.connect(self.loaded_camera_changed)
 
         registration_tab.addTab(global_registration_widget, "Global Registration")
         registration_tab.addTab(local_registration_widget, "Local Registration")
@@ -365,3 +366,6 @@ class RegistrationMainWindow(QMainWindow):
         self.raster_window.setWindowTitle("Rasterized point clouds")
         self.raster_window.setWindowModality(Qt.WindowModal)
         self.raster_window.show()
+
+    def loaded_camera_changed(self, extrinsics):
+        self.pane_open3d.apply_camera_transformation(extrinsics)

@@ -36,7 +36,7 @@ class InputTab(QWidget):
         bt_sparse = QPushButton("Import sparse point cloud")
         bt_sparse.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                 "padding-top: 2px; padding-bottom: 2px;")
-        bt_sparse.setFixedSize(250, 30)
+        bt_sparse.setFixedSize(285, 30)
         bt_sparse.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         label_pc = QLabel("Point cloud inputs: ")
@@ -53,7 +53,7 @@ class InputTab(QWidget):
         bt_gaussian.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_gaussian.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                   "padding-top: 2px; padding-bottom: 2px;")
-        bt_gaussian.setFixedSize(250, 30)
+        bt_gaussian.setFixedSize(285, 30)
 
         self.checkbox_cache = QCheckBox()
         self.checkbox_cache.setText("Save converted point clouds")
@@ -70,12 +70,12 @@ class InputTab(QWidget):
         layout.addWidget(label_sparse)
         layout.addWidget(self.fs_input1)
         layout.addWidget(self.fs_input2)
-        layout.addWidget(bt_sparse)
+        layout.addWidget(bt_sparse, alignment=Qt.AlignCenter)
         layout.addSpacing(40)
         layout.addWidget(label_pc)
         layout.addWidget(self.fs_pc1)
         layout.addWidget(self.fs_pc2)
-        layout.addWidget(bt_gaussian)
+        layout.addWidget(bt_gaussian, alignment=Qt.AlignCenter)
         layout.addWidget(self.checkbox_cache)
 
         layout.addStretch()

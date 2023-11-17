@@ -43,7 +43,8 @@ class RasterizerWorker(QObject):
         point_cloud.from_ply(merged_pc)
 
         camera_mat = self.extrinsic.transpose()
-        camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y)
+        camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
+                        self.width, self.height)
 
         # Create zero tensor. We will use it to make pytorch return gradients of the 2D (screen-space) means
         screenspace_points = torch.zeros_like(point_cloud.get_xyz, dtype=point_cloud.get_xyz.dtype, requires_grad=True,

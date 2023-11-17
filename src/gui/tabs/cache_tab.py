@@ -37,7 +37,7 @@ class CacheTab(QWidget):
         bt_cached.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_cached.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                 "padding-top: 2px; padding-bottom: 2px;")
-        bt_cached.setFixedSize(250, 30)
+        bt_cached.setFixedSize(285, 30)
 
         layout.addWidget(label_cache)
         layout.addWidget(self.fs_cache1)
