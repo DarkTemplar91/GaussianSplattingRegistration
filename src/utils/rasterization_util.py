@@ -49,4 +49,4 @@ def rasterize_image(point_cloud, camera, color, device):
         opacities=opacity,
         cov3D_precomp=cov3D_precomp)
 
-    return image_tensor, radii
+    return image_tensor.detach().cpu(), radii

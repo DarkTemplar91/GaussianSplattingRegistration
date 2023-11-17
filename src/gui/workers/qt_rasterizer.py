@@ -40,18 +40,21 @@ class RasterizerWorker(QObject):
         self.fov_y = focal2fov(fy, img_height)
 
     def do_rasterization(self):
-        merged_pc = merge_point_clouds(self.pc1, self.pc2, self.transformation)
-        point_cloud = GaussianModel(3)
-        point_cloud.from_ply(merged_pc)
+        with torch.no_grad():
+            merged_pc = merge_point_clouds(self.pc1, self.pc2, self.transformation)
+            point_cloud = GaussianModel(3)
+            point_cloud.from_ply(merged_pc)
 
-        camera_mat = self.extrinsic.transpose()
-        camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
-                        self.width, self.height)
+            camera_mat = self.extrinsic.transpose()
+            camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
+                            self.width, self.height)
 
-        image_tensor, _ = rasterize_image(point_cloud, camera, self.color, self.device)
+            image_tensor, _ = rasterize_image(point_cloud, camera, self.color, self.device)
 
-        pix = self.get_pixmap_from_tensor(image_tensor)
-        self.signal_rasterization_done.emit(pix)
+            pix = self.get_pixmap_from_tensor(image_tensor)
+            self.signal_rasterization_done.emit(pix)
+
+        torch.cuda.empty_cache()
 
     def get_pixmap_from_tensor(self, image_tensor):
         numpy_image = (image_tensor * 255).clamp(0, 255).to(torch.uint8).permute(1, 2, 0).cpu().detach().numpy().astype(

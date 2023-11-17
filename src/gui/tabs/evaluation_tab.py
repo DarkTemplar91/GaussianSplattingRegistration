@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFileDialog, QGroupBox, QHBoxLayout,
                              QLabel, QSpinBox, QLineEdit, QErrorMessage)
 
+from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.models.cameras import Camera
 from src.utils.general_utils import convert_to_camera_transform
@@ -14,7 +15,7 @@ from src.utils.graphics_utils import focal2fov
 
 class EvaluationTab(QWidget):
     signal_camera_change = pyqtSignal(np.ndarray)
-    signal_evaluate_registration = pyqtSignal(list, str, str)
+    signal_evaluate_registration = pyqtSignal(list, str, str, np.ndarray)
 
     def __init__(self):
         super().__init__()
@@ -22,7 +23,7 @@ class EvaluationTab(QWidget):
         self.raster_window = None
         layout = QVBoxLayout()
         self.setLayout(layout)
-        self.cameras_list = list()
+        self.cameras_list = []
 
         input_group = QGroupBox()
         input_layout = QVBoxLayout()
@@ -68,6 +69,7 @@ class EvaluationTab(QWidget):
 
         self.fs_images = FileSelector(text="Images folder: ", type=QFileDialog.Directory, label_width=80)
         self.fs_log = FileSelector(text="Log file: ", name_filter="*.txt", label_width=80)
+        self.render_color = ColorPicker("Background color: ", np.zeros(3))
         self.button_evaluate = QPushButton("Evaluate registration")
         self.button_evaluate.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                            "padding-top: 2px; padding-bottom: 2px;")
@@ -76,6 +78,7 @@ class EvaluationTab(QWidget):
 
         evaluation_layout.addWidget(self.fs_images)
         evaluation_layout.addWidget(self.fs_log)
+        evaluation_layout.addWidget(self.render_color)
         evaluation_layout.addWidget(self.button_evaluate)
 
         layout.addWidget(input_group)
@@ -136,4 +139,5 @@ class EvaluationTab(QWidget):
         if log_file == "":
             return
 
-        self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file)
+        color = np.asarray(self.render_color.color_debug)
+        self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file, color)

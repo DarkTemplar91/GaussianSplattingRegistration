@@ -39,6 +39,10 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_originalFirst = None
         self.pc_originalSecond = None
 
+        # Dataclass that stores the results and parameters of the last registration
+        # TODO: Set up data classes
+        self.registration_result = None
+
         # Tabs for the settings page
         self.cache_tab = None
         self.input_tab = None
@@ -374,7 +378,7 @@ class RegistrationMainWindow(QMainWindow):
     def loaded_camera_changed(self, extrinsics):
         self.pane_open3d.apply_camera_transformation(extrinsics)
 
-    def evaluate_registration(self, camera_list, image_path, log_path):
+    def evaluate_registration(self, camera_list, image_path, log_path, color):
         pc1 = self.pc_originalFirst
         pc2 = self.pc_originalSecond
 
@@ -382,7 +386,7 @@ class RegistrationMainWindow(QMainWindow):
             return
 
         worker = RegistrationEvaluator(pc1, pc2, self.transformation_picker.transformation_matrix,
-                                       camera_list, image_path, log_path)
+                                       camera_list, image_path, log_path, color, None)
 
         # Create thread
         thread = QThread(self)
