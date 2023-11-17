@@ -1,5 +1,6 @@
 import json
 import os.path
+from time import sleep
 
 import numpy as np
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -7,8 +8,10 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFil
     QSpinBox, QLineEdit
 
 from src.gui.widgets.file_selector_widget import FileSelector
+from src.gui.windows.image_viewer_window import RasterImageViewer
+from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.models.cameras import Camera
-from src.utils.graphics_utils import focal2fov
+from src.utils.graphics_utils import focal2fov, fov2focal
 
 
 class EvaluationTab(QWidget):
@@ -17,6 +20,7 @@ class EvaluationTab(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.raster_window = None
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.cameras_list = list()
@@ -101,26 +105,32 @@ class EvaluationTab(QWidget):
             fov_x = focal2fov(fx, width)
             fov_y = focal2fov(fy, height)
 
-            rotation = np.array([np.array(xi) for xi in camera_iter["rotation"]])
-            position = np.array([np.array(xi) for xi in camera_iter["position"]])
+            rot = np.array([np.array(xi) for xi in camera_iter["rotation"]])
+            pos = np.array([np.array(xi) for xi in camera_iter["position"]])
+            R, T = self.convert_to_camera_transform(rot, pos)
             image_name = camera_iter["img_name"]
-            camera = Camera(rotation, position, fov_x, fov_y, image_name, width, height)
+            camera = Camera(R, T, fov_x, fov_y, image_name, width, height)
             self.cameras_list.append(camera)
 
         self.spinbox.setEnabled(True)
         self.spinbox.setRange(1, len(self.cameras_list))
+        self.spinbox.setValue(0)
         self.current_image_name.setText(self.cameras_list[0].image_name)
+
+
+    def convert_to_camera_transform(self, rot, pos):
+        W2C = np.zeros((4, 4))
+        W2C[:3, 3] = pos
+        W2C[:3, :3] = rot
+        W2C[3, 3] = 1.0
+
+        Rt = np.linalg.inv(W2C)
+        R = Rt[:3, :3].transpose()
+        T = Rt[:3, 3]
+
+        return R, T
 
     def current_camera_changed(self, camera_id):
         current_camera = self.cameras_list[camera_id-1]
         self.current_image_name.setText(current_camera.image_name)
-        R = current_camera.R
-        T = current_camera.T
-
-        extrinsics = np.eye(4)
-        extrinsics[:3, :3] = R
-        extrinsics[3, :3] = T
-        extrinsics = extrinsics.transpose()
-
-        self.signal_camera_change.emit(extrinsics)
-
+        self.signal_camera_change.emit(current_camera.world_view_transform.detach().cpu().numpy().transpose())
