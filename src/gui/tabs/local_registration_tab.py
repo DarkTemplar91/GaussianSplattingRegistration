@@ -1,20 +1,29 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
+from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, \
-    QComboBox
+    QComboBox, QScrollArea, QFrame, QHBoxLayout
 
+from src.gui.widgets.optional_value_widget import OptionalInputField
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
-from src.utils.local_registration_util import LocalRegistrationType
+from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 
 
-class LocalRegistrationTab(QWidget):
-    signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int)
+class LocalRegistrationTab(QScrollArea):
+    signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int,
+                                               KernelLossFunctionType, float)
 
     def __init__(self):
         super().__init__()
+
+        widget = QWidget()
+        self.setWidget(widget)
+        self.setBackgroundRole(QPalette.Background)
+        self.setFrameShadow(QFrame.Plain)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setWidgetResizable(True)
         layout = QVBoxLayout()
-        self.setLayout(layout)
+        widget.setLayout(layout)
 
         type_label = QLabel("Local registration type")
         self.combo_box_icp = QComboBox()
@@ -37,11 +46,11 @@ class LocalRegistrationTab(QWidget):
         self.correspondence_widget = SimpleInputField("Max correspondence:", "5.0", 150, 60,
                                                       double_validator)
 
+        # Convergence criteria
         convergence_layout = QVBoxLayout()
         convergence_widget = QWidget()
         convergence_widget.setLayout(convergence_layout)
 
-        # Convergence criteria
         conv_label = QLabel("Convergence criteria")
         conv_label.setStyleSheet(
             "QLabel {"
@@ -67,6 +76,40 @@ class LocalRegistrationTab(QWidget):
         convergence_layout.addWidget(self.rmse_widget)
         convergence_layout.addWidget(self.iteration_widget)
 
+        # Outlier rejection
+        outlier_layout = QVBoxLayout()
+        outlier_widget = QWidget()
+        outlier_widget.setLayout(outlier_layout)
+
+        rejection_label = QLabel("Robust Kernel outlier rejection")
+        rejection_label.setStyleSheet(
+            "QLabel {"
+            "    font-size: 12px;"
+            "    font-weight: bold;"
+            "    padding: 8px;"
+            "}"
+        )
+
+        self.k_value_widget = SimpleInputField("Standard deviation", "0.0",
+                                               100, validator=double_validator)
+        self.k_value_widget.setEnabled(False)
+        outlier_type_label = QLabel("Loss type:")
+        self.combo_box_outlier = QComboBox()
+        self.combo_box_outlier.currentIndexChanged.connect(self.rejection_type_changed)
+        self.combo_box_outlier.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        for enum_member in KernelLossFunctionType:
+            self.combo_box_outlier.addItem(enum_member.instance_name)
+
+        rejection_widget = QWidget()
+        rejection_layout = QHBoxLayout()
+        rejection_widget.setLayout(rejection_layout)
+        rejection_layout.addWidget(outlier_type_label)
+        rejection_layout.addWidget(self.combo_box_outlier)
+        rejection_layout.addStretch()
+
+        outlier_layout.addWidget(rejection_widget)
+        outlier_layout.addWidget(self.k_value_widget)
+
         bt_apply = QPushButton("Start local registration")
         bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                "padding-top: 2px; padding-bottom: 2px;")
@@ -79,6 +122,8 @@ class LocalRegistrationTab(QWidget):
         layout.addSpacing(5)
         layout.addWidget(conv_label)
         layout.addWidget(convergence_widget)
+        layout.addWidget(rejection_label)
+        layout.addWidget(outlier_widget)
         layout.addWidget(bt_apply)
         layout.addStretch()
 
@@ -90,5 +135,11 @@ class LocalRegistrationTab(QWidget):
         relative_fitness = float(self.fitness_widget.lineedit.text())
         relative_rmse = float(self.rmse_widget.lineedit.text())
         max_iteration = int(self.iteration_widget.lineedit.text())
+        rejection_type = KernelLossFunctionType(self.combo_box_outlier.currentIndex())
+        k_value = float(self.k_value_widget.lineedit.text())
         self.signal_do_registration.emit(registration_type,
-                                         max_correspondence, relative_fitness, relative_rmse, max_iteration)
+                                         max_correspondence, relative_fitness, relative_rmse, max_iteration,
+                                         rejection_type, k_value)
+
+    def rejection_type_changed(self, index):
+        self.k_value_widget.setEnabled(index != 0)

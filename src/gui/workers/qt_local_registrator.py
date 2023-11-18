@@ -11,7 +11,7 @@ class LocalRegistrator(QObject):
     signal_registration_done = pyqtSignal(object, object)
 
     def __init__(self, pc1, pc2, init_trans, registration_type, max_correspondence,
-                 relative_fitness, relative_rmse, max_iteration):
+                 relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
         super().__init__()
 
         self.pc1 = copy.deepcopy(pc1)
@@ -22,11 +22,13 @@ class LocalRegistrator(QObject):
         self.relative_fitness = relative_fitness
         self.relative_rmse = relative_rmse
         self.max_iteration = max_iteration
+        self.rejection_type = rejection_type
+        self.k_value = k_value
 
     def do_registration(self):
         results = do_icp_registration(self.pc1, self.pc2, self.init_trans, self.registration_type,
                                       self.max_correspondence, self.relative_fitness,
-                                      self.relative_rmse, self.max_iteration)
+                                      self.relative_rmse, self.max_iteration, self.rejection_type, self.k_value)
 
         dataclass = self.create_dataclass_object(results)
         self.signal_registration_done.emit(results, dataclass)

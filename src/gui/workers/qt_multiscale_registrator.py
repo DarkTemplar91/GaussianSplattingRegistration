@@ -14,7 +14,7 @@ class MultiScaleRegistrator(QObject):
     signal_registration_done = pyqtSignal(object, object)
 
     def __init__(self, pc1, pc2, init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
-                 relative_fitness, relative_rmse, voxel_values, iter_values):
+                 relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value):
         super().__init__()
 
         self.pc1 = copy.deepcopy(pc1)
@@ -28,6 +28,8 @@ class MultiScaleRegistrator(QObject):
         self.relative_rmse = relative_rmse
         self.voxel_values = voxel_values
         self.iter_values = iter_values
+        self.rejection_type = rejection_type
+        self.k_value = k_value
 
     def do_registration(self):
         current_trans = self.init_trans
@@ -47,7 +49,8 @@ class MultiScaleRegistrator(QObject):
             # Use first correspondence and iterations from list
             sparse_result = do_icp_registration(sparse_pc1, sparse_pc2, current_trans, self.registration_type,
                                                 self.voxel_values[0], self.relative_fitness,
-                                                self.relative_rmse, self.iter_values[0])
+                                                self.relative_rmse, self.iter_values[0],
+                                                self.rejection_type, self.k_value)
             current_trans = sparse_result.transformation
 
         for scale in range(len(self.iter_values)):
@@ -63,7 +66,8 @@ class MultiScaleRegistrator(QObject):
                 o3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
 
             results = do_icp_registration(source_down, target_down, current_trans, self.registration_type,
-                                          radius, self.relative_fitness, self.relative_rmse, max_iter)
+                                          radius, self.relative_fitness, self.relative_rmse, max_iter,
+                                          self.rejection_type, self.k_value)
 
             current_trans = results.transformation
 

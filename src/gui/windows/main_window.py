@@ -223,13 +223,14 @@ class RegistrationMainWindow(QMainWindow):
         return False
 
     def do_local_registration(self, registration_type, max_correspondence,
-                              relative_fitness, relative_rmse, max_iteration):
+                              relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
         # Create worker for local registration
         pc1 = self.pane_open3d.pc1
         pc2 = self.pane_open3d.pc2
         init_trans = self.transformation_picker.transformation_matrix
         local_registrator = LocalRegistrator(pc1, pc2, init_trans, registration_type, max_correspondence,
-                                             relative_fitness, relative_rmse, max_iteration)
+                                             relative_fitness, relative_rmse, max_iteration, rejection_type,
+                                             k_value)
 
         # Create thread
         thread = QThread(self)
@@ -309,14 +310,16 @@ class RegistrationMainWindow(QMainWindow):
         self.transformation_picker.set_transformation(results.transformation)
 
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
-                                    relative_fitness, relative_rmse, voxel_values, iter_values):
+                                    relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
+                                    k_value):
         pc1 = self.pane_open3d.pc1
         pc2 = self.pane_open3d.pc2
 
         multi_scale_registrator = MultiScaleRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                                         use_corresponding, sparse_first, sparse_second,
                                                         registration_type, relative_fitness,
-                                                        relative_rmse, voxel_values, iter_values)
+                                                        relative_rmse, voxel_values, iter_values,
+                                                        rejection_type, k_value)
 
         # Create thread
         thread = QThread(self)

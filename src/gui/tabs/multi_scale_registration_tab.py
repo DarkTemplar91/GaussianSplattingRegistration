@@ -1,20 +1,29 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale, QRegularExpression
-from PyQt5.QtGui import QDoubleValidator, QRegularExpressionValidator
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton
+from PyQt5.QtGui import QDoubleValidator, QRegularExpressionValidator, QPalette
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton, QHBoxLayout, \
+    QFrame, QScrollArea
 
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
-from src.utils.local_registration_util import LocalRegistrationType
+from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 
 
-class MultiScaleRegistrationTab(QWidget):
-    signal_do_registration = QtCore.pyqtSignal(bool, str, str, LocalRegistrationType, float, float, list, list)
+class MultiScaleRegistrationTab(QScrollArea):
+    signal_do_registration = QtCore.pyqtSignal(bool, str, str, LocalRegistrationType, float, float, list, list,
+                                               KernelLossFunctionType, float)
 
     def __init__(self, input_path):
         super().__init__()
+
+        widget = QWidget()
+        self.setWidget(widget)
+        self.setBackgroundRole(QPalette.Background)
+        self.setFrameShadow(QFrame.Plain)
+        self.setFrameShape(QFrame.NoFrame)
+        self.setWidgetResizable(True)
         layout = QVBoxLayout()
-        self.setLayout(layout)
+        widget.setLayout(layout)
 
         # validators
         locale = QLocale(QLocale.English)
@@ -43,7 +52,7 @@ class MultiScaleRegistrationTab(QWidget):
         )
 
         self.sparse_checkbox = QCheckBox()
-        self.sparse_checkbox.setText("Use corresponding sparse inputs for initial registration")
+        self.sparse_checkbox.setText("Use sparse point clouds for initial registration")
         self.sparse_checkbox.setStyleSheet(
             "QCheckBox::indicator {"
             "    width: 20px;"
@@ -79,6 +88,40 @@ class MultiScaleRegistrationTab(QWidget):
         self.voxel_values = SimpleInputField("Voxel values:", "5,2.5", 90, 150, double_list_validator)
         self.iter_values = SimpleInputField("Iteration values:", "50,30", 90, 150, int_list_validator)
 
+        # Outlier rejection
+        outlier_layout = QVBoxLayout()
+        outlier_widget = QWidget()
+        outlier_widget.setLayout(outlier_layout)
+
+        rejection_label = QLabel("Robust Kernel outlier rejection")
+        rejection_label.setStyleSheet(
+            "QLabel {"
+            "    font-size: 12px;"
+            "    font-weight: bold;"
+            "    padding: 8px;"
+            "}"
+        )
+
+        self.k_value_widget = SimpleInputField("Standard deviation", "0.0",
+                                               100, validator=double_validator)
+        self.k_value_widget.setEnabled(False)
+        outlier_type_label = QLabel("Loss type:")
+        self.combo_box_outlier = QComboBox()
+        self.combo_box_outlier.currentIndexChanged.connect(self.rejection_type_changed)
+        self.combo_box_outlier.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        for enum_member in KernelLossFunctionType:
+            self.combo_box_outlier.addItem(enum_member.instance_name)
+
+        rejection_widget = QWidget()
+        rejection_layout = QHBoxLayout()
+        rejection_widget.setLayout(rejection_layout)
+        rejection_layout.addWidget(outlier_type_label)
+        rejection_layout.addWidget(self.combo_box_outlier)
+        rejection_layout.addStretch()
+
+        outlier_layout.addWidget(rejection_widget)
+        outlier_layout.addWidget(self.k_value_widget)
+
         bt_apply = QPushButton("Start multi-scale registration")
         bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                "padding-top: 2px; padding-bottom: 2px;")
@@ -98,6 +141,8 @@ class MultiScaleRegistrationTab(QWidget):
 
         layout.addWidget(self.voxel_values)
         layout.addWidget(self.iter_values)
+        layout.addWidget(rejection_label)
+        layout.addWidget(outlier_widget)
         layout.addWidget(bt_apply)
         layout.addStretch()
 
@@ -124,6 +169,12 @@ class MultiScaleRegistrationTab(QWidget):
 
         voxel_values = list(map(float, filter(None, self.voxel_values.lineedit.text().split(","))))
         iter_values = list(map(int, filter(None, self.iter_values.lineedit.text().split(","))))
-        self.signal_do_registration.emit(use_corresponding, sparse_first, sparse_second, registration_type,
-                                         relative_fitness, relative_rmse, voxel_values, iter_values)
 
+        rejection_type = KernelLossFunctionType(self.combo_box_outlier.currentIndex())
+        k_value = float(self.k_value_widget.lineedit.text())
+        self.signal_do_registration.emit(use_corresponding, sparse_first, sparse_second, registration_type,
+                                         relative_fitness, relative_rmse, voxel_values, iter_values,
+                                         rejection_type, k_value)
+
+    def rejection_type_changed(self, index):
+        self.k_value_widget.setEnabled(index != 0)
