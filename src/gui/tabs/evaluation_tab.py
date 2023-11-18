@@ -20,16 +20,19 @@ class EvaluationTab(QWidget):
     def __init__(self):
         super().__init__()
 
+        self.error_message = None
+
         self.raster_window = None
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.cameras_list = []
 
         input_group = QGroupBox()
+        input_group.setTitle("Cameras")
         input_layout = QVBoxLayout()
         input_group.setLayout(input_layout)
 
-        self.fs_cameras = FileSelector(text="Cameras: ", name_filter="*.json")
+        self.fs_cameras = FileSelector(text="Cameras: ", name_filter="*.json", label_width=60)
 
         self.button_load_cameras = QPushButton("Load cameras")
         self.button_load_cameras.setStyleSheet("padding-left: 10px; padding-right: 10px;"
@@ -60,15 +63,16 @@ class EvaluationTab(QWidget):
         self.spinbox.valueChanged.connect(self.current_camera_changed)
 
         input_layout.addWidget(self.fs_cameras)
-        input_layout.addWidget(self.button_load_cameras, alignment=Qt.AlignCenter)
         input_layout.addWidget(spinbox_widget)
+        input_layout.addWidget(self.button_load_cameras, alignment=Qt.AlignCenter)
 
-        self.evaluation_group = QGroupBox()
+        evaluation_group = QGroupBox()
+        evaluation_group.setTitle("Evaluation")
         evaluation_layout = QVBoxLayout()
-        self.evaluation_group.setLayout(evaluation_layout)
+        evaluation_group.setLayout(evaluation_layout)
 
-        self.fs_images = FileSelector(text="Images folder: ", type=QFileDialog.Directory, label_width=80)
-        self.fs_log = FileSelector(text="Log file: ", name_filter="*.txt", label_width=80)
+        self.fs_images = FileSelector(text="Images folder: ", file_type=QFileDialog.Directory, label_width=80)
+        self.fs_log = FileSelector(text="Log file: ", name_filter="*.txt *.log", label_width=80)
         self.render_color = ColorPicker("Background color: ", np.zeros(3))
         self.button_evaluate = QPushButton("Evaluate registration")
         self.button_evaluate.setStyleSheet("padding-left: 10px; padding-right: 10px;"
@@ -82,7 +86,7 @@ class EvaluationTab(QWidget):
         evaluation_layout.addWidget(self.button_evaluate)
 
         layout.addWidget(input_group)
-        layout.addWidget(self.evaluation_group)
+        layout.addWidget(evaluation_group)
 
         self.button_load_cameras.clicked.connect(self.load_cameras_clicked)
         self.button_evaluate.clicked.connect(self.evaluate_registration)
@@ -122,7 +126,7 @@ class EvaluationTab(QWidget):
         self.current_image_name.setText(self.cameras_list[0].image_name)
 
     def current_camera_changed(self, camera_id):
-        current_camera = self.cameras_list[camera_id-1]
+        current_camera = self.cameras_list[camera_id - 1]
         self.current_image_name.setText(current_camera.image_name)
         self.signal_camera_change.emit(current_camera.world_view_transform.detach().cpu().numpy().transpose())
 
@@ -131,13 +135,22 @@ class EvaluationTab(QWidget):
         log_file = self.fs_log.file_path
 
         if not len(self.cameras_list) > 0:
+            self.creat_error_box("There are no cameras loaded.\nPlease load cameras before evaluation!")
             return
 
         if not os.path.isdir(image_path):
+            self.creat_error_box("Select a valid image directory!")
             return
 
         if log_file == "":
+            self.creat_error_box("Select a path for the log file!")
             return
 
         color = np.asarray(self.render_color.color_debug)
         self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file, color)
+
+    def creat_error_box(self, message):
+        self.error_message = QErrorMessage()
+        self.error_message.setWindowTitle("Error")
+        self.error_message.setModal(True)
+        self.error_message.showMessage(message)

@@ -1,19 +1,14 @@
 import copy
 import json
-import math
 import os.path
-from dataclasses import dataclass, asdict
 
 import torch
 from PIL import Image
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal
 import torchvision.transforms.functional as tf
-from tqdm import tqdm
 
 from src.models.gaussian_model import GaussianModel
-from src.submodules.lpips_pytorch import lpips
-from src.utils.evaluation_utils import ssim, psnr, mse
 from src.utils.point_cloud_merger import merge_point_clouds
 from src.utils.rasterization_util import rasterize_image
 
@@ -70,7 +65,7 @@ class RegistrationEvaluator(QObject):
             self.update_progress()
 
             img_name = camera.image_name
-            image_path = os.path.join(self.images_path, img_name+".png")
+            image_path = os.path.join(self.images_path, img_name + ".png")
             try:
                 pil_image = Image.open(image_path)
                 gt_image = tf.to_tensor(pil_image).unsqueeze(0)
@@ -97,18 +92,20 @@ class RegistrationEvaluator(QObject):
 
     def update_progress(self):
         self.current_progress += 1
-        new_percent = int(self.current_progress/self.max_progress * 100)
+        new_percent = int(self.current_progress / self.max_progress * 100)
         self.signal_update_progress.emit(new_percent)
 
-
     def evaluate_images(self, rendered_images, gt_images):
+        from src.submodules.lpips_pytorch import lpips
+        from src.utils.evaluation_utils import ssim, psnr, mse
+
         mses = []
         rmses = []
         ssims = []
         psnrs = []
         lpipss = []
 
-        for idx in tqdm(range(len(rendered_images)), desc="Metric evaluation progress"):
+        for idx in range(len(rendered_images)):
 
             QtWidgets.QApplication.processEvents()
             if self.signal_cancel:
@@ -132,17 +129,15 @@ class RegistrationEvaluator(QObject):
     def create_and_save_log_file(self, error_list):
         evaluation = self.EvaluationObject(self.registration_result, self.mean_mses, self.mean_rmses,
                                            self.mean_ssims, self.mean_psnrs, self.mean_lpipss, error_list)
-
         with open(self.log_path, 'w') as f:
-            json.dump(asdict(evaluation), f, indent=2)
+            json.dump(evaluation.__dict__, f, default=lambda x: x.tolist(), indent=2)
 
         return evaluation
 
     # Class for the JSON evaluation
-    @dataclass
-    class EvaluationObject:
+    class EvaluationObject(object):
 
-        registration_data: dataclass
+        registration_data: dict
         mse: float
         rmse: float
         ssim: float
@@ -150,3 +145,14 @@ class RegistrationEvaluator(QObject):
         lpips: float
 
         error_list: list
+
+        def __init__(self, registration_data, mse, rmse, ssim, psnr, lpips, error_list):
+            super().__init__()
+
+            self.registration_data = registration_data.__dict__
+            self.mse = mse
+            self.rmse = rmse
+            self.ssim = ssim
+            self.psnr = psnr
+            self.lpips = lpips
+            self.error_list = error_list

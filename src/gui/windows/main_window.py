@@ -1,4 +1,3 @@
-import copy
 import math
 import os
 
@@ -6,7 +5,6 @@ import numpy as np
 from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
     QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog
-from numpy.core.defchararray import isnumeric
 
 from src.gui.tabs.cache_tab import CacheTab
 from src.gui.tabs.evaluation_tab import EvaluationTab
@@ -16,8 +14,8 @@ from src.gui.tabs.local_registration_tab import LocalRegistrationTab
 from src.gui.tabs.merger_tab import MergeTab
 from src.gui.tabs.multi_scale_registration_tab import MultiScaleRegistrationTab
 from src.gui.tabs.rasterizer_tab import RasterizerTab
-from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.tabs.visualizer_tab import VisualizerTab
+from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
@@ -41,9 +39,8 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_originalFirst = None
         self.pc_originalSecond = None
 
-        # Dataclass that stores the results and parameters of the last registration
-        # TODO: Set up data classes
-        self.registration_result = None
+        # Dataclass that stores the results and parameters of the last local registration
+        self.local_registration_data = None
 
         # Tabs for the settings page
         self.cache_tab = None
@@ -299,17 +296,17 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
-    def handle_registration_result(self, registration_result):
+    def handle_registration_result(self, results, data):
         self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setWindowTitle("Successful registration")
         message_dialog.setText(f"The registration of the point clouds is finished.\n"
                                f"The transformation will be applied.\n\n"
-                               f"Fitness: {registration_result.fitness}\n"
-                               f"RMSE: {registration_result.inlier_rmse}\n")
+                               f"Fitness: {results.fitness}\n"
+                               f"RMSE: {results.inlier_rmse}\n")
         message_dialog.exec()
-
-        self.transformation_picker.set_transformation(registration_result.transformation)
+        self.local_registration_data = data
+        self.transformation_picker.set_transformation(results.transformation)
 
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values):
@@ -385,10 +382,15 @@ class RegistrationMainWindow(QMainWindow):
         pc2 = self.pc_originalSecond
 
         if not pc1 or not pc2:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("There are no gaussian point clouds loaded for registration evaluation!"
+                               "\nPlease load two point clouds for registration and evaluation")
             return
 
         worker = RegistrationEvaluator(pc1, pc2, self.transformation_picker.transformation_matrix,
-                                       camera_list, image_path, log_path, color, None)
+                                       camera_list, image_path, log_path, color, self.local_registration_data)
 
         # Create thread
         thread = QThread(self)
@@ -415,7 +417,12 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.setWindowTitle("Evaluation finished")
         message = "The evaluation finished with"
         if not math.isnan(log_object.psnr):
-            message += " success."
+            message += " success.\n"
+            message += f"\nMSE:  {log_object.mse}"
+            message += f"\nRMSE: {log_object.rmse}"
+            message += f"\nSSIM: {log_object.ssim}"
+            message += f"\nPSNR: {log_object.psnr}"
+            message += f"\nLPIP: {log_object.lpips}"
         else:
             message += " error."
 

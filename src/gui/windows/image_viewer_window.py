@@ -78,7 +78,8 @@ class RasterImageViewer(QMainWindow):
         self.zoomInAct.setEnabled(self.scaleFactor < 10.0)
         self.zoomOutAct.setEnabled(self.scaleFactor > 0.1)
 
-    def adjustScrollBar(self, scrollBar, factor):
+    @staticmethod
+    def adjustScrollBar(scrollBar, factor):
         scrollBar.setValue(int(factor * scrollBar.value()
                                + ((factor - 1) * scrollBar.pageStep() / 2)))
 

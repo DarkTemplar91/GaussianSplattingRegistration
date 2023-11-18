@@ -1,12 +1,10 @@
 import copy
-import math
 
 import numpy as np
 import torch
 from PIL import Image
 from PyQt5 import QtGui
 from PyQt5.QtCore import QObject, pyqtSignal
-from diff_gaussian_rasterization import GaussianRasterizationSettings, GaussianRasterizer
 
 from src.models.cameras import Camera
 from src.models.gaussian_model import GaussianModel
