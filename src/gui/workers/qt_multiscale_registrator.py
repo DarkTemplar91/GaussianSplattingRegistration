@@ -2,6 +2,7 @@ import copy
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from src.models.registration_data import MultiScaleRegistrationData
 from src.utils.file_loader import load_sparse_pc
 from src.utils.local_registration_util import do_icp_registration
 
@@ -10,7 +11,7 @@ import open3d as o3d
 
 class MultiScaleRegistrator(QObject):
     signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object)
+    signal_registration_done = pyqtSignal(object, object)
 
     def __init__(self, pc1, pc2, init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
                  relative_fitness, relative_rmse, voxel_values, iter_values):
@@ -66,5 +67,15 @@ class MultiScaleRegistrator(QObject):
 
             current_trans = results.transformation
 
-        self.signal_registration_done.emit(results)
+        registration_data = self.create_dataclass_object(results)
+        self.signal_registration_done.emit(results, registration_data)
         self.signal_finished.emit()
+
+    def create_dataclass_object(self, results):
+        return MultiScaleRegistrationData(registration_type=self.registration_type.instance_name,
+                                          initial_transformation=self.init_trans,
+                                          relative_fitness=self.relative_fitness, relative_rmse=self.relative_rmse,
+                                          result_fitness=results.fitness, result_inlier_rmse=results.inlier_rmse,
+                                          result_transformation=results.transformation,
+                                          voxel_values=self.voxel_values, iteration_values=self.iter_values,
+                                          used_sparse_clouds=self.use_corresponding)

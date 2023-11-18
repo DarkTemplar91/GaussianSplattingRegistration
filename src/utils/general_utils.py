@@ -76,3 +76,14 @@ def build_scaling_rotation(s, r):
 
     L = R @ L
     return L
+
+
+def convert_to_camera_transform(rot, pos):
+    W2C = np.zeros((4, 4))
+    W2C[:3, 3] = pos
+    W2C[:3, :3] = rot
+    W2C[3, 3] = 1.0
+    Rt = np.linalg.inv(W2C)
+    R = Rt[:3, :3].transpose()
+    T = Rt[:3, 3]
+    return R, T

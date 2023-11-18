@@ -2,14 +2,14 @@ import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale
 from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy
 
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget
 
 
-class VisualizerWidget(QWidget):
+class VisualizerTab(QWidget):
     signal_change_vis = QtCore.pyqtSignal(bool, np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray)
     signal_get_current_view = QtCore.pyqtSignal()
 
@@ -109,5 +109,6 @@ class VisualizerWidget(QWidget):
             self.debug_color_dialog_second.color_debug)
 
     def get_current_transformations(self):
-        return float(
-            self.zoom_widget.lineedit.text()), self.front_widget.values, self.lookat_widget.values, self.up_widget.values
+        return (float(
+            self.zoom_widget.lineedit.text()), self.front_widget.values,
+                self.lookat_widget.values, self.up_widget.values)

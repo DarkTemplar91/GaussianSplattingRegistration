@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import plyfile
 
@@ -10,8 +12,11 @@ def save_merged_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
 
 
 def merge_point_clouds(pc1, pc2, transformation_matrix=None):
-    vertex_data1 = pc1["vertex"].data
-    vertex_data2 = pc2["vertex"].data
+    pc1_copy = copy.copy(pc1)
+    pc2_copy = copy.copy(pc2)
+
+    vertex_data1 = pc1_copy["vertex"].data
+    vertex_data2 = pc2_copy["vertex"].data
 
     # calculate the new positions for the transformation if needed
     if transformation_matrix is not None:

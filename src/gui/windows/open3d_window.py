@@ -175,3 +175,10 @@ class Open3DWindow(QMainWindow):
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
         return parameters.intrinsic.intrinsic_matrix
+
+    def apply_camera_transformation(self, extrinsics):
+        view_control = self.vis.get_view_control()
+        parameters = view_control.convert_to_pinhole_camera_parameters()
+        parameters.extrinsic = extrinsics
+        view_control.convert_from_pinhole_camera_parameters(parameters)
+        pass

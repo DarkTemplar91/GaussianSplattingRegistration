@@ -1,21 +1,24 @@
+import math
 import os
 
 import numpy as np
 from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
-    QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog, QLabel
+    QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog
 
-from src.gui.widgets.cache_tab_widget import CacheTab
-from src.gui.widgets.global_registration_widget import GlobalRegistrationTab
-from src.gui.widgets.input_tab_widget import InputTab
-from src.gui.widgets.local_registration_widget import LocalRegistrationTab
-from src.gui.widgets.merger_widget import MergerWidget
-from src.gui.widgets.multi_scale_registration_widget import MultiScaleRegistrationTab
-from src.gui.widgets.rasterizer_tab_widget import RasterizerTab
+from src.gui.tabs.cache_tab import CacheTab
+from src.gui.tabs.evaluation_tab import EvaluationTab
+from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
+from src.gui.tabs.input_tab import InputTab
+from src.gui.tabs.local_registration_tab import LocalRegistrationTab
+from src.gui.tabs.merger_tab import MergeTab
+from src.gui.tabs.multi_scale_registration_tab import MultiScaleRegistrationTab
+from src.gui.tabs.rasterizer_tab import RasterizerTab
+from src.gui.tabs.visualizer_tab import VisualizerTab
 from src.gui.widgets.transformation_widget import Transformation3DPicker
-from src.gui.widgets.visualizer_widget import VisualizerWidget
 from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
+from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
@@ -35,6 +38,9 @@ class RegistrationMainWindow(QMainWindow):
         # Point cloud output of the 3D Gaussian Splatting
         self.pc_originalFirst = None
         self.pc_originalSecond = None
+
+        # Dataclass that stores the results and parameters of the last local registration
+        self.local_registration_data = None
 
         # Tabs for the settings page
         self.cache_tab = None
@@ -101,9 +107,9 @@ class RegistrationMainWindow(QMainWindow):
         self.input_tab = InputTab(self.input_dir)
         self.cache_tab = CacheTab(self.cache_dir)
         self.transformation_picker = Transformation3DPicker()
-        self.visualizer_widget = VisualizerWidget()
+        self.visualizer_widget = VisualizerTab()
         self.rasterizer_tab = RasterizerTab()
-        self.merger_widget = MergerWidget(self.output_dir, self.input_dir)
+        self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.input_tab.result_signal.connect(self.handle_result)
@@ -138,9 +144,15 @@ class RegistrationMainWindow(QMainWindow):
         multi_scale_registration_widget = MultiScaleRegistrationTab(self.input_dir)
         multi_scale_registration_widget.signal_do_registration.connect(self.do_multi_scale_registration)
 
+        evaluator_widget = EvaluationTab()
+        evaluator_widget.signal_camera_change.connect(self.loaded_camera_changed)
+        evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
+
         registration_tab.addTab(global_registration_widget, "Global Registration")
         registration_tab.addTab(local_registration_widget, "Local Registration")
         registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
+        registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
+        registration_tab.addTab(evaluator_widget, "Evaluation")
         layout.addWidget(registration_tab)
 
     # Event Handlers
@@ -203,6 +215,7 @@ class RegistrationMainWindow(QMainWindow):
         if not pc_first or not pc_second:
             # TODO: Further error messages. Tracing?
             dialog = QErrorMessage(self)
+            dialog.setModal(True)
             dialog.setWindowTitle("Error")
             dialog.showMessage(message)
             return True
@@ -258,7 +271,6 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
-
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
         pc1 = self.pane_open3d.pc1
@@ -284,17 +296,17 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
-    def handle_registration_result(self, registration_result):
+    def handle_registration_result(self, results, data):
         self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setWindowTitle("Successful registration")
         message_dialog.setText(f"The registration of the point clouds is finished.\n"
                                f"The transformation will be applied.\n\n"
-                               f"Fitness: {registration_result.fitness}\n"
-                               f"RMSE: {registration_result.inlier_rmse}\n")
+                               f"Fitness: {results.fitness}\n"
+                               f"RMSE: {results.inlier_rmse}\n")
         message_dialog.exec()
-
-        self.transformation_picker.set_transformation(registration_result.transformation)
+        self.local_registration_data = data
+        self.transformation_picker.set_transformation(results.transformation)
 
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values):
@@ -329,6 +341,7 @@ class RegistrationMainWindow(QMainWindow):
                          '\nLoad two Gaussian point clouds for rasterization!')
         if not is_point_cloud_gaussian(pc1) or not is_point_cloud_gaussian(pc2):
             dialog = QErrorMessage(self)
+            dialog.setModal(True)
             dialog.setWindowTitle("Error")
             dialog.showMessage(error_message)
             return
@@ -360,3 +373,62 @@ class RegistrationMainWindow(QMainWindow):
         self.raster_window.setWindowTitle("Rasterized point clouds")
         self.raster_window.setWindowModality(Qt.WindowModal)
         self.raster_window.show()
+
+    def loaded_camera_changed(self, extrinsics):
+        self.pane_open3d.apply_camera_transformation(extrinsics)
+
+    def evaluate_registration(self, camera_list, image_path, log_path, color):
+        pc1 = self.pc_originalFirst
+        pc2 = self.pc_originalSecond
+
+        if not pc1 or not pc2:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("There are no gaussian point clouds loaded for registration evaluation!"
+                               "\nPlease load two point clouds for registration and evaluation")
+            return
+
+        worker = RegistrationEvaluator(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                       camera_list, image_path, log_path, color, self.local_registration_data)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        worker.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(worker.do_evaluation)
+        worker.signal_evaluation_done.connect(self.handle_evaluation_result)
+        worker.signal_finished.connect(thread.quit)
+        worker.signal_finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        self.progress_dialog.setLabelText("Evaluating registration...")
+        self.progress_dialog.setRange(0, 100)
+        self.progress_dialog.canceled.connect(worker.cancel_evaluation)
+        worker.signal_update_progress.connect(self.progress_dialog.setValue)
+
+        thread.start()
+        self.progress_dialog.exec()
+
+    def handle_evaluation_result(self, log_object):
+        self.progress_dialog.close()
+        message_dialog = QMessageBox()
+        message_dialog.setWindowTitle("Evaluation finished")
+        message = "The evaluation finished with"
+        if not math.isnan(log_object.psnr):
+            message += " success.\n"
+            message += f"\nMSE:  {log_object.mse}"
+            message += f"\nRMSE: {log_object.rmse}"
+            message += f"\nSSIM: {log_object.ssim}"
+            message += f"\nPSNR: {log_object.psnr}"
+            message += f"\nLPIP: {log_object.lpips}"
+        else:
+            message += " error."
+
+        if log_object.error_list:
+            message += "\nClick \"Show details\" for any potential issues."
+            message_dialog.setDetailedText("\n".join(log_object.error_list))
+
+        message_dialog.setText(message)
+        message_dialog.exec()

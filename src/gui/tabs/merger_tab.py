@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePoli
 from src.gui.widgets.file_selector_widget import FileSelector
 
 
-class MergerWidget(QWidget):
+class MergeTab(QWidget):
     signal_merge_point_clouds = QtCore.pyqtSignal(bool, str, str, str)
 
     def __init__(self, merge_path="", input_path=""):
@@ -75,6 +75,7 @@ class MergerWidget(QWidget):
     def merge_point_clouds(self):
         if not self.fs_merge.file_path:
             dialog = QErrorMessage(self)
+            dialog.setModal(True)
             dialog.setWindowTitle("Error")
             dialog.showMessage("Please select location to save the merged point cloud!")
             return
