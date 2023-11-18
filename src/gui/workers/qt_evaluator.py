@@ -20,7 +20,7 @@ from src.utils.rasterization_util import rasterize_image
 
 class RegistrationEvaluator(QObject):
     signal_finished = pyqtSignal()
-    signal_evaluation_done = pyqtSignal()
+    signal_evaluation_done = pyqtSignal(object)
 
     signal_update_progress = pyqtSignal(int)
 
@@ -58,32 +58,38 @@ class RegistrationEvaluator(QObject):
 
         rendered_images = []
         gt_images = []
+        error_list = []
         for idx, camera in enumerate(self.cameras_list):
             # Process events, look for cancel signal
             QtWidgets.QApplication.processEvents()
             if self.signal_cancel:
                 self.signal_finished.emit()
+                torch.cuda.empty_cache()
                 return
 
             self.update_progress()
 
             img_name = camera.image_name
             image_path = os.path.join(self.images_path, img_name+".png")
-            pil_image = Image.open(image_path)
-            gt_image = tf.to_tensor(pil_image).unsqueeze(0)
+            try:
+                pil_image = Image.open(image_path)
+                gt_image = tf.to_tensor(pil_image).unsqueeze(0)
+                gt_images.append(gt_image)
+            except (OSError, IOError) as e:
+                error_list.append(str(e))
+                continue
 
-            image_tensor, _ = rasterize_image(point_cloud, camera, self.color, self.device)
+            image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device)
             image_tensor = image_tensor.unsqueeze(0)
-
-            gt_images.append(gt_image)
             rendered_images.append(image_tensor)
 
         self.evaluate_images(rendered_images, gt_images)
 
-        self.create_log_file()
+        log = self.create_and_save_log_file(error_list)
         torch.cuda.empty_cache()
         self.update_progress()
 
+        self.signal_evaluation_done.emit(log)
         self.signal_finished.emit()
 
     def cancel_evaluation(self):
@@ -123,12 +129,14 @@ class RegistrationEvaluator(QObject):
         self.mean_psnrs = torch.tensor(psnrs).mean().item()
         self.mean_lpipss = torch.tensor(lpipss).mean().item()
 
-    def create_log_file(self):
+    def create_and_save_log_file(self, error_list):
         evaluation = self.EvaluationObject(self.registration_result, self.mean_mses, self.mean_rmses,
-                                           self.mean_ssims, self.mean_psnrs, self.mean_lpipss)
+                                           self.mean_ssims, self.mean_psnrs, self.mean_lpipss, error_list)
 
         with open(self.log_path, 'w') as f:
-            json.dump(asdict(evaluation), f)
+            json.dump(asdict(evaluation), f, indent=2)
+
+        return evaluation
 
     # Class for the JSON evaluation
     @dataclass
@@ -140,3 +148,5 @@ class RegistrationEvaluator(QObject):
         ssim: float
         psnr: float
         lpips: float
+
+        error_list: list

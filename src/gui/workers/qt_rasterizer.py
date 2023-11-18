@@ -35,6 +35,7 @@ class RasterizerWorker(QObject):
         self.extrinsic = extrinsic
         self.intrinsic = intrinsic
 
+        # TODO: Consider using fov set by hand
         fx, fy = get_focal_from_intrinsics(intrinsic)
         self.fov_x = focal2fov(fx, img_width)
         self.fov_y = focal2fov(fy, img_height)
@@ -49,11 +50,12 @@ class RasterizerWorker(QObject):
             camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
                             self.width, self.height)
 
-            image_tensor, _ = rasterize_image(point_cloud, camera, self.color, self.device)
+            image_tensor, _ = rasterize_image(point_cloud, camera, self.scale, self.color, self.device)
 
             pix = self.get_pixmap_from_tensor(image_tensor)
             self.signal_rasterization_done.emit(pix)
 
+        self.signal_finished.emit()
         torch.cuda.empty_cache()
 
     def get_pixmap_from_tensor(self, image_tensor):

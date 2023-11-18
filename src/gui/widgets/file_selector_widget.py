@@ -32,6 +32,7 @@ class FileSelector(QWidget):
         label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         button.clicked.connect(self.button_clicked)
+        self.inputField.textChanged.connect(self.text_changed)
         self.file_path = str()
         layout.addStretch()
 
@@ -48,3 +49,7 @@ class FileSelector(QWidget):
         if dialog.exec():
             self.file_path = dialog.selectedFiles()[0]
             self.inputField.setText(self.file_path)
+
+
+    def text_changed(self, text):
+        self.file_path = self.inputField.text()

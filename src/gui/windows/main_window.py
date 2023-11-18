@@ -1,10 +1,12 @@
 import copy
+import math
 import os
 
 import numpy as np
 from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
     QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog
+from numpy.core.defchararray import isnumeric
 
 from src.gui.tabs.cache_tab import CacheTab
 from src.gui.tabs.evaluation_tab import EvaluationTab
@@ -394,13 +396,11 @@ class RegistrationMainWindow(QMainWindow):
         worker.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(worker.do_evaluation)
-        #worker.signal_evaluation_done.connect(self.handle_registration_result) # Maybe it should be handled here?
+        worker.signal_evaluation_done.connect(self.handle_evaluation_result)
         worker.signal_finished.connect(thread.quit)
         worker.signal_finished.connect(worker.deleteLater)
         thread.finished.connect(thread.deleteLater)
 
-
-        # TODO: Update progress dialog
         self.progress_dialog.setLabelText("Evaluating registration...")
         self.progress_dialog.setRange(0, 100)
         self.progress_dialog.canceled.connect(worker.cancel_evaluation)
@@ -409,3 +409,19 @@ class RegistrationMainWindow(QMainWindow):
         thread.start()
         self.progress_dialog.exec()
 
+    def handle_evaluation_result(self, log_object):
+        self.progress_dialog.close()
+        message_dialog = QMessageBox()
+        message_dialog.setWindowTitle("Evaluation finished")
+        message = "The evaluation finished with"
+        if not math.isnan(log_object.psnr):
+            message += " success."
+        else:
+            message += " error."
+
+        if log_object.error_list:
+            message += "\nClick \"Show details\" for any potential issues."
+            message_dialog.setDetailedText("\n".join(log_object.error_list))
+
+        message_dialog.setText(message)
+        message_dialog.exec()
