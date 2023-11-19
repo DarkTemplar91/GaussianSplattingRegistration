@@ -58,8 +58,13 @@ class RegistrationEvaluator(QObject):
             # Process events, look for cancel signal
             QtWidgets.QApplication.processEvents()
             if self.signal_cancel:
-                self.signal_finished.emit()
+                # Force gpu memory garbage collection
+                del gt_images
+                del rendered_images
                 torch.cuda.empty_cache()
+                import gc
+                gc.collect()
+                
                 return
 
             self.update_progress()
@@ -68,21 +73,30 @@ class RegistrationEvaluator(QObject):
             image_path = os.path.join(self.images_path, img_name + ".png")
             try:
                 pil_image = Image.open(image_path)
-                gt_image = tf.to_tensor(pil_image).unsqueeze(0)
+                gt_image = tf.to_tensor(pil_image).unsqueeze(0).cuda()
                 gt_images.append(gt_image)
+                del gt_image
             except (OSError, IOError) as e:
                 error_list.append(str(e))
                 continue
-
             image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device)
             image_tensor = image_tensor.unsqueeze(0)
             rendered_images.append(image_tensor)
+            del image_tensor
 
         self.evaluate_images(rendered_images, gt_images)
 
         log = self.create_and_save_log_file(error_list)
-        torch.cuda.empty_cache()
         self.update_progress()
+
+        # Force gpu memory garbage collection
+        del gt_images
+        del rendered_images
+        torch.cuda.empty_cache()
+        import gc
+        gc.collect()
+
+        #self.force_clean_gpu_memory(gt_images, rendered_images)
 
         self.signal_evaluation_done.emit(log)
         self.signal_finished.emit()
@@ -149,10 +163,13 @@ class RegistrationEvaluator(QObject):
         def __init__(self, registration_data, mse, rmse, ssim, psnr, lpips, error_list):
             super().__init__()
 
-            self.registration_data = registration_data.__dict__
+            self.registration_data = dict()
+            if registration_data is not None:
+                self.registration_data = registration_data.__dict__
             self.mse = mse
             self.rmse = rmse
             self.ssim = ssim
             self.psnr = psnr
             self.lpips = lpips
             self.error_list = error_list
+
