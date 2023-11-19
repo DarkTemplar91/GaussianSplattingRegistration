@@ -306,7 +306,10 @@ class RegistrationMainWindow(QMainWindow):
                                f"Fitness: {results.fitness}\n"
                                f"RMSE: {results.inlier_rmse}\n")
         message_dialog.exec()
-        self.local_registration_data = data
+        # Otherwise the registration is global
+        if data is not None:
+            self.local_registration_data = data
+
         self.transformation_picker.set_transformation(results.transformation)
 
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,

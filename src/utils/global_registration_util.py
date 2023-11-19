@@ -58,6 +58,7 @@ def do_ransac_registration(point_cloud_first, point_cloud_second, voxel_size, mu
         ransac_n,
         checkers, o3d.pipelines.registration.RANSACConvergenceCriteria(max_iteration, confidence))
 
+    print(result)
     return result
 
 
@@ -76,6 +77,7 @@ def do_fgr_registration(point_cloud_first, point_cloud_second, voxel_size, divis
                                                                                    source_fpfh,
                                                                                    target_fpfh, options)
 
+    print(result)
     return result
 
 

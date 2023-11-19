@@ -7,7 +7,7 @@ from src.utils.global_registration_util import do_ransac_registration
 
 class RANSACRegistrator(QObject):
     signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object)
+    signal_registration_done = pyqtSignal(object, object)
 
     def __init__(self, pc1, pc2, init_transformation,
                  voxel_size, mutual_filter, max_correspondence, estimation_method,
@@ -37,5 +37,5 @@ class RANSACRegistrator(QObject):
                                          self.max_iteration,
                                          self.confidence)
 
-        self.signal_registration_done.emit(results)
+        self.signal_registration_done.emit(results, None)
         self.signal_finished.emit()
