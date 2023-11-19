@@ -70,9 +70,8 @@ class EvaluationTab(QWidget):
         evaluation_group.setTitle("Evaluation")
         evaluation_layout = QVBoxLayout()
         evaluation_group.setLayout(evaluation_layout)
-
         self.fs_images = FileSelector(text="Images folder: ", file_type=QFileDialog.Directory, label_width=80)
-        self.fs_log = FileSelector(text="Log file: ", name_filter="*.txt *.log", label_width=80)
+        self.fs_log = FileSelector(text="Log file: ", name_filter="Log files (*.txt *.log);;*.txt;;*.log", label_width=80)
         self.render_color = ColorPicker("Background color: ", np.zeros(3))
         self.button_evaluate = QPushButton("Evaluate registration")
         self.button_evaluate.setStyleSheet("padding-left: 10px; padding-right: 10px;"

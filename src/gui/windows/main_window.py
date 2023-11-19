@@ -331,6 +331,7 @@ class RegistrationMainWindow(QMainWindow):
         # connect signals to slots
         thread.started.connect(multi_scale_registrator.do_registration)
         multi_scale_registrator.signal_registration_done.connect(self.handle_registration_result)
+        multi_scale_registrator.signal_error_occurred.connect(self.create_error_list_dialog)
         multi_scale_registrator.signal_finished.connect(thread.quit)
         multi_scale_registrator.signal_finished.connect(multi_scale_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -339,7 +340,7 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
-    def rasterize_gaussians(self, width, height, scale, color):
+    def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
         pc1 = self.pc_originalFirst
         pc2 = self.pc_originalSecond
 
@@ -353,7 +354,9 @@ class RegistrationMainWindow(QMainWindow):
             return
 
         extrinsic = self.pane_open3d.get_camera_extrinsic().astype(np.float32)
-        intrinsic = self.pane_open3d.get_camera_intrinsic().astype(np.float32)
+        intrinsic = intrinsics_supplied
+        if intrinsic is None:
+            intrinsic = self.pane_open3d.get_camera_intrinsic().astype(np.float32)
         rasterizer = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix,
                                       extrinsic, intrinsic, scale, color, height, width)
 
@@ -420,6 +423,7 @@ class RegistrationMainWindow(QMainWindow):
     def handle_evaluation_result(self, log_object):
         self.progress_dialog.close()
         message_dialog = QMessageBox()
+        message_dialog.setModal(True)
         message_dialog.setWindowTitle("Evaluation finished")
         message = "The evaluation finished with"
         if not math.isnan(log_object.psnr):
@@ -437,4 +441,13 @@ class RegistrationMainWindow(QMainWindow):
             message_dialog.setDetailedText("\n".join(log_object.error_list))
 
         message_dialog.setText(message)
+        message_dialog.exec()
+
+    def create_error_list_dialog(self, error_list):
+        self.progress_dialog.close()
+        message_dialog = QMessageBox()
+        message_dialog.setModal(True)
+        message_dialog.setWindowTitle("Error occured")
+        message_dialog.setText("The following error(s) occurred.\n Click \"Show details\" for more information!")
+        message_dialog.setDetailedText("\n".join(error_list))
         message_dialog.exec()

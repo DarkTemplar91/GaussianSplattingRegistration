@@ -1,7 +1,7 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette
 from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtWidgets import QLabel, QSizePolicy, QScrollArea, QMainWindow, QMenu, QAction, QApplication
+from PyQt5.QtWidgets import QLabel, QSizePolicy, QScrollArea, QMainWindow, QMenu, QAction, QApplication, QFileDialog
 
 
 class RasterImageViewer(QMainWindow):
@@ -11,35 +11,38 @@ class RasterImageViewer(QMainWindow):
         self.printer = QPrinter()
         self.scaleFactor = 0.0
 
-        self.imageLabel = QLabel()
-        self.imageLabel.setBackgroundRole(QPalette.Base)
-        self.imageLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self.imageLabel.setScaledContents(True)
-        self.imageLabel.setAlignment(Qt.AlignCenter)
+        self.image_label = QLabel()
+        self.image_label.setBackgroundRole(QPalette.Base)
+        self.image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.image_label.setScaledContents(True)
+        self.image_label.setAlignment(Qt.AlignCenter)
 
-        self.scrollArea = QScrollArea()
-        self.scrollArea.setBackgroundRole(QPalette.Dark)
-        self.scrollArea.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.scrollArea.setWidget(self.imageLabel)
-        self.scrollArea.setVisible(False)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setBackgroundRole(QPalette.Dark)
+        self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.scroll_area.setWidget(self.image_label)
+        self.scroll_area.setVisible(False)
 
-        self.setCentralWidget(self.scrollArea)
+        self.setCentralWidget(self.scroll_area)
 
         # Actions
-        self.zoomInAct = QAction("Zoom &In (25%)", self, shortcut="Ctrl++", enabled=False, triggered=self.zoomIn)
-        self.zoomOutAct = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-", enabled=False, triggered=self.zoomOut)
-        self.normalSizeAct = QAction("&Normal Size", self, shortcut="Ctrl+S", enabled=False, triggered=self.normalSize)
-        self.fitToWindowAct = QAction("&Fit to Window", self, enabled=False, checkable=True, shortcut="Ctrl+F",
-                                      triggered=self.fitToWindow)
+        self.zoom_in_act = QAction("Zoom &In (25%)", self, shortcut="Ctrl++", enabled=False, triggered=self.zoomIn)
+        self.zoom_out_act = QAction("Zoom &Out (25%)", self, shortcut="Ctrl+-", enabled=False, triggered=self.zoomOut)
+        self.normal_size_act = QAction("&Normal Size", self, shortcut="Ctrl+N", enabled=False,
+                                       triggered=self.normalSize)
+        self.fit_to_window_act = QAction("&Fit to Window", self, enabled=False, checkable=True, shortcut="Ctrl+F",
+                                         triggered=self.fitToWindow)
+        self.save_act = QAction("&Save", self, shortcut="Ctrl+S", enabled=False, triggered=self.save_image)
 
         # Menu
         self.viewMenu = QMenu("&View", self)
-        self.viewMenu.addAction(self.zoomInAct)
-        self.viewMenu.addAction(self.zoomOutAct)
-        self.viewMenu.addAction(self.normalSizeAct)
+        self.viewMenu.addAction(self.zoom_in_act)
+        self.viewMenu.addAction(self.zoom_out_act)
+        self.viewMenu.addAction(self.normal_size_act)
         self.viewMenu.addSeparator()
-        self.viewMenu.addAction(self.fitToWindowAct)
+        self.viewMenu.addAction(self.fit_to_window_act)
 
+        self.menuBar().addAction(self.save_act)
         self.menuBar().addMenu(self.viewMenu)
 
         self.setWindowTitle("Image Viewer")
@@ -52,31 +55,32 @@ class RasterImageViewer(QMainWindow):
         self.scaleImage(0.8)
 
     def normalSize(self):
-        self.imageLabel.adjustSize()
+        self.image_label.adjustSize()
         self.scaleFactor = 1.0
 
     def fitToWindow(self):
-        fitToWindow = self.fitToWindowAct.isChecked()
-        self.scrollArea.setWidgetResizable(fitToWindow)
+        fitToWindow = self.fit_to_window_act.isChecked()
+        self.scroll_area.setWidgetResizable(fitToWindow)
         if not fitToWindow:
             self.normalSize()
 
         self.updateActions()
 
     def updateActions(self):
-        self.zoomInAct.setEnabled(not self.fitToWindowAct.isChecked())
-        self.zoomOutAct.setEnabled(not self.fitToWindowAct.isChecked())
-        self.normalSizeAct.setEnabled(not self.fitToWindowAct.isChecked())
+        self.zoom_in_act.setEnabled(not self.fit_to_window_act.isChecked())
+        self.zoom_out_act.setEnabled(not self.fit_to_window_act.isChecked())
+        self.normal_size_act.setEnabled(not self.fit_to_window_act.isChecked())
+        self.save_act.setEnabled(not self.fit_to_window_act.isChecked())
 
     def scaleImage(self, factor):
         self.scaleFactor *= factor
-        self.imageLabel.resize(self.scaleFactor * self.imageLabel.pixmap().size())
+        self.image_label.resize(self.scaleFactor * self.image_label.pixmap().size())
 
-        self.adjustScrollBar(self.scrollArea.horizontalScrollBar(), factor)
-        self.adjustScrollBar(self.scrollArea.verticalScrollBar(), factor)
+        self.adjustScrollBar(self.scroll_area.horizontalScrollBar(), factor)
+        self.adjustScrollBar(self.scroll_area.verticalScrollBar(), factor)
 
-        self.zoomInAct.setEnabled(self.scaleFactor < 10.0)
-        self.zoomOutAct.setEnabled(self.scaleFactor > 0.1)
+        self.zoom_in_act.setEnabled(self.scaleFactor < 10.0)
+        self.zoom_out_act.setEnabled(self.scaleFactor > 0.1)
 
     @staticmethod
     def adjustScrollBar(scrollBar, factor):
@@ -84,14 +88,14 @@ class RasterImageViewer(QMainWindow):
                                + ((factor - 1) * scrollBar.pageStep() / 2)))
 
     def set_image(self, pix):
-        self.imageLabel.setPixmap(pix)
+        self.image_label.setPixmap(pix)
         self.scaleFactor = 1.0
-        self.scrollArea.setVisible(True)
-        self.fitToWindowAct.setEnabled(True)
+        self.scroll_area.setVisible(True)
+        self.fit_to_window_act.setEnabled(True)
         self.updateActions()
 
-        if not self.fitToWindowAct.isChecked():
-            self.imageLabel.adjustSize()
+        if not self.fit_to_window_act.isChecked():
+            self.image_label.adjustSize()
 
         new_width, new_height = self.calculate_size_from_pixmap(pix)
 
@@ -113,3 +117,21 @@ class RasterImageViewer(QMainWindow):
         new_height = height + 10 + self.viewMenu.height()
 
         return new_width, new_height
+
+    def save_image(self):
+        dialog = QFileDialog(self)
+        dialog.setViewMode(QFileDialog.Detail)
+        dialog.setAcceptMode(QFileDialog.AcceptSave)
+        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setNameFilter("All files (*.*);;BMP (*.bmp);;GIF (*.gif);;JPEG ("
+                             "*.jpeg);;JPG (*.jpg);;PBM (*.pbm);;PGM (*.pgm);;PNG (*.png);;PPM (*.ppm);"
+                             ";XBM (*.xbm);;XPM (*.xpm)")
+
+        if dialog.exec():
+            file_path = dialog.selectedFiles()[0]
+            pix = self.image_label.pixmap()
+            pix.save(file_path, quality=100)
+        else:
+            return
+
+

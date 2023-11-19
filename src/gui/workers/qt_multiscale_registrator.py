@@ -12,6 +12,7 @@ import open3d as o3d
 class MultiScaleRegistrator(QObject):
     signal_finished = pyqtSignal()
     signal_registration_done = pyqtSignal(object, object)
+    signal_error_occurred = pyqtSignal(list)
 
     def __init__(self, pc1, pc2, init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
                  relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value):
@@ -65,9 +66,16 @@ class MultiScaleRegistrator(QObject):
             target_down.estimate_normals(
                 o3d.geometry.KDTreeSearchParamHybrid(radius=radius * 2, max_nn=30))
 
-            results = do_icp_registration(source_down, target_down, current_trans, self.registration_type,
+            try:
+                results = do_icp_registration(source_down, target_down, current_trans, self.registration_type,
                                           radius, self.relative_fitness, self.relative_rmse, max_iter,
                                           self.rejection_type, self.k_value)
+            except RuntimeError as e:
+                error_str = str(e)
+                error_str += f"\nSource: \"{str(source_down)}\"\nTarget: \"{str(target_down)}\""
+                self.signal_error_occurred.emit([error_str])
+                self.signal_finished.emit()
+                return
 
             current_trans = results.transformation
 

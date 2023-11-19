@@ -4,8 +4,8 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton
 
 
 class FileSelector(QWidget):
-    def __init__(self, parent=None, text="", base_path=None, label_width=120, file_type=QFileDialog.AnyFile,
-                 name_filter="*.ply *.stl *.obj *.off"):
+    def __init__(self, parent=None, text="", base_path=None, label_width=120, file_type=QFileDialog.ExistingFile,
+                 name_filter="All files (*.*);;*.ply;;*.stl;;*.obj;;*.off"):
         super().__init__(parent)
 
         layout = QHBoxLayout()
@@ -39,6 +39,10 @@ class FileSelector(QWidget):
     def button_clicked(self):
         dialog = QFileDialog(self)
         dialog.setFileMode(self.type)
+
+        if self.type is QFileDialog.Directory:
+            dialog.setAcceptMode(QFileDialog.AcceptSave)
+
         if self.type is not QFileDialog.Directory:
             dialog.setNameFilter(self.name_filter)
 
