@@ -1,4 +1,5 @@
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage
 
 from src.gui.widgets.file_selector_widget import FileSelector
@@ -49,7 +50,7 @@ class MergeTab(QWidget):
         bt_merge = QPushButton("Merge point clouds")
         bt_merge.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                "padding-top: 2px; padding-bottom: 2px;")
-        bt_merge.setFixedSize(250, 30)
+        bt_merge.setFixedSize(280, 30)
         bt_merge.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_merge.clicked.connect(self.merge_point_clouds)
 
@@ -57,7 +58,7 @@ class MergeTab(QWidget):
         layout.addWidget(self.input_checkbox)
         layout.addWidget(widget_input)
         layout.addWidget(self.fs_merge)
-        layout.addWidget(bt_merge)
+        layout.addWidget(bt_merge, alignment=Qt.AlignCenter)
         layout.addStretch()
 
     def checkbox_changed(self, state):

@@ -37,8 +37,8 @@ class EvaluationTab(QWidget):
         self.button_load_cameras = QPushButton("Load cameras")
         self.button_load_cameras.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                                "padding-top: 2px; padding-bottom: 2px;")
-        self.button_load_cameras.setFixedSize(285, 30)
-        self.button_load_cameras.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.button_load_cameras.setFixedHeight(30)
+        self.button_load_cameras.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # Spinbox row
         spinbox_layout = QHBoxLayout()
@@ -64,7 +64,7 @@ class EvaluationTab(QWidget):
 
         input_layout.addWidget(self.fs_cameras)
         input_layout.addWidget(spinbox_widget)
-        input_layout.addWidget(self.button_load_cameras, alignment=Qt.AlignCenter)
+        input_layout.addWidget(self.button_load_cameras)
 
         evaluation_group = QGroupBox()
         evaluation_group.setTitle("Evaluation")
@@ -77,8 +77,8 @@ class EvaluationTab(QWidget):
         self.button_evaluate = QPushButton("Evaluate registration")
         self.button_evaluate.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                            "padding-top: 2px; padding-bottom: 2px;")
-        self.button_evaluate.setFixedSize(285, 30)
-        self.button_evaluate.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.button_evaluate.setFixedHeight(30)
+        self.button_evaluate.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         evaluation_layout.addWidget(self.fs_images)
         evaluation_layout.addWidget(self.fs_log)

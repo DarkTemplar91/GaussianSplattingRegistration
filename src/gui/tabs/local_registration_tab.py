@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import QLocale, Qt
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, \
     QComboBox, QScrollArea, QFrame, QHBoxLayout
@@ -9,21 +9,26 @@ from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 
 
-class LocalRegistrationTab(QScrollArea):
+class LocalRegistrationTab(QWidget):
     signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int,
                                                KernelLossFunctionType, float)
 
     def __init__(self):
         super().__init__()
 
-        widget = QWidget()
-        self.setWidget(widget)
-        self.setBackgroundRole(QPalette.Background)
-        self.setFrameShadow(QFrame.Plain)
-        self.setFrameShape(QFrame.NoFrame)
-        self.setWidgetResizable(True)
+        registration_layout = QVBoxLayout()
+        self.setLayout(registration_layout)
+
+        scroll_widget = QScrollArea()
+        scroll_widget.setBackgroundRole(QPalette.Background)
+        scroll_widget.setFrameShadow(QFrame.Plain)
+        scroll_widget.setFrameShape(QFrame.NoFrame)
+        scroll_widget.setWidgetResizable(True)
+
+        inner_widget = QWidget()
         layout = QVBoxLayout()
-        widget.setLayout(layout)
+        inner_widget.setLayout(layout)
+        scroll_widget.setWidget(inner_widget)
 
         type_label = QLabel("Local registration type")
         self.combo_box_icp = QComboBox()
@@ -113,8 +118,8 @@ class LocalRegistrationTab(QScrollArea):
         bt_apply = QPushButton("Start local registration")
         bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                "padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setFixedSize(250, 30)
-        bt_apply.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_apply.setFixedHeight(30)
+        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         layout.addWidget(type_label)
         layout.addWidget(self.combo_box_icp)
@@ -124,8 +129,10 @@ class LocalRegistrationTab(QScrollArea):
         layout.addWidget(convergence_widget)
         layout.addWidget(rejection_label)
         layout.addWidget(outlier_widget)
-        layout.addWidget(bt_apply)
         layout.addStretch()
+
+        registration_layout.addWidget(scroll_widget)
+        registration_layout.addWidget(bt_apply)
 
         bt_apply.clicked.connect(self.registration_button_pressed)
 

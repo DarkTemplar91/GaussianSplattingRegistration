@@ -42,7 +42,7 @@ class CacheTab(QWidget):
         layout.addWidget(label_cache)
         layout.addWidget(self.fs_cache1)
         layout.addWidget(self.fs_cache2)
-        layout.addWidget(bt_cached)
+        layout.addWidget(bt_cached, alignment=Qt.AlignCenter)
         layout.addStretch()
         layout.setAlignment(Qt.AlignTop)
 

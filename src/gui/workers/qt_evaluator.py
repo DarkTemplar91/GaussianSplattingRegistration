@@ -96,8 +96,6 @@ class RegistrationEvaluator(QObject):
         import gc
         gc.collect()
 
-        #self.force_clean_gpu_memory(gt_images, rendered_images)
-
         self.signal_evaluation_done.emit(log)
         self.signal_finished.emit()
 
@@ -123,6 +121,12 @@ class RegistrationEvaluator(QObject):
 
             QtWidgets.QApplication.processEvents()
             if self.signal_cancel:
+                # Force gpu memory garbage collection
+                del gt_images
+                del rendered_images
+                torch.cuda.empty_cache()
+                import gc
+                gc.collect()
                 self.signal_finished.emit()
                 return
 

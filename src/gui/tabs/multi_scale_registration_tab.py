@@ -9,21 +9,27 @@ from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 
 
-class MultiScaleRegistrationTab(QScrollArea):
+class MultiScaleRegistrationTab(QWidget):
     signal_do_registration = QtCore.pyqtSignal(bool, str, str, LocalRegistrationType, float, float, list, list,
                                                KernelLossFunctionType, float)
 
     def __init__(self, input_path):
         super().__init__()
 
-        widget = QWidget()
-        self.setWidget(widget)
-        self.setBackgroundRole(QPalette.Background)
-        self.setFrameShadow(QFrame.Plain)
-        self.setFrameShape(QFrame.NoFrame)
-        self.setWidgetResizable(True)
+        registration_layout = QVBoxLayout()
+        self.setLayout(registration_layout)
+
+        scroll_widget = QScrollArea()
+        scroll_widget.setBackgroundRole(QPalette.Background)
+        scroll_widget.setFrameShadow(QFrame.Plain)
+        scroll_widget.setFrameShape(QFrame.NoFrame)
+        scroll_widget.setWidgetResizable(True)
+
+        inner_widget = QWidget()
         layout = QVBoxLayout()
-        widget.setLayout(layout)
+        inner_widget.setLayout(layout)
+
+        scroll_widget.setWidget(inner_widget)
 
         # validators
         locale = QLocale(QLocale.English)
@@ -125,8 +131,8 @@ class MultiScaleRegistrationTab(QScrollArea):
         bt_apply = QPushButton("Start multi-scale registration")
         bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                "padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setFixedSize(250, 30)
-        bt_apply.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_apply.setFixedHeight(30)
+        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         bt_apply.clicked.connect(self.registration_button_pressed)
 
         layout.addWidget(label_title)
@@ -143,8 +149,10 @@ class MultiScaleRegistrationTab(QScrollArea):
         layout.addWidget(self.iter_values)
         layout.addWidget(rejection_label)
         layout.addWidget(outlier_widget)
-        layout.addWidget(bt_apply)
         layout.addStretch()
+
+        registration_layout.addWidget(scroll_widget)
+        registration_layout.addWidget(bt_apply)
 
     def checkbox_changed(self, state):
         self.fs_sparse1.setEnabled(state)

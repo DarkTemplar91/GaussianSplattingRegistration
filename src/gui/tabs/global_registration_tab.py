@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QLocale, pyqtSignal
+from PyQt5.QtCore import QLocale, pyqtSignal, Qt
 from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QLabel, QVBoxLayout, QComboBox, QWidget, QCheckBox, QSizePolicy, \
     QScrollArea, QFrame, QPushButton, QStackedWidget, QHBoxLayout
@@ -10,7 +10,7 @@ from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.utils.global_registration_util import GlobalRegistrationType, RANSACEstimationMethod
 
 
-class GlobalRegistrationTab(QScrollArea):
+class GlobalRegistrationTab(QWidget):
     signal_do_ransac = pyqtSignal(float, bool, float, RANSACEstimationMethod, int, list, int, float)
     signal_do_fgr = pyqtSignal(float, float, bool, bool, float, int, float, int, bool)
 
@@ -38,15 +38,20 @@ class GlobalRegistrationTab(QScrollArea):
         self.max_correspondence_ransac_widget = None
         self.checkbox_mutual = None
 
-        widget = QWidget()
-        self.setWidget(widget)
-        layout = QVBoxLayout()
-        widget.setLayout(layout)
+        registration_layout = QVBoxLayout()
+        self.setLayout(registration_layout)
 
-        self.setBackgroundRole(QPalette.Background)
-        self.setFrameShadow(QFrame.Plain)
-        self.setFrameShape(QFrame.NoFrame)
-        self.setWidgetResizable(True)
+        scroll_widget = QScrollArea()
+        scroll_widget.setBackgroundRole(QPalette.Background)
+        scroll_widget.setFrameShadow(QFrame.Plain)
+        scroll_widget.setFrameShape(QFrame.NoFrame)
+        scroll_widget.setWidgetResizable(True)
+        scroll_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        layout = QVBoxLayout()
+        inner_widget = QWidget()
+        inner_widget.setLayout(layout)
+        scroll_widget.setWidget(inner_widget)
 
         locale = QLocale(QLocale.English)
         self.double_validator = QDoubleValidator()
@@ -88,16 +93,18 @@ class GlobalRegistrationTab(QScrollArea):
         bt_apply = QPushButton("Start global registration")
         bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
                                "padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setFixedSize(250, 30)
-        bt_apply.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bt_apply.setFixedHeight(30)
         bt_apply.clicked.connect(self.registration_button_pressed)
 
         layout.addWidget(type_label)
         layout.addWidget(self.combo_box_global)
         layout.addWidget(self.voxel_size_widget)
         layout.addWidget(self.stack, stretch=1)
-        layout.addWidget(bt_apply)
         layout.addStretch()
+
+        registration_layout.addWidget(scroll_widget)
+        registration_layout.addWidget(bt_apply)
 
     def create_ransac_stack_widget(self):
         widget = QWidget()
@@ -208,10 +215,6 @@ class GlobalRegistrationTab(QScrollArea):
         widget_options = QWidget()
         layout_options = QVBoxLayout()
         widget_options.setLayout(layout_options)
-
-        """division_factor: float = 1.4, use_absolute_scale: bool = False, decrease_mu: bool = False, 
-        maximum_correspondence_distance: float = 0.025, iteration_number: int = 64, tuple_scale: float = 0.95, 
-        maximum_tuple_count: int = 1000, tuple_test: bool = True"""
 
         self.division_factor_widget = SimpleInputField("Division factor:", "1.4", validator=self.double_validator)
         self.checkbox_use_absolute_scale = QCheckBox()

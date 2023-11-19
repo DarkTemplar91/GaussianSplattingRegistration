@@ -1,6 +1,6 @@
 import numpy as np
 from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import QLocale, Qt
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy
 
@@ -76,8 +76,8 @@ class VisualizerTab(QWidget):
         layout.addWidget(self.front_widget)
         layout.addWidget(self.lookat_widget)
         layout.addWidget(self.up_widget)
-        layout.addWidget(button_apply)
-        layout.addWidget(button_copy)
+        layout.addWidget(button_apply, alignment=Qt.AlignCenter)
+        layout.addWidget(button_copy, alignment=Qt.AlignCenter)
         layout.addStretch()
 
     def checkbox_changed(self, state):
