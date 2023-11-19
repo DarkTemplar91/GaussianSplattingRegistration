@@ -102,7 +102,7 @@ class Open3DWindow(QMainWindow):
         self.pc1_copy.paint_uniform_color(debug_color1)
         self.pc2_copy.paint_uniform_color(debug_color2)
 
-        self.pc2_copy.transform(transformation)
+        self.pc1_copy.transform(transformation)
 
         self.vis.clear_geometries()
         self.vis.add_geometry(self.pc1_copy)

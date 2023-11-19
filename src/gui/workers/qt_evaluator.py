@@ -24,8 +24,8 @@ class RegistrationEvaluator(QObject):
         # Signal to cancel task
         self.signal_cancel = False
 
-        self.pc1 = copy.copy(pc1)
-        self.pc2 = copy.copy(pc2)
+        self.pc1 = copy.deepcopy(pc1)
+        self.pc2 = copy.deepcopy(pc2)
 
         self.transformation = transformation
 

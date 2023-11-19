@@ -40,9 +40,6 @@ class FileSelector(QWidget):
         dialog = QFileDialog(self)
         dialog.setFileMode(self.type)
 
-        if self.type is QFileDialog.Directory:
-            dialog.setAcceptMode(QFileDialog.AcceptSave)
-
         if self.type is not QFileDialog.Directory:
             dialog.setNameFilter(self.name_filter)
 
