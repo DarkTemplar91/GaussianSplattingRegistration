@@ -358,6 +358,14 @@ class RegistrationMainWindow(QMainWindow):
             dialog.showMessage(error_message)
             return
 
+        if self.pane_open3d.is_ortho():
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("The current projection type is orthographical, which is invalid for rasterization.\n"
+                               "Increase the FOV to continue!")
+            return
+
         extrinsic = self.pane_open3d.get_camera_extrinsic().astype(np.float32)
         intrinsic = intrinsics_supplied
         if intrinsic is None:
