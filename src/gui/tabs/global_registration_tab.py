@@ -8,6 +8,7 @@ from open3d.cpu.pybind.pipelines.registration import CorrespondenceCheckerBasedO
 from src.gui.widgets.optional_value_widget import OptionalInputField
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.utils.global_registration_util import GlobalRegistrationType, RANSACEstimationMethod
+import src.utils.graphics_utils as graphic_util
 
 
 class GlobalRegistrationTab(QWidget):
@@ -91,10 +92,10 @@ class GlobalRegistrationTab(QWidget):
         self.stack.setCurrentIndex(0)
 
         bt_apply = QPushButton("Start global registration")
-        bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                               "padding-top: 2px; padding-bottom: 2px;")
+        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        bt_apply.setFixedHeight(30)
+        bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         bt_apply.clicked.connect(self.registration_button_pressed)
 
         layout.addWidget(type_label)
@@ -117,11 +118,11 @@ class GlobalRegistrationTab(QWidget):
         self.checkbox_mutual.setText("Mutual filtering")
         self.checkbox_mutual.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
 
@@ -148,9 +149,9 @@ class GlobalRegistrationTab(QWidget):
         checker_label = QLabel("Alignment checker")
         checker_label.setStyleSheet(
             "QLabel {"
-            "    font-size: 12px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
         self.edge_length_checker = OptionalInputField("Edge Length:", "0.0", 75, validator=self.double_validator)
@@ -168,9 +169,9 @@ class GlobalRegistrationTab(QWidget):
         convergence_label = QLabel("Convergence criteria")
         convergence_label.setStyleSheet(
             "QLabel {"
-            "    font-size: 12px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -205,9 +206,9 @@ class GlobalRegistrationTab(QWidget):
         options_label = QLabel("Options")
         options_label.setStyleSheet(
             "QLabel {"
-            "    font-size: 12px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -221,22 +222,22 @@ class GlobalRegistrationTab(QWidget):
         self.checkbox_use_absolute_scale.setText("Use absolute scale")
         self.checkbox_use_absolute_scale.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
         self.checkbox_decrease_mu = QCheckBox()
         self.checkbox_decrease_mu.setText("Decrease mu")
         self.checkbox_decrease_mu.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
         self.maximum_correspondence_fgr_widget = SimpleInputField("Maximum correspondence:",
@@ -253,11 +254,11 @@ class GlobalRegistrationTab(QWidget):
         self.checkbox_tuple_test.setText("Tuple test")
         self.checkbox_tuple_test.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
 
@@ -281,7 +282,7 @@ class GlobalRegistrationTab(QWidget):
         current_widget = self.stack.currentWidget()
         if current_widget is not None:
             height = current_widget.sizeHint().height()
-            self.stack.setFixedHeight(height)
+            self.stack.setFixedHeight(int(height * graphic_util.SIZE_SCALE_Y))
 
     def registration_button_pressed(self):
         if self.combo_box_global.currentIndex() == 0:

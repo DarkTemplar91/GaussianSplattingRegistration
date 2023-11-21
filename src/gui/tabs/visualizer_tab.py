@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget
+import src.utils.graphics_utils as graphic_util
 
 
 class VisualizerTab(QWidget):
@@ -27,20 +28,20 @@ class VisualizerTab(QWidget):
         label_title = QLabel("Visualization")
         label_title.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
         self.debug_color_checkbox = QCheckBox()
         self.debug_color_checkbox.setText("Use debug colors")
         self.debug_color_checkbox.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
         self.debug_color_checkbox.stateChanged.connect(self.checkbox_changed)
@@ -53,13 +54,13 @@ class VisualizerTab(QWidget):
         self.zoom_widget = SimpleInputField("Zoom: ", "1.0", 50, 60, validator=double_validator)
 
         button_apply = QPushButton()
-        button_apply.setFixedSize(250, 30)
+        button_apply.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
         button_apply.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         button_apply.setText("Apply")
         button_apply.clicked.connect(self.apply_to_vis)
 
         button_copy = QPushButton()
-        button_copy.setFixedSize(250, 30)
+        button_copy.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
         button_copy.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         button_copy.setText("Copy current view")
         button_copy.clicked.connect(self.get_current_view)

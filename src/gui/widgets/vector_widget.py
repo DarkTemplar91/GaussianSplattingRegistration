@@ -2,6 +2,8 @@ import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
+import src.utils.graphics_utils as graphic_util
+
 
 
 class VectorWidget(QWidget):
@@ -14,7 +16,7 @@ class VectorWidget(QWidget):
 
             self.id = cell_id
 
-            self.setFixedWidth(60)
+            self.setFixedWidth(int(60 * graphic_util.SIZE_SCALE_X))
             self.setAlignment(Qt.AlignLeft)
             self.value = value
             self.setText(str(self.value))
@@ -43,7 +45,7 @@ class VectorWidget(QWidget):
         self.setLayout(layout)
 
         label = QLabel(label_text)
-        label.setFixedWidth(50)
+        label.setFixedWidth(int(50 * graphic_util.SIZE_SCALE_X))
 
         layout.addWidget(label)
 

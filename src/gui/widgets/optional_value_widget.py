@@ -1,4 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit, QCheckBox
+import src.utils.graphics_utils as graphic_util
+
 
 
 class OptionalInputField(QWidget):
@@ -12,18 +14,18 @@ class OptionalInputField(QWidget):
         self.checkbox_optional = QCheckBox()
         self.checkbox_optional.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
 
         label = QLabel(label_text)
-        label.setFixedWidth(label_width)
+        label.setFixedWidth(int(label_width * graphic_util.SIZE_SCALE_X))
         self.voxel_size_lineedit = QLineEdit(value)
-        self.voxel_size_lineedit.setFixedWidth(line_edit_width)
+        self.voxel_size_lineedit.setFixedWidth(int(line_edit_width * graphic_util.SIZE_SCALE_X))
         self.voxel_size_lineedit.setValidator(validator)
         self.voxel_size_lineedit.setEnabled(False)
 

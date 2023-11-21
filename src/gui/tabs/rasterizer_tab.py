@@ -8,8 +8,9 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayo
 
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
-from src.utils.graphics_utils import fov2focal
 
+from src.utils.graphics_utils import fov2focal
+import src.utils.graphics_utils as graphic_util
 
 class RasterizerTab(QWidget):
     signal_rasterize = pyqtSignal(int, int, float, np.ndarray, object)
@@ -33,9 +34,9 @@ class RasterizerTab(QWidget):
         label_res = QLabel("Rasterization")
         label_res.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -50,9 +51,9 @@ class RasterizerTab(QWidget):
         self.background_color_widget = ColorPicker("Background color: ", np.zeros(3))
 
         bt_rasterize = QPushButton("Rasterize")
-        bt_rasterize.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                                   "padding-top: 2px; padding-bottom: 2px;")
-        bt_rasterize.setFixedSize(250, 30)
+        bt_rasterize.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                                   f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_rasterize.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
         bt_rasterize.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_rasterize.clicked.connect(self.button_clicked)
 

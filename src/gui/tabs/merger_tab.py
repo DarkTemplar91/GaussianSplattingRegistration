@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage
 
 from src.gui.widgets.file_selector_widget import FileSelector
+import src.utils.graphics_utils as graphic_util
 
 
 class MergeTab(QWidget):
@@ -16,9 +17,9 @@ class MergeTab(QWidget):
         label_title = QLabel("Point cloud merging")
         label_title.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "   font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -26,11 +27,11 @@ class MergeTab(QWidget):
         self.input_checkbox.setText("Use corresponding inputs")
         self.input_checkbox.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
         self.input_checkbox.stateChanged.connect(self.checkbox_changed)
@@ -48,9 +49,9 @@ class MergeTab(QWidget):
 
         self.fs_merge = FileSelector(text="Save path:", base_path=merge_path, label_width=70)
         bt_merge = QPushButton("Merge point clouds")
-        bt_merge.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                               "padding-top: 2px; padding-bottom: 2px;")
-        bt_merge.setFixedSize(280, 30)
+        bt_merge.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_merge.setFixedSize(int(280 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
         bt_merge.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         bt_merge.clicked.connect(self.merge_point_clouds)
 

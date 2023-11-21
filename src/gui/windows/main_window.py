@@ -4,7 +4,7 @@ import os
 import numpy as np
 from PyQt5.QtCore import QThread, Qt
 from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLayout, \
-    QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog
+    QTabWidget, QSizePolicy, QErrorMessage, QMessageBox, QProgressDialog, QApplication
 
 from src.gui.tabs.cache_tab import CacheTab
 from src.gui.tabs.evaluation_tab import EvaluationTab
@@ -27,7 +27,6 @@ from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.gui.workers.qt_workers import PointCloudSaver
 from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 from src.utils.point_cloud_merger import save_merged_point_clouds
-
 
 class RegistrationMainWindow(QMainWindow):
 
@@ -67,6 +66,11 @@ class RegistrationMainWindow(QMainWindow):
 
         # Set window size to screen size
         self.showMaximized()
+
+        # Assign size scale to global variable to handle different screen sizes
+        import src.utils.graphics_utils
+        src.utils.graphics_utils.SIZE_SCALE_X = QApplication.primaryScreen().size().width() / 1920
+        src.utils.graphics_utils.SIZE_SCALE_Y = QApplication.primaryScreen().size().height() / 1080
 
         # Create splitter and two planes
         splitter = QSplitter(self)

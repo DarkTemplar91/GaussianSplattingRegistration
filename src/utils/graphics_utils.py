@@ -14,6 +14,9 @@ import math
 import numpy as np
 import torch
 
+SIZE_SCALE_X = 1.0
+SIZE_SCALE_Y = 1.0
+
 
 def getWorld2View2(R, t, translate=np.array([.0, .0, .0]), scale=1.0):
     Rt = np.zeros((4, 4))

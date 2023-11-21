@@ -1,4 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
+import src.utils.graphics_utils as graphic_util
+
 
 
 class SimpleInputField(QWidget):
@@ -10,9 +12,9 @@ class SimpleInputField(QWidget):
         self.setLayout(layout)
 
         label = QLabel(label_text)
-        label.setFixedWidth(label_width)
+        label.setFixedWidth(int(label_width * graphic_util.SIZE_SCALE_X))
         self.lineedit = QLineEdit(value)
-        self.lineedit.setFixedWidth(line_edit_width)
+        self.lineedit.setFixedWidth(int(line_edit_width * graphic_util.SIZE_SCALE_X))
         self.lineedit.setValidator(validator)
 
         layout.addWidget(label)

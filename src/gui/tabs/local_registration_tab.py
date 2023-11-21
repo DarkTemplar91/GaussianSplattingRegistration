@@ -6,8 +6,9 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePoli
 
 from src.gui.widgets.optional_value_widget import OptionalInputField
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
-from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 
+from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
+import src.utils.graphics_utils as graphic_util
 
 class LocalRegistrationTab(QWidget):
     signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int,
@@ -59,9 +60,9 @@ class LocalRegistrationTab(QWidget):
         conv_label = QLabel("Convergence criteria")
         conv_label.setStyleSheet(
             "QLabel {"
-            "    font-size: 12px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -89,9 +90,9 @@ class LocalRegistrationTab(QWidget):
         rejection_label = QLabel("Robust Kernel outlier rejection")
         rejection_label.setStyleSheet(
             "QLabel {"
-            "    font-size: 12px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -116,9 +117,9 @@ class LocalRegistrationTab(QWidget):
         outlier_layout.addWidget(self.k_value_widget)
 
         bt_apply = QPushButton("Start local registration")
-        bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                               "padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setFixedHeight(30)
+        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         layout.addWidget(type_label)

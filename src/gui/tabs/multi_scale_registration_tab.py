@@ -6,7 +6,9 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, 
 
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.widgets.registration_input_field_widget import SimpleInputField
+
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
+import src.utils.graphics_utils as graphic_util
 
 
 class MultiScaleRegistrationTab(QWidget):
@@ -51,9 +53,9 @@ class MultiScaleRegistrationTab(QWidget):
         label_title = QLabel("Multi-scale Local Registration")
         label_title.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -61,11 +63,11 @@ class MultiScaleRegistrationTab(QWidget):
         self.sparse_checkbox.setText("Use sparse point clouds for initial registration")
         self.sparse_checkbox.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
         self.sparse_checkbox.stateChanged.connect(self.checkbox_changed)
@@ -102,9 +104,9 @@ class MultiScaleRegistrationTab(QWidget):
         rejection_label = QLabel("Robust Kernel outlier rejection")
         rejection_label.setStyleSheet(
             "QLabel {"
-            "    font-size: 12px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
@@ -129,9 +131,9 @@ class MultiScaleRegistrationTab(QWidget):
         outlier_layout.addWidget(self.k_value_widget)
 
         bt_apply = QPushButton("Start multi-scale registration")
-        bt_apply.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                               "padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setFixedHeight(30)
+        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         bt_apply.clicked.connect(self.registration_button_pressed)
 

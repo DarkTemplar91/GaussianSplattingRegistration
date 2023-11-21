@@ -10,7 +10,7 @@ from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.models.cameras import Camera
 from src.utils.general_utils import convert_to_camera_transform
-from src.utils.graphics_utils import focal2fov
+import src.utils.graphics_utils as graphic_util
 
 
 class EvaluationTab(QWidget):
@@ -35,9 +35,9 @@ class EvaluationTab(QWidget):
         self.fs_cameras = FileSelector(text="Cameras: ", name_filter="*.json", label_width=60)
 
         self.button_load_cameras = QPushButton("Load cameras")
-        self.button_load_cameras.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                                               "padding-top: 2px; padding-bottom: 2px;")
-        self.button_load_cameras.setFixedHeight(30)
+        self.button_load_cameras.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        self.button_load_cameras.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         self.button_load_cameras.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # Spinbox row
@@ -46,14 +46,14 @@ class EvaluationTab(QWidget):
         spinbox_widget.setLayout(spinbox_layout)
         label = QLabel("Snap to:")
         self.spinbox = QSpinBox()
-        self.spinbox.setFixedWidth(50)
-        self.spinbox.setFixedHeight(30)
+        self.spinbox.setFixedWidth(int(50 * graphic_util.SIZE_SCALE_X))
+        self.spinbox.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         self.spinbox.setRange(0, 0)
         self.spinbox.setKeyboardTracking(False)
         self.current_image_name = QLineEdit()
         self.current_image_name.setEnabled(False)
-        self.current_image_name.setFixedHeight(30)
-        self.current_image_name.setFixedWidth(100)
+        self.current_image_name.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
+        self.current_image_name.setFixedWidth(int(100 * graphic_util.SIZE_SCALE_X))
         self.current_image_name.setAlignment(Qt.AlignLeft)
         spinbox_layout.addWidget(label)
         spinbox_layout.addWidget(self.spinbox)
@@ -74,9 +74,9 @@ class EvaluationTab(QWidget):
         self.fs_log = FileSelector(text="Log file: ", name_filter="Log files (*.txt *.log);;*.txt;;*.log", label_width=80)
         self.render_color = ColorPicker("Background color: ", np.zeros(3))
         self.button_evaluate = QPushButton("Evaluate registration")
-        self.button_evaluate.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                                           "padding-top: 2px; padding-bottom: 2px;")
-        self.button_evaluate.setFixedHeight(30)
+        self.button_evaluate.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                                           f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        self.button_evaluate.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         self.button_evaluate.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         evaluation_layout.addWidget(self.fs_images)
@@ -109,8 +109,8 @@ class EvaluationTab(QWidget):
             fy = camera_iter["fy"]
             height = camera_iter["height"]
             width = camera_iter["width"]
-            fov_x = focal2fov(fx, width)
-            fov_y = focal2fov(fy, height)
+            fov_x = graphic_util.focal2fov(fx, width)
+            fov_y = graphic_util.focal2fov(fy, height)
 
             rot = np.array([np.array(xi) for xi in camera_iter["rotation"]])
             pos = np.array([np.array(xi) for xi in camera_iter["position"]])

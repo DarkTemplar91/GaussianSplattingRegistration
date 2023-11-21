@@ -33,7 +33,6 @@ class RasterizerWorker(QObject):
         self.extrinsic = extrinsic
         self.intrinsic = intrinsic
 
-        # TODO: Consider using fov set by hand
         fx, fy = get_focal_from_intrinsics(intrinsic)
         self.fov_x = focal2fov(fx, img_width)
         self.fov_y = focal2fov(fy, img_height)

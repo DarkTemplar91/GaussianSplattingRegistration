@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayo
 
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.workers.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian
-
+import src.utils.graphics_utils as graphic_util
 
 class InputTab(QWidget):
     result_signal = pyqtSignal(object, object, bool, object, object)
@@ -25,45 +25,45 @@ class InputTab(QWidget):
         label_sparse = QLabel("Sparse inputs: ")
         label_sparse.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
         self.fs_input1 = FileSelector(text="First sparse input:", base_path=input_dir)
         self.fs_input2 = FileSelector(text="Second sparse input:", base_path=input_dir)
         bt_sparse = QPushButton("Import sparse point cloud")
-        bt_sparse.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                                "padding-top: 2px; padding-bottom: 2px;")
-        bt_sparse.setFixedSize(285, 30)
+        bt_sparse.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_sparse.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
         bt_sparse.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         label_pc = QLabel("Point cloud inputs: ")
         label_pc.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
         self.fs_pc1 = FileSelector(text="First point cloud:", base_path=input_dir)
         self.fs_pc2 = FileSelector(text="Second point cloud:", base_path=input_dir)
         bt_gaussian = QPushButton("Import gaussian point cloud")
         bt_gaussian.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        bt_gaussian.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                                  "padding-top: 2px; padding-bottom: 2px;")
-        bt_gaussian.setFixedSize(285, 30)
+        bt_gaussian.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                                  f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_gaussian.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
 
         self.checkbox_cache = QCheckBox()
         self.checkbox_cache.setText("Save converted point clouds")
         self.checkbox_cache.setStyleSheet(
             "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
             "}"
             "QCheckBox::indicator::text {"
-            "    padding-left: 10px;"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
             "}"
         )
 

@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayo
 
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.workers.qt_workers import PointCloudLoaderO3D
+import src.utils.graphics_utils as graphic_util
+
 
 
 class CacheTab(QWidget):
@@ -27,17 +29,17 @@ class CacheTab(QWidget):
         label_cache = QLabel("Cached point clouds: ")
         label_cache.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"
-            "    padding: 8px;"
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
             "}"
         )
 
         bt_cached = QPushButton("Import cached point clouds")
         bt_cached.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        bt_cached.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                                "padding-top: 2px; padding-bottom: 2px;")
-        bt_cached.setFixedSize(285, 30)
+        bt_cached.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_cached.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
 
         layout.addWidget(label_cache)
         layout.addWidget(self.fs_cache1)

@@ -4,6 +4,8 @@ from PyQt5.QtCore import Qt, QLocale
 from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, \
     QTableWidget, QGridLayout, QLineEdit, QPushButton, QSizePolicy
+import src.utils.graphics_utils as graphic_util
+
 
 
 class Transformation3DPicker(QWidget):
@@ -25,7 +27,7 @@ class Transformation3DPicker(QWidget):
             self.col = self.cell_number % 4
             Transformation3DPicker.MatrixCell.cell_number += 1
 
-            self.setFixedSize(50, 50)
+            self.setFixedSize(int(50 * graphic_util.SIZE_SCALE_X), int(50 * graphic_util.SIZE_SCALE_Y))
             self.setAlignment(Qt.AlignLeft)
             self.value = value
             self.setText(str(self.value))
@@ -51,9 +53,9 @@ class Transformation3DPicker(QWidget):
         label = QLabel("Transformation matrix")
         label.setStyleSheet(
             "QLabel {"
-            "    font-size: 14px;"
+            "    font-size: 11pt;"
             "    font-weight: bold;"  # Bold font
-            "    padding: 8px;"  # Padding
+            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"  # Padding
             "}"
         )
 
@@ -81,9 +83,9 @@ class Transformation3DPicker(QWidget):
             cell.value_changed.connect(self.transformation_changed)
 
         button_reset = QPushButton("Reset transformation matrix")
-        button_reset.setStyleSheet("padding-left: 10px; padding-right: 10px;"
-                                   "padding-top: 2px; padding-bottom: 2px;")
-        button_reset.setFixedSize(250, 30)
+        button_reset.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+                                   f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        button_reset.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
         button_reset.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         button_reset.clicked.connect(self.reset_transformation)
 

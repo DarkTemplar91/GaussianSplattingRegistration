@@ -1,7 +1,7 @@
 import os
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton, QSizePolicy, QStyle, QFileDialog
-
+import src.utils.graphics_utils as graphic_util
 
 class FileSelector(QWidget):
     def __init__(self, parent=None, text="", base_path=None, label_width=120, file_type=QFileDialog.ExistingFile,
@@ -15,7 +15,7 @@ class FileSelector(QWidget):
 
         self.inputField = QLineEdit()
         label = QLabel(text)
-        label.setFixedWidth(label_width)
+        label.setFixedWidth(int(label_width * graphic_util.SIZE_SCALE_X))
         button = QPushButton()
         icon = self.style().standardIcon(QStyle.SP_DialogOpenButton)
         button.setIcon(icon)
