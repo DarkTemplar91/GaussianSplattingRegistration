@@ -99,10 +99,9 @@ class RasterImageViewer(QMainWindow):
 
         new_width, new_height = self.calculate_size_from_pixmap(pix)
 
-        # Cap initial size to 75% of primary screen
         screen_size = QApplication.primaryScreen().size()
-        max_initial_width = screen_size.width() * 0.75
-        max_initial_height = screen_size.height() * 0.75
+        max_initial_width = screen_size.width() * 0.9
+        max_initial_height = screen_size.height() * 0.9
         if max_initial_width < new_width or max_initial_height < new_height:
             new_width = int(max_initial_width)
             new_height = int(max_initial_height)

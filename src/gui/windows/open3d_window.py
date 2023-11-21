@@ -4,6 +4,7 @@ from subprocess import Popen, PIPE
 
 import numpy as np
 import open3d as o3d
+from PyQt5.QtCore import Qt
 
 if sys.platform.startswith('win'):
     import win32gui
@@ -20,28 +21,29 @@ class Open3DWindow(QMainWindow):
         self.pc1 = None
         self.pc2 = None
 
-        widget = QtWidgets.QWidget()
-        layout = QtWidgets.QGridLayout(widget)
-        self.setCentralWidget(widget)
+        self.parent_widget = QtWidgets.QWidget()
+        self.layout = QtWidgets.QGridLayout(self.parent_widget)
+        self.setCentralWidget(self.parent_widget)
 
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window()
+        self.is_embedded = True
 
         # Set background color to match theme
         background_color = (0.09803921568627451, 0.13725490196078433, 0.17647058823529413)
         opt = self.vis.get_render_option()
         opt.background_color = background_color
 
-        hwnd = None
+        self.hwnd = None
         platform = sys.platform
         if platform.startswith("win"):
-            hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
+            self.hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
         elif platform.startswith("linux"):
-            hwnd = self.get_hwnd()
+            self.hwnd = self.get_hwnd()
 
-        self.window = QtGui.QWindow.fromWinId(hwnd)
-        self.window_container = self.createWindowContainer(self.window, widget)
-        layout.addWidget(self.window_container, 0, 0)
+        self.window = QtGui.QWindow.fromWinId(self.hwnd)
+        self.window_container = self.createWindowContainer(self.window, self.parent_widget)
+        self.layout.addWidget(self.window_container, 0, 0)
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.update_vis)
         timer.start(1)
@@ -187,3 +189,16 @@ class Open3DWindow(QMainWindow):
         parameters.extrinsic = extrinsics
         view_control.convert_from_pinhole_camera_parameters(parameters)
         pass
+
+    def pop_visualizer(self):
+        if self.is_embedded:
+            self.layout.removeWidget(self.window_container)
+            self.window.setParent(None)
+            self.window.setFlags(Qt.Window)
+            self.is_embedded = False
+            return
+
+        self.window = QtGui.QWindow.fromWinId(self.hwnd)
+        self.window_container = self.createWindowContainer(self.window, self.parent_widget)
+        self.layout.addWidget(self.window_container, 0, 0)
+        self.is_embedded = True

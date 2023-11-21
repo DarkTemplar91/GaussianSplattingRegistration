@@ -120,6 +120,7 @@ class RegistrationMainWindow(QMainWindow):
         self.cache_tab.result_signal.connect(self.handle_result)
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
+        self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
         self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
