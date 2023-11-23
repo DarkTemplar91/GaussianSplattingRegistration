@@ -47,7 +47,7 @@ class Transformation3DPicker(QWidget):
                 text_original = clipboard.text()
                 try:
                     text = text_original.replace("\n", "").replace("[", "").replace("]", "")
-                    new_matrix = np.fromstring(text[2:-2], dtype=np.float32, sep=' ')
+                    new_matrix = np.fromstring(text, dtype=np.float32, sep=',')
                     self.matrix_copied.emit(new_matrix.reshape(4, 4))
                 except ValueError:
                     pass
