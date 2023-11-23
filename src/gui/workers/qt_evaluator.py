@@ -11,6 +11,8 @@ import torchvision.transforms.functional as tf
 from src.models.gaussian_model import GaussianModel
 from src.utils.point_cloud_merger import merge_point_clouds
 from src.utils.rasterization_util import rasterize_image
+from src.submodules.lpips_pytorch import lpips
+from src.utils.evaluation_utils import ssim, psnr, mse
 
 
 class RegistrationEvaluator(QObject):
@@ -19,7 +21,9 @@ class RegistrationEvaluator(QObject):
 
     signal_update_progress = pyqtSignal(int)
 
-    def __init__(self, pc1, pc2, transformation, cameras_list, images_path, log_path, color, registration_result):
+    def __init__(self, pc1, pc2, transformation, cameras_list, images_path, log_path, color, registration_result,
+                 use_gpu):
+
         super().__init__()
         # Signal to cancel task
         self.signal_cancel = False
@@ -35,6 +39,7 @@ class RegistrationEvaluator(QObject):
 
         self.color = color
         self.device = "cuda:0"
+        self.use_gpu = use_gpu  # Whether the actual evaluation happens on the gpu or not
 
         self.registration_result = registration_result
         self.mean_rmses = None
@@ -44,27 +49,29 @@ class RegistrationEvaluator(QObject):
         self.mean_mses = None
 
         self.current_progress = 0
-        self.max_progress = 201
+        self.max_progress = len(cameras_list)
 
     def do_evaluation(self):
         merged_pc = merge_point_clouds(self.pc1, self.pc2, self.transformation)
         point_cloud = GaussianModel(3)
         point_cloud.from_ply(merged_pc)
 
-        rendered_images = []
-        gt_images = []
         error_list = []
+
+        mses = []
+        rmses = []
+        ssims = []
+        psnrs = []
+        lpipss = []
+
         for idx, camera in enumerate(self.cameras_list):
             # Process events, look for cancel signal
             QtWidgets.QApplication.processEvents()
             if self.signal_cancel:
                 # Force gpu memory garbage collection
-                del gt_images
-                del rendered_images
                 torch.cuda.empty_cache()
                 import gc
                 gc.collect()
-                
                 return
 
             self.update_progress()
@@ -73,25 +80,32 @@ class RegistrationEvaluator(QObject):
             image_path = os.path.join(self.images_path, img_name + ".png")
             try:
                 pil_image = Image.open(image_path)
-                gt_image = tf.to_tensor(pil_image).unsqueeze(0).cuda()
-                gt_images.append(gt_image)
-                del gt_image
+                gt_image = tf.to_tensor(pil_image).unsqueeze(0)
+                if self.use_gpu:
+                    gt_image.cuda()
             except (OSError, IOError) as e:
                 error_list.append(str(e))
                 continue
-            image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device)
+            image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
             image_tensor = image_tensor.unsqueeze(0)
-            rendered_images.append(image_tensor)
-            del image_tensor
 
-        self.evaluate_images(rendered_images, gt_images)
+            current_mse = mse(image_tensor, gt_image)
+            mses.append(current_mse)
+            rmses.append(torch.sqrt(current_mse))
+            ssims.append(ssim(image_tensor, gt_image))
+            psnrs.append(psnr(image_tensor, gt_image))
+            lpipss.append(lpips(image_tensor, gt_image))
+
+            torch.cuda.empty_cache()
+
+        self.mean_mses = torch.tensor(mses).mean().item()
+        self.mean_rmses = torch.tensor(rmses).mean().item()
+        self.mean_ssims = torch.tensor(ssims).mean().item()
+        self.mean_psnrs = torch.tensor(psnrs).mean().item()
+        self.mean_lpipss = torch.tensor(lpipss).mean().item()
 
         log = self.create_and_save_log_file(error_list)
-        self.update_progress()
 
-        # Force gpu memory garbage collection
-        del gt_images
-        del rendered_images
         torch.cuda.empty_cache()
         import gc
         gc.collect()
@@ -106,43 +120,6 @@ class RegistrationEvaluator(QObject):
         self.current_progress += 1
         new_percent = int(self.current_progress / self.max_progress * 100)
         self.signal_update_progress.emit(new_percent)
-
-    def evaluate_images(self, rendered_images, gt_images):
-        from src.submodules.lpips_pytorch import lpips
-        from src.utils.evaluation_utils import ssim, psnr, mse
-
-        mses = []
-        rmses = []
-        ssims = []
-        psnrs = []
-        lpipss = []
-
-        for idx in range(len(rendered_images)):
-
-            QtWidgets.QApplication.processEvents()
-            if self.signal_cancel:
-                # Force gpu memory garbage collection
-                del gt_images
-                del rendered_images
-                torch.cuda.empty_cache()
-                import gc
-                gc.collect()
-                self.signal_finished.emit()
-                return
-
-            self.update_progress()
-            current_mse = mse(rendered_images[idx], gt_images[idx])
-            mses.append(current_mse)
-            rmses.append(torch.sqrt(current_mse))
-            ssims.append(ssim(rendered_images[idx], gt_images[idx]))
-            psnrs.append(psnr(rendered_images[idx], gt_images[idx]))
-            lpipss.append(lpips(rendered_images[idx], gt_images[idx]))
-
-        self.mean_mses = torch.tensor(mses).mean().item()
-        self.mean_rmses = torch.tensor(rmses).mean().item()
-        self.mean_ssims = torch.tensor(ssims).mean().item()
-        self.mean_psnrs = torch.tensor(psnrs).mean().item()
-        self.mean_lpipss = torch.tensor(lpipss).mean().item()
 
     def create_and_save_log_file(self, error_list):
         evaluation = self.EvaluationObject(self.registration_result, self.mean_mses, self.mean_rmses,

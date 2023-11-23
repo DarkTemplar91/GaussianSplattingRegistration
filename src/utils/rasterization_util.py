@@ -4,7 +4,7 @@ import torch
 from diff_gaussian_rasterization import GaussianRasterizer, GaussianRasterizationSettings
 
 
-def rasterize_image(point_cloud, camera, scale, color, device):
+def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True):
     # Create zero tensor. We will use it to make pytorch return gradients of the 2D (screen-space) means
     screenspace_points = torch.zeros_like(point_cloud.get_xyz, dtype=point_cloud.get_xyz.dtype, requires_grad=True,
                                           device=device) + 0
@@ -49,4 +49,7 @@ def rasterize_image(point_cloud, camera, scale, color, device):
         opacities=opacity,
         cov3D_precomp=cov3D_precomp)
 
-    return image_tensor.detach(), radii
+    if leave_on_gpu:
+        return image_tensor.detach(), radii
+    else:
+        return image_tensor.detach().cpu(), radii

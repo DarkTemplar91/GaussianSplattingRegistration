@@ -4,7 +4,7 @@ import os.path
 import numpy as np
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFileDialog, QGroupBox, QHBoxLayout,
-                             QLabel, QSpinBox, QLineEdit, QErrorMessage)
+                             QLabel, QSpinBox, QLineEdit, QErrorMessage, QCheckBox)
 
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.file_selector_widget import FileSelector
@@ -15,7 +15,7 @@ import src.utils.graphics_utils as graphic_util
 
 class EvaluationTab(QWidget):
     signal_camera_change = pyqtSignal(np.ndarray)
-    signal_evaluate_registration = pyqtSignal(list, str, str, np.ndarray)
+    signal_evaluate_registration = pyqtSignal(list, str, str, np.ndarray, bool)
 
     def __init__(self):
         super().__init__()
@@ -73,6 +73,19 @@ class EvaluationTab(QWidget):
         self.fs_images = FileSelector(text="Images folder: ", file_type=QFileDialog.Directory, label_width=80)
         self.fs_log = FileSelector(text="Log file: ", name_filter="Log files (*.txt *.log);;*.txt;;*.log", label_width=80)
         self.render_color = ColorPicker("Background color: ", np.zeros(3))
+
+        self.checkbox_gpu = QCheckBox()
+        self.checkbox_gpu.setText("Use GPU for evaluation")
+        self.checkbox_gpu.setStyleSheet(
+            "QCheckBox::indicator {"
+            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
+            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            "}"
+            "QCheckBox::indicator::text {"
+            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            "}"
+        )
+
         self.button_evaluate = QPushButton("Evaluate registration")
         self.button_evaluate.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                            f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
@@ -82,6 +95,7 @@ class EvaluationTab(QWidget):
         evaluation_layout.addWidget(self.fs_images)
         evaluation_layout.addWidget(self.fs_log)
         evaluation_layout.addWidget(self.render_color)
+        evaluation_layout.addWidget(self.checkbox_gpu)
         evaluation_layout.addWidget(self.button_evaluate)
 
         layout.addWidget(input_group)
@@ -146,7 +160,8 @@ class EvaluationTab(QWidget):
             return
 
         color = np.asarray(self.render_color.color_debug)
-        self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file, color)
+        use_gpu = self.checkbox_gpu.isChecked()
+        self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file, color, use_gpu)
 
     def creat_error_box(self, message):
         self.error_message = QErrorMessage()

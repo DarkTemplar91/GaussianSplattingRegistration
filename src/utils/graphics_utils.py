@@ -66,3 +66,7 @@ def focal2fov(focal, pixels):
 def get_focal_from_intrinsics(intrinsics):
     fx, fy = intrinsics[:2, :2].diagonal()
     return fx, fy
+
+
+def fov_x2fov_y(fov_x, aspect_ratio):
+    return 2 * math.atan(math.tan(fov_x / 2) / aspect_ratio)

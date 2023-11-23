@@ -126,8 +126,11 @@ class RasterizerTab(QWidget):
                 fx = fov2focal(value, width)
                 fy = fov2focal(value, height)
             case 2:
+                # Approximate solution only.
                 fx = value
-                fy = fx * (width/height)
+                fov_x = graphic_util.focal2fov(fx, width)
+                fov_y = graphic_util.fov_x2fov_y(fov_x, width / height)
+                fy = fov2focal(fov_y, height)
         cx = width / 2
         cy = height / 2
         intrinsics = np.array([

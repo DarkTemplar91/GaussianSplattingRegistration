@@ -399,7 +399,7 @@ class RegistrationMainWindow(QMainWindow):
     def loaded_camera_changed(self, extrinsics):
         self.pane_open3d.apply_camera_transformation(extrinsics)
 
-    def evaluate_registration(self, camera_list, image_path, log_path, color):
+    def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
         pc1 = self.pc_originalFirst
         pc2 = self.pc_originalSecond
 
@@ -412,7 +412,8 @@ class RegistrationMainWindow(QMainWindow):
             return
 
         worker = RegistrationEvaluator(pc1, pc2, self.transformation_picker.transformation_matrix,
-                                       camera_list, image_path, log_path, color, self.local_registration_data)
+                                       camera_list, image_path, log_path, color, self.local_registration_data,
+                                       use_gpu)
 
         # Create thread
         thread = QThread(self)
