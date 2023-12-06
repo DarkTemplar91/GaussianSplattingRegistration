@@ -71,7 +71,8 @@ class EvaluationTab(QWidget):
         evaluation_layout = QVBoxLayout()
         evaluation_group.setLayout(evaluation_layout)
         self.fs_images = FileSelector(text="Images folder: ", file_type=QFileDialog.Directory, label_width=80)
-        self.fs_log = FileSelector(text="Log file: ", name_filter="Log files (*.txt *.log);;*.txt;;*.log", label_width=80)
+        self.fs_log = FileSelector(text="Log file: ", name_filter="Log files (*.txt *.log);;*.txt;;*.log",
+                                   label_width=80, file_type=QFileDialog.AnyFile)
         self.render_color = ColorPicker("Background color: ", np.zeros(3))
 
         self.checkbox_gpu = QCheckBox()

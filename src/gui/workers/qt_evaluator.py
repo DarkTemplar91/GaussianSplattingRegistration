@@ -79,15 +79,17 @@ class RegistrationEvaluator(QObject):
             img_name = camera.image_name
             image_path = os.path.join(self.images_path, img_name + ".png")
             try:
-                pil_image = Image.open(image_path)
+                pil_image = Image.open(image_path).convert('RGB')
                 gt_image = tf.to_tensor(pil_image).unsqueeze(0)
                 if self.use_gpu:
-                    gt_image.cuda()
+                    gt_image = gt_image.cuda()
             except (OSError, IOError) as e:
                 error_list.append(str(e))
                 continue
             image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
             image_tensor = image_tensor.unsqueeze(0)
+            if self.use_gpu:
+                image_tensor = image_tensor.cuda()
 
             current_mse = mse(image_tensor, gt_image)
             mses.append(current_mse)

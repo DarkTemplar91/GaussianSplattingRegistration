@@ -1,6 +1,7 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage, \
+    QFileDialog
 
 from src.gui.widgets.file_selector_widget import FileSelector
 import src.utils.graphics_utils as graphic_util
@@ -47,7 +48,8 @@ class MergeTab(QWidget):
         layout_input.addWidget(self.fs_input1)
         layout_input.addWidget(self.fs_input2)
 
-        self.fs_merge = FileSelector(text="Save path:", base_path=merge_path, label_width=70)
+        self.fs_merge = FileSelector(text="Save path:", base_path=merge_path, label_width=70,
+                                     file_type=QFileDialog.AnyFile)
         bt_merge = QPushButton("Merge point clouds")
         bt_merge.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
