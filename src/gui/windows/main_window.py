@@ -28,6 +28,7 @@ from src.gui.workers.qt_workers import PointCloudSaver
 from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 from src.utils.point_cloud_merger import save_merged_point_clouds
 
+
 class RegistrationMainWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -465,3 +466,7 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.setText("The following error(s) occurred.\n Click \"Show details\" for more information!")
         message_dialog.setDetailedText("\n".join(error_list))
         message_dialog.exec()
+
+    def closeEvent(self, event):
+        self.pane_open3d.close()
+        super(QMainWindow, self).closeEvent(event)
