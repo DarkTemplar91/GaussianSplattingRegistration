@@ -86,7 +86,13 @@ class RegistrationEvaluator(QObject):
             except (OSError, IOError) as e:
                 error_list.append(str(e))
                 continue
-            image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
+
+            try:
+                image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
+            except (OSError, IOError) as e:
+                error_list.append(str(e))
+                continue
+
             image_tensor = image_tensor.unsqueeze(0)
             if self.use_gpu:
                 image_tensor = image_tensor.cuda()
