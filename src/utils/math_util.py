@@ -2,27 +2,6 @@ import numpy as np
 from e3nn import o3
 import torch
 
-
-def get_normals_from_covariance(covariance_mat):
-    eigen_values, eigen_vectors = np.linalg.eigh(covariance_mat)
-    min_eigenvalue_index = np.argmin(eigen_values, axis=1)
-    return eigen_vectors[np.arange(len(eigen_values)), :, min_eigenvalue_index]
-
-
-def convert_to_covariance_matrix(scaling_factors, quaternion):
-    scaling_matrices = np.zeros((scaling_factors.shape[0], 3, 3), dtype=float)
-    rotation_matrices = convert_quaternions_to_rot_matrix(quaternion)
-
-    scaling_matrices[:, 0, 0] = scaling_factors[:, 0]
-    scaling_matrices[:, 1, 1] = scaling_factors[:, 1]
-    scaling_matrices[:, 2, 2] = scaling_factors[:, 2]
-
-    scaling_matrices = rotation_matrices @ scaling_matrices
-
-    covariance_matrix = scaling_matrices @ scaling_matrices.transpose(0, 2, 1)
-    return covariance_matrix
-
-
 def convert_quaternions_to_rot_matrix(quaternions):
     # find normals of the quaternions
     norm = np.sqrt(quaternions[:, 0] ** 2 + quaternions[:, 1] ** 2 +
@@ -72,7 +51,3 @@ def get_wigner_from_rotation(order, rotation_matrix):
     wigner_d = o3.wigner_D(order, rot_angles[0], rot_angles[1], rot_angles[2])
 
     return wigner_d.numpy()
-
-
-def sh2rgb(sh):
-    return sh * 0.28209479177387814 + 0.5
