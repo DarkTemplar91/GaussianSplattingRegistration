@@ -11,10 +11,11 @@
 
 import numpy as np
 import torch
+from plyfile import PlyElement, PlyData
 from torch import nn
 
 from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
-    inverse_sigmoid
+    inverse_sigmoid, build_rotation, matrices_to_quaternions
 
 
 class GaussianModel:
@@ -37,20 +38,14 @@ class GaussianModel:
         self.rotation_activation = torch.nn.functional.normalize
 
     def __init__(self, sh_degree: int):
-        self.active_sh_degree = 0
-        self.max_sh_degree = sh_degree
+        self.sh_degree = sh_degree
         self._xyz = torch.empty(0)
         self._features_dc = torch.empty(0)
         self._features_rest = torch.empty(0)
         self._scaling = torch.empty(0)
         self._rotation = torch.empty(0)
         self._opacity = torch.empty(0)
-        self.max_radii2D = torch.empty(0)
-        self.xyz_gradient_accum = torch.empty(0)
-        self.denom = torch.empty(0)
-        self.optimizer = None
-        self.percent_dense = 0
-        self.spatial_lr_scale = 0
+        self._covariance = torch.empty(0)
         self.setup_functions()
 
     @property
@@ -72,11 +67,20 @@ class GaussianModel:
         return torch.cat((features_dc, features_rest), dim=1)
 
     @property
+    def get_colors(self):
+        return self._features_dc.flatten(start_dim=1)
+
+    @property
     def get_opacity(self):
         return self.opacity_activation(self._opacity)
 
-    def get_covariance(self, scaling_modifier=1):
+    @property
+    def get_covariance3D(self):
+        return self._covariance
+
+    def get_scaled_covariance(self, scaling_modifier=1):
         return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation)
+
 
     def from_ply(self, plydata):
         xyz = np.stack((np.asarray(plydata.elements[0]["x"]),
@@ -91,12 +95,12 @@ class GaussianModel:
 
         extra_f_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("f_rest_")]
         extra_f_names = sorted(extra_f_names, key=lambda x: int(x.split('_')[-1]))
-        assert len(extra_f_names) == 3 * (self.max_sh_degree + 1) ** 2 - 3
+        assert len(extra_f_names) == 3 * (self.sh_degree + 1) ** 2 - 3
         features_extra = np.zeros((xyz.shape[0], len(extra_f_names)))
         for idx, attr_name in enumerate(extra_f_names):
             features_extra[:, idx] = np.asarray(plydata.elements[0][attr_name])
         # Reshape (P,F*SH_coeffs) to (P, F, SH_coeffs except DC)
-        features_extra = features_extra.reshape((features_extra.shape[0], 3, (self.max_sh_degree + 1) ** 2 - 1))
+        features_extra = features_extra.reshape((features_extra.shape[0], 3, (self.sh_degree + 1) ** 2 - 1))
 
         scale_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("scale_")]
         scale_names = sorted(scale_names, key=lambda x: int(x.split('_')[-1]))
@@ -121,4 +125,79 @@ class GaussianModel:
         self._scaling = nn.Parameter(torch.tensor(scales, dtype=torch.float, device="cuda").requires_grad_(True))
         self._rotation = nn.Parameter(torch.tensor(rots, dtype=torch.float, device="cuda").requires_grad_(True))
 
-        self.active_sh_degree = self.max_sh_degree
+        L = build_scaling_rotation(self._scaling, self._rotation)
+        actual_covariance = L @ L.transpose(1, 2)
+        self._covariance = actual_covariance
+
+    def construct_list_of_attributes(self):
+        l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
+        # All channels except the 3 DC
+        for i in range(self._features_dc.shape[1]*self._features_dc.shape[2]):
+            l.append('f_dc_{}'.format(i))
+        for i in range(self._features_rest.shape[1]*self._features_rest.shape[2]):
+            l.append('f_rest_{}'.format(i))
+        l.append('opacity')
+        for i in range(self._scaling.shape[1]):
+            l.append('scale_{}'.format(i))
+        for i in range(self._rotation.shape[1]):
+            l.append('rot_{}'.format(i))
+        return l
+
+    def save_ply(self, path):
+        xyz = self._xyz.detach().cpu().numpy()
+        normals = np.zeros_like(xyz)
+        f_dc = self._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
+        f_rest = self._features_rest.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
+        opacities = self._opacity.detach().cpu().numpy()
+        scale = self._scaling.detach().cpu().numpy()
+        rotation = self._rotation.detach().cpu().numpy()
+
+        dtype_full = [(attribute, 'f4') for attribute in self.construct_list_of_attributes()]
+
+        elements = np.empty(xyz.shape[0], dtype=dtype_full)
+        attributes = np.concatenate((xyz, normals, f_dc, f_rest, opacities, scale, rotation), axis=1)
+        elements[:] = list(map(tuple, attributes))
+        el = PlyElement.describe(elements, 'vertex')
+        PlyData([el]).write(path)
+
+    def clone_gaussian(self):
+        new_model = GaussianModel(3)
+        new_model._covariance = self._covariance.clone().detach().requires_grad_(True)
+        new_model._xyz = self._xyz.clone().detach().requires_grad_(True)
+        new_model._rotation = self._rotation.clone().detach().requires_grad_(True)
+        new_model._scaling = self._scaling.clone().detach().requires_grad_(True)
+        new_model._features_dc = self._features_dc.clone().detach().requires_grad_(True)
+        new_model._features_rest = self._features_rest.clone().detach().requires_grad_(True)
+        new_model._opacity = self._opacity.clone().detach().requires_grad_(True)
+        return new_model
+
+    def transform_gaussian(self, transformation_matrix):
+        points = torch.cat((self._xyz.T, torch.zeros(1, self._xyz.shape[0],
+                                                                     device=self._xyz.device)))
+        self._xyz = torch.matmul(transformation_matrix, points).T[:, :3]
+
+        self._xyz[:, 0] += transformation_matrix[0, 3]
+        self._xyz[:, 1] += transformation_matrix[1, 3]
+        self._xyz[:, 2] += transformation_matrix[2, 3]
+
+        new_rotation = build_rotation(self._rotation)
+        new_rotation = transformation_matrix[:3, :3] @ new_rotation
+        self._rotation = matrices_to_quaternions(new_rotation)
+
+
+    @staticmethod
+    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix = None):
+        merged_pc = GaussianModel(3)
+
+        if transformation_matrix is not None:
+            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
+            gaussian1.transform_gaussian(transformation_matrix_tensor)
+
+        merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
+        merged_pc._rotation = torch.cat((gaussian1._rotation, gaussian2._rotation))
+        merged_pc._scaling = torch.cat((gaussian1._scaling, gaussian2._scaling))
+        merged_pc._features_dc = torch.cat((gaussian1._features_dc, gaussian2._features_dc))
+        merged_pc._features_rest = torch.cat((gaussian1._features_rest, gaussian2._features_rest))
+        merged_pc._opacity = torch.cat((gaussian1._opacity, gaussian2._opacity))
+
+        return merged_pc

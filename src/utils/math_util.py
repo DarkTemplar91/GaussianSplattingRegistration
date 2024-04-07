@@ -2,65 +2,43 @@ import numpy as np
 from e3nn import o3
 import torch
 
+# Not sure if this is actually needed.
+def rotate_sh(pc, points, transformation_matrix):
+    vertex_data = pc["vertex"].data
 
-def get_normals_from_covariance(covariance_mat):
-    eigen_values, eigen_vectors = np.linalg.eigh(covariance_mat)
-    min_eigenvalue_index = np.argmin(eigen_values, axis=1)
-    return eigen_vectors[np.arange(len(eigen_values)), :, min_eigenvalue_index]
+    # Read in the SH
+    extra_f_names = [p.name for p in pc["vertex"].properties if p.name.startswith("f_rest_")]
+    extra_f_names = sorted(extra_f_names, key=lambda x: int(x.split('_')[-1]))
+    features_extra = np.zeros((points.shape[0], len(extra_f_names)))
+    for idx, attr_name in enumerate(extra_f_names):
+        features_extra[:, idx] = np.asarray(pc.elements[0][attr_name])
+    # Reshape (P,F*SH_coeffs) to (P, F, SH_coeffs except DC)
+    features_extra = features_extra.reshape((features_extra.shape[0], 3, 4 ** 2 - 1))
 
+    # Calculate second and third order and multiply them by the rotation
+    d_1 = transformation_matrix
+    d_2 = get_wigner_from_rotation(2, transformation_matrix)
+    d_3 = get_wigner_from_rotation(3, transformation_matrix)
 
-def convert_to_covariance_matrix(scaling_factors, quaternion):
-    scaling_matrices = np.zeros((scaling_factors.shape[0], 3, 3), dtype=float)
-    rotation_matrices = convert_quaternions_to_rot_matrix(quaternion)
+    # Select the corresponding parts of the spherical harmonics matrix for each order
+    spherical_harmonics_order1 = features_extra[:, :, :3]  # For J = 1
+    spherical_harmonics_order2 = features_extra[:, :, 3:8]  # For J = 2
+    spherical_harmonics_order3 = features_extra[:, :, 8:]  # For J = 3
 
-    scaling_matrices[:, 0, 0] = scaling_factors[:, 0]
-    scaling_matrices[:, 1, 1] = scaling_factors[:, 1]
-    scaling_matrices[:, 2, 2] = scaling_factors[:, 2]
+    # Multiply each part with the corresponding Wigner D matrix
+    rotated_harmonics_order1 = np.einsum('nij,jk->nik', spherical_harmonics_order1, d_1)
+    rotated_harmonics_order2 = np.einsum('nij,jk->nik', spherical_harmonics_order2, d_2)
+    rotated_harmonics_order3 = np.einsum('nij,jk->nik', spherical_harmonics_order3, d_3)
 
-    scaling_matrices = rotation_matrices @ scaling_matrices
+    features_extra = np.concatenate((rotated_harmonics_order1,
+                                     rotated_harmonics_order2,
+                                     rotated_harmonics_order3), axis=2)
 
-    covariance_matrix = scaling_matrices @ scaling_matrices.transpose(0, 2, 1)
-    return covariance_matrix
+    features_transposed = np.transpose(features_extra, (0, 2, 1))
+    features_flattened = features_transposed.reshape(features_transposed.shape[0], -1)
 
-
-def convert_quaternions_to_rot_matrix(quaternions):
-    # find normals of the quaternions
-    norm = np.sqrt(quaternions[:, 0] ** 2 + quaternions[:, 1] ** 2 +
-                   quaternions[:, 2] ** 2 + quaternions[:, 3] ** 2)
-
-    # normalize quaternions
-    q = quaternions / norm[:, None]
-
-    rotation_mat = np.zeros((q.shape[0], 3, 3))
-
-    r = q[:, 0]
-    x = q[:, 1]
-    y = q[:, 2]
-    z = q[:, 3]
-
-    # convert quaternions to rotation mat
-    rotation_mat[:, 0, 0] = 1 - 2 * (y * y + z * z)
-    rotation_mat[:, 0, 1] = 2 * (x * y - r * z)
-    rotation_mat[:, 0, 2] = 2 * (x * z + r * y)
-    rotation_mat[:, 1, 0] = 2 * (x * y + r * z)
-    rotation_mat[:, 1, 1] = 1 - 2 * (x * x + z * z)
-    rotation_mat[:, 1, 2] = 2 * (y * z - r * x)
-    rotation_mat[:, 2, 0] = 2 * (x * z - r * y)
-    rotation_mat[:, 2, 1] = 2 * (y * z + r * x)
-    rotation_mat[:, 2, 2] = 1 - 2 * (x * x + y * y)
-
-    return rotation_mat
-
-
-def matrices_to_quaternions(rotation_matrices):
-    trace = np.trace(rotation_matrices, axis1=1, axis2=2)
-    w = np.sqrt(1 + trace) / 2
-    x = (rotation_matrices[:, 2, 1] - rotation_matrices[:, 1, 2]) / (4 * w)
-    y = (rotation_matrices[:, 0, 2] - rotation_matrices[:, 2, 0]) / (4 * w)
-    z = (rotation_matrices[:, 1, 0] - rotation_matrices[:, 0, 1]) / (4 * w)
-    return np.stack((w, x, y, z), axis=-1)
-
-
+    for idx, attr_name in enumerate(extra_f_names):
+        vertex_data[attr_name] = features_flattened[:, idx]
 def get_wigner_from_rotation(order, rotation_matrix):
     # Convert the rotation_matrix to a tensor
     rotation_matrix_tensor = torch.tensor(rotation_matrix, dtype=torch.float64)
@@ -72,7 +50,3 @@ def get_wigner_from_rotation(order, rotation_matrix):
     wigner_d = o3.wigner_D(order, rot_angles[0], rot_angles[1], rot_angles[2])
 
     return wigner_d.numpy()
-
-
-def sh2rgb(sh):
-    return sh * 0.28209479177387814 + 0.5

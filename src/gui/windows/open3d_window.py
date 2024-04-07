@@ -135,7 +135,6 @@ class Open3DWindow(QMainWindow):
         subtracted = (eye - bb_center.reshape(3, 1)).T
         ideal_distance = np.abs(subtracted.dot(front))
         ideal_zoom = ideal_distance * np.tan(fov * 0.5 / 180.0 * np.pi) / aabb.get_max_extent()
-        zoom = ideal_zoom
         zoom = max([min([ideal_zoom, 2.0]), 0.02])
         view_ratio = zoom * aabb.get_max_extent()
         distance = view_ratio / np.tan(fov * 0.5 / 180.0 * np.pi)

@@ -10,7 +10,7 @@ def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True
                                           device=device) + 0
     try:
         screenspace_points.retain_grad()
-    except:
+    except Exception as e:
         pass
 
     bg_color = torch.tensor(color, dtype=torch.float32, device=device)
@@ -39,7 +39,7 @@ def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True
     means3D = point_cloud.get_xyz
     means2D = screenspace_points
     opacity = point_cloud.get_opacity
-    cov3D_precomp = point_cloud.get_covariance(scale)
+    cov3D_precomp = point_cloud.get_scaled_covariance(scale)
     shs = point_cloud.get_features
 
     image_tensor, radii = rasterizer(

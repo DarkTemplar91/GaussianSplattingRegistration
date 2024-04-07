@@ -17,15 +17,6 @@ def inverse_sigmoid(x):
     return torch.log(x / (1 - x))
 
 
-def PILtoTorch(pil_image, resolution):
-    resized_image_PIL = pil_image.resize(resolution)
-    resized_image = torch.from_numpy(np.array(resized_image_PIL)) / 255.0
-    if len(resized_image.shape) == 3:
-        return resized_image.permute(2, 0, 1)
-    else:
-        return resized_image.unsqueeze(dim=-1).permute(2, 0, 1)
-
-
 def strip_lowerdiag(L):
     uncertainty = torch.zeros((L.shape[0], 6), dtype=torch.float, device="cuda")
 
@@ -87,3 +78,12 @@ def convert_to_camera_transform(rot, pos):
     R = Rt[:3, :3].transpose()
     T = Rt[:3, 3]
     return R, T
+
+
+def matrices_to_quaternions(rotation_matrices):
+    trace = torch.vmap(torch.trace)(rotation_matrices)
+    w = torch.sqrt(1 + trace) / 2
+    x = (rotation_matrices[:, 2, 1] - rotation_matrices[:, 1, 2]) / (4 * w)
+    y = (rotation_matrices[:, 0, 2] - rotation_matrices[:, 2, 0]) / (4 * w)
+    z = (rotation_matrices[:, 1, 0] - rotation_matrices[:, 0, 1]) / (4 * w)
+    return torch.stack((w, x, y, z), dim=-1)

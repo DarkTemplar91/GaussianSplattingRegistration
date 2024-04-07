@@ -1,6 +1,10 @@
+import torch
 from PyQt5.QtCore import QThread, pyqtSignal
 
-from src.utils.file_loader import load_sparse_pc, load_gaussian_pc, load_o3d_pc, save_point_clouds_to_cache
+from src.models.gaussian_model import GaussianModel
+from src.utils.file_loader import load_sparse_pc, load_o3d_pc, save_point_clouds_to_cache, \
+    load_plyfile_pc
+from src.utils.point_cloud_converter import convert_gs_to_open3d_pc
 
 
 class PointCloudLoaderInput(QThread):
@@ -29,8 +33,19 @@ class PointCloudLoaderGaussian(QThread):
         self.point_cloud2 = point_cloud2
 
     def run(self):
-        result1, original1 = load_gaussian_pc(self.point_cloud1)
-        result2, original2 = load_gaussian_pc(self.point_cloud2)
+        torch.cuda.empty_cache()
+        pc1 = load_plyfile_pc(self.point_cloud1)
+        pc2 = load_plyfile_pc(self.point_cloud2)
+
+        original1 = GaussianModel(3)
+        original2 = GaussianModel(3)
+        original1.from_ply(pc1)
+        original2.from_ply(pc2)
+
+        result1 = convert_gs_to_open3d_pc(original1)
+        result2 = convert_gs_to_open3d_pc(original2)
+
+        torch.cuda.empty_cache()
 
         self.result_signal.emit(result1, result2, original1, original2)
 

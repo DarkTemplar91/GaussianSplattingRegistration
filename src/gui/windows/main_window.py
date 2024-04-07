@@ -20,13 +20,14 @@ from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
+from src.gui.workers.qt_gaussian_saver import GaussianSaver
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.gui.workers.qt_workers import PointCloudSaver
+from src.models.gaussian_model import GaussianModel
 from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
-from src.utils.point_cloud_merger import save_merged_point_clouds
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -202,20 +203,45 @@ class RegistrationMainWindow(QMainWindow):
         pc_second = self.pc_originalSecond
 
         if is_checked:
-            pc_first = load_plyfile_pc(pc_path1)
-            pc_second = load_plyfile_pc(pc_path2)
+            pc_first_ply = load_plyfile_pc(pc_path1)
+            pc_second_ply = load_plyfile_pc(pc_path2)
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
-            if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
+            if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message) or
+                    not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
+
+            pc_first = GaussianModel(3)
+            pc_second = GaussianModel(3)
+            pc_first.from_ply(pc_first_ply)
+            pc_second.from_ply(pc_second_ply)
+
 
         error_message = ("There were no preloaded point clouds found! Load a Gaussian point cloud before merging, "
                          "or check the \"corresponding inputs\" option and select the point clouds you wish to merge.")
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        save_merged_point_clouds(pc_first, pc_second,
-                                 merge_path, self.transformation_picker.transformation_matrix)
+
+        merged = GaussianModel.get_merged_gaussian_point_clouds(pc_first, pc_second,
+                                                                self.transformation_picker.transformation_matrix)
+
+
+        gaussian_saver = GaussianSaver(merged, merge_path)
+        thread = QThread(self)
+        # Move worker to thread
+        gaussian_saver.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(gaussian_saver.save_gaussian)
+        gaussian_saver.signal_finished.connect(self.progress_dialog.close)
+        gaussian_saver.signal_finished.connect(gaussian_saver.deleteLater)
+
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        self.progress_dialog.setLabelText("Saving merged point cloud...")
+        self.progress_dialog.exec()
+
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:
@@ -350,9 +376,8 @@ class RegistrationMainWindow(QMainWindow):
         pc1 = self.pc_originalFirst
         pc2 = self.pc_originalSecond
 
-        error_message = ('One or both of the point clouds loaded are not of the correct type.'
-                         '\nLoad two Gaussian point clouds for rasterization!')
-        if not is_point_cloud_gaussian(pc1) or not is_point_cloud_gaussian(pc2):
+        error_message = 'Load two Gaussian point clouds for rasterization!'
+        if not pc1 or not pc2:
             dialog = QErrorMessage(self)
             dialog.setModal(True)
             dialog.setWindowTitle("Error")

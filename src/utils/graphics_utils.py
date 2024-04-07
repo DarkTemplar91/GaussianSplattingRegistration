@@ -17,6 +17,10 @@ import torch
 SIZE_SCALE_X = 1.0
 SIZE_SCALE_Y = 1.0
 
+def get_normals_from_covariance(covariance_mat):
+    eigen_values, eigen_vectors = torch.linalg.eigh(covariance_mat)
+    min_eigenvalue_index = eigen_values.argsort()[:,0]
+    return eigen_vectors[torch.arange(eigen_values.shape[0]), :, min_eigenvalue_index]
 
 def getWorld2View2(R, t, translate=np.array([.0, .0, .0]), scale=1.0):
     Rt = np.zeros((4, 4))
@@ -70,3 +74,6 @@ def get_focal_from_intrinsics(intrinsics):
 
 def fov_x2fov_y(fov_x, aspect_ratio):
     return 2 * math.atan(math.tan(fov_x / 2) / aspect_ratio)
+
+def sh2rgb(sh):
+    return sh * 0.28209479177387814 + 0.5

@@ -9,7 +9,6 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from src.models.cameras import Camera
 from src.models.gaussian_model import GaussianModel
 from src.utils.graphics_utils import focal2fov, get_focal_from_intrinsics
-from src.utils.point_cloud_merger import merge_point_clouds
 from src.utils.rasterization_util import rasterize_image
 
 
@@ -21,8 +20,8 @@ class RasterizerWorker(QObject):
         super().__init__()
 
         self.device = torch.device("cuda:0")
-        self.pc1 = copy.deepcopy(pc1)
-        self.pc2 = copy.deepcopy(pc2)
+        self.pc1 = pc1.clone_gaussian()
+        self.pc2 = pc2.clone_gaussian()
 
         self.transformation = transformation
         self.width = img_width
@@ -39,9 +38,7 @@ class RasterizerWorker(QObject):
 
     def do_rasterization(self):
         with torch.no_grad():
-            merged_pc = merge_point_clouds(self.pc1, self.pc2, self.transformation)
-            point_cloud = GaussianModel(3)
-            point_cloud.from_ply(merged_pc)
+            point_cloud = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, self.transformation)
 
             camera_mat = self.extrinsic.transpose()
             camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
