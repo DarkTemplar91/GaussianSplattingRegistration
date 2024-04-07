@@ -2,6 +2,43 @@ import numpy as np
 from e3nn import o3
 import torch
 
+# Not sure if this is actually needed.
+def rotate_sh(pc, points, transformation_matrix):
+    vertex_data = pc["vertex"].data
+
+    # Read in the SH
+    extra_f_names = [p.name for p in pc["vertex"].properties if p.name.startswith("f_rest_")]
+    extra_f_names = sorted(extra_f_names, key=lambda x: int(x.split('_')[-1]))
+    features_extra = np.zeros((points.shape[0], len(extra_f_names)))
+    for idx, attr_name in enumerate(extra_f_names):
+        features_extra[:, idx] = np.asarray(pc.elements[0][attr_name])
+    # Reshape (P,F*SH_coeffs) to (P, F, SH_coeffs except DC)
+    features_extra = features_extra.reshape((features_extra.shape[0], 3, 4 ** 2 - 1))
+
+    # Calculate second and third order and multiply them by the rotation
+    d_1 = transformation_matrix
+    d_2 = get_wigner_from_rotation(2, transformation_matrix)
+    d_3 = get_wigner_from_rotation(3, transformation_matrix)
+
+    # Select the corresponding parts of the spherical harmonics matrix for each order
+    spherical_harmonics_order1 = features_extra[:, :, :3]  # For J = 1
+    spherical_harmonics_order2 = features_extra[:, :, 3:8]  # For J = 2
+    spherical_harmonics_order3 = features_extra[:, :, 8:]  # For J = 3
+
+    # Multiply each part with the corresponding Wigner D matrix
+    rotated_harmonics_order1 = np.einsum('nij,jk->nik', spherical_harmonics_order1, d_1)
+    rotated_harmonics_order2 = np.einsum('nij,jk->nik', spherical_harmonics_order2, d_2)
+    rotated_harmonics_order3 = np.einsum('nij,jk->nik', spherical_harmonics_order3, d_3)
+
+    features_extra = np.concatenate((rotated_harmonics_order1,
+                                     rotated_harmonics_order2,
+                                     rotated_harmonics_order3), axis=2)
+
+    features_transposed = np.transpose(features_extra, (0, 2, 1))
+    features_flattened = features_transposed.reshape(features_transposed.shape[0], -1)
+
+    for idx, attr_name in enumerate(extra_f_names):
+        vertex_data[attr_name] = features_flattened[:, idx]
 def get_wigner_from_rotation(order, rotation_matrix):
     # Convert the rotation_matrix to a tensor
     rotation_matrix_tensor = torch.tensor(rotation_matrix, dtype=torch.float64)

@@ -17,15 +17,6 @@ def inverse_sigmoid(x):
     return torch.log(x / (1 - x))
 
 
-def PILtoTorch(pil_image, resolution):
-    resized_image_PIL = pil_image.resize(resolution)
-    resized_image = torch.from_numpy(np.array(resized_image_PIL)) / 255.0
-    if len(resized_image.shape) == 3:
-        return resized_image.permute(2, 0, 1)
-    else:
-        return resized_image.unsqueeze(dim=-1).permute(2, 0, 1)
-
-
 def strip_lowerdiag(L):
     uncertainty = torch.zeros((L.shape[0], 6), dtype=torch.float, device="cuda")
 
