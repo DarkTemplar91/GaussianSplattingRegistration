@@ -20,6 +20,7 @@ from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
+from src.gui.workers.qt_gaussian_saver import GaussianSaver
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
@@ -197,7 +198,6 @@ class RegistrationMainWindow(QMainWindow):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
         self.visualizer_widget.assign_new_values(zoom, front, lookat, up)
 
-    #TODO: Refactor
     def merge_point_clouds(self, is_checked, pc_path1, pc_path2, merge_path):
         pc_first = self.pc_originalFirst
         pc_second = self.pc_originalSecond
@@ -222,10 +222,26 @@ class RegistrationMainWindow(QMainWindow):
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
+
         merged = GaussianModel.get_merged_gaussian_point_clouds(pc_first, pc_second,
                                                                 self.transformation_picker.transformation_matrix)
 
-        merged.save_ply(merge_path)
+
+        gaussian_saver = GaussianSaver(merged, merge_path)
+        thread = QThread(self)
+        # Move worker to thread
+        gaussian_saver.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(gaussian_saver.save_gaussian)
+        gaussian_saver.signal_finished.connect(self.progress_dialog.close)
+        gaussian_saver.signal_finished.connect(gaussian_saver.deleteLater)
+
+        thread.finished.connect(thread.deleteLater)
+
+        thread.start()
+        self.progress_dialog.setLabelText("Saving merged point cloud...")
+        self.progress_dialog.exec()
+
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:
