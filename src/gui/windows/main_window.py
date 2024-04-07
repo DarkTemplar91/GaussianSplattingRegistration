@@ -25,8 +25,7 @@ from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.gui.workers.qt_workers import PointCloudSaver
-from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
-from src.utils.point_cloud_merger import save_merged_point_clouds
+from src.utils.file_loader import load_plyfile_pc
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -197,6 +196,7 @@ class RegistrationMainWindow(QMainWindow):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
         self.visualizer_widget.assign_new_values(zoom, front, lookat, up)
 
+    #TODO: Refactor
     def merge_point_clouds(self, is_checked, pc_path1, pc_path2, merge_path):
         pc_first = self.pc_originalFirst
         pc_second = self.pc_originalSecond
@@ -214,8 +214,8 @@ class RegistrationMainWindow(QMainWindow):
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        save_merged_point_clouds(pc_first, pc_second,
-                                 merge_path, self.transformation_picker.transformation_matrix)
+        """save_merged_point_clouds(pc_first, pc_second,
+                                 merge_path, self.transformation_picker.transformation_matrix)"""
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:
@@ -350,9 +350,8 @@ class RegistrationMainWindow(QMainWindow):
         pc1 = self.pc_originalFirst
         pc2 = self.pc_originalSecond
 
-        error_message = ('One or both of the point clouds loaded are not of the correct type.'
-                         '\nLoad two Gaussian point clouds for rasterization!')
-        if not is_point_cloud_gaussian(pc1) or not is_point_cloud_gaussian(pc2):
+        error_message = 'Load two Gaussian point clouds for rasterization!'
+        if not pc1 or not pc2:
             dialog = QErrorMessage(self)
             dialog.setModal(True)
             dialog.setWindowTitle("Error")

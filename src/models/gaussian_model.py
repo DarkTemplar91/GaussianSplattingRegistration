@@ -14,7 +14,7 @@ import torch
 from torch import nn
 
 from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
-    inverse_sigmoid
+    inverse_sigmoid, build_rotation, matrices_to_quaternions
 
 
 class GaussianModel:
@@ -127,3 +127,45 @@ class GaussianModel:
         L = build_scaling_rotation(self._scaling, self._rotation)
         actual_covariance = L @ L.transpose(1, 2)
         self._covariance = actual_covariance
+
+    def clone_gaussian(self):
+        new_model = GaussianModel(3)
+        new_model._covariance = self._covariance.clone().detach().requires_grad_(True)
+        new_model._xyz = self._xyz.clone().detach().requires_grad_(True)
+        new_model._rotation = self._rotation.clone().detach().requires_grad_(True)
+        new_model._scaling = self._scaling.clone().detach().requires_grad_(True)
+        new_model._features_dc = self._features_dc.clone().detach().requires_grad_(True)
+        new_model._features_rest = self._features_rest.clone().detach().requires_grad_(True)
+        new_model._opacity = self._opacity.clone().detach().requires_grad_(True)
+        return new_model
+
+    def transform_gaussian(self, transformation_matrix):
+        points = torch.cat((self._xyz.T, torch.zeros(1, self._xyz.shape[0],
+                                                                     device=self._xyz.device)))
+        self._xyz = torch.matmul(transformation_matrix, points).T[:, :3]
+
+        self._xyz[:, 0] += transformation_matrix[0, 3]
+        self._xyz[:, 1] += transformation_matrix[1, 3]
+        self._xyz[:, 2] += transformation_matrix[2, 3]
+
+        new_rotation = build_rotation(self._rotation)
+        new_rotation = transformation_matrix[:3, :3] @ new_rotation
+        self._rotation = matrices_to_quaternions(new_rotation)
+
+
+    @staticmethod
+    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix):
+        merged_pc = GaussianModel(3)
+
+        if transformation_matrix is not None:
+            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
+            gaussian1.transform_gaussian(transformation_matrix_tensor)
+
+        merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
+        merged_pc._rotation = torch.cat((gaussian1._rotation, gaussian2._rotation))
+        merged_pc._scaling = torch.cat((gaussian1._scaling, gaussian2._scaling))
+        merged_pc._features_dc = torch.cat((gaussian1._features_dc, gaussian2._features_dc))
+        merged_pc._features_rest = torch.cat((gaussian1._features_rest, gaussian2._features_rest))
+        merged_pc._opacity = torch.cat((gaussian1._opacity, gaussian2._opacity))
+
+        return merged_pc

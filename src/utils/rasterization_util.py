@@ -10,7 +10,7 @@ def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True
                                           device=device) + 0
     try:
         screenspace_points.retain_grad()
-    except:
+    except Exception as e:
         pass
 
     bg_color = torch.tensor(color, dtype=torch.float32, device=device)

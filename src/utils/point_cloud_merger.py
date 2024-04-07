@@ -3,33 +3,7 @@ import copy
 import numpy as np
 import plyfile
 
-from src.utils.math_util import matrices_to_quaternions, convert_quaternions_to_rot_matrix, get_wigner_from_rotation
-
-
-def save_merged_point_clouds(pc1, pc2, output_path, transformation_matrix=None):
-    out_ply_data = merge_point_clouds(pc1, pc2, transformation_matrix)
-    plyfile.PlyData.write(out_ply_data, output_path)
-
-
-def merge_point_clouds(pc1, pc2, transformation_matrix=None):
-    pc1_copy = copy.deepcopy(pc1)
-    pc2_copy = copy.deepcopy(pc2)
-
-    # calculate the new positions for the transformation if needed
-    if transformation_matrix is not None:
-        transform_point_cloud(pc1_copy, transformation_matrix)
-
-    vertex_data1 = pc1_copy["vertex"].data
-    vertex_data2 = pc2_copy["vertex"].data
-
-    out_vertex_data = np.concatenate([vertex_data1, vertex_data2])
-    out_vertex_element = plyfile.PlyElement.describe(out_vertex_data, "vertex", len_types={}, val_types={},
-                                                     comments=[])
-    out_ply_data = plyfile.PlyData(text=False,  # binary
-                                   byte_order='<',  # < stands for little endian
-                                   elements=[out_vertex_element])
-
-    return out_ply_data
+from src.utils.math_util import get_wigner_from_rotation
 
 
 # Not sure if this is actually needed.
@@ -69,33 +43,3 @@ def rotate_sh(pc, points, transformation_matrix):
 
     for idx, attr_name in enumerate(extra_f_names):
         vertex_data[attr_name] = features_flattened[:, idx]
-
-
-def transform_point_cloud(pc, transformation_matrix):
-    vertex_data = pc["vertex"].data
-
-    points = np.vstack([vertex_data['x'], vertex_data['y'], vertex_data['z'], np.ones(vertex_data["x"].shape)]).T
-    transformed_points = np.dot(transformation_matrix, points.T).T[:, :3]
-
-    # Update the coordinates in the PLY data
-    vertex_data['x'] = transformed_points[:, 0]
-    vertex_data['y'] = transformed_points[:, 1]
-    vertex_data['z'] = transformed_points[:, 2]
-
-    # Get quaternions and convert them to rotation matrices
-    rot_names = [p.name for p in pc["vertex"].properties if p.name.startswith("rot")]
-    rot_names = sorted(rot_names, key=lambda x: int(x.split('_')[-1]))
-    quaternions = np.zeros((points.shape[0], len(rot_names)))
-    for idx, attr_name in enumerate(rot_names):
-        quaternions[:, idx] = np.asarray(pc.elements[0][attr_name])
-
-    new_rotation = convert_quaternions_to_rot_matrix(quaternions)
-    new_rotation = transformation_matrix[:3, :3] @ new_rotation
-
-    # Get back new quaternions
-    quaternions = matrices_to_quaternions(new_rotation)
-
-    vertex_data['rot_0'] = quaternions[:, 0]
-    vertex_data['rot_1'] = quaternions[:, 1]
-    vertex_data['rot_2'] = quaternions[:, 2]
-    vertex_data['rot_3'] = quaternions[:, 3]
