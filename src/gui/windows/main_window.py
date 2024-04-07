@@ -25,7 +25,8 @@ from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.gui.workers.qt_workers import PointCloudSaver
-from src.utils.file_loader import load_plyfile_pc
+from src.models.gaussian_model import GaussianModel
+from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -202,20 +203,29 @@ class RegistrationMainWindow(QMainWindow):
         pc_second = self.pc_originalSecond
 
         if is_checked:
-            pc_first = load_plyfile_pc(pc_path1)
-            pc_second = load_plyfile_pc(pc_path2)
+            pc_first_ply = load_plyfile_pc(pc_path1)
+            pc_second_ply = load_plyfile_pc(pc_path2)
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
-            if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
+            if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message) or
+                    not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
+
+            pc_first = GaussianModel(3)
+            pc_second = GaussianModel(3)
+            pc_first.from_ply(pc_first_ply)
+            pc_second.from_ply(pc_second_ply)
+
 
         error_message = ("There were no preloaded point clouds found! Load a Gaussian point cloud before merging, "
                          "or check the \"corresponding inputs\" option and select the point clouds you wish to merge.")
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        """save_merged_point_clouds(pc_first, pc_second,
-                                 merge_path, self.transformation_picker.transformation_matrix)"""
+        merged = GaussianModel.get_merged_gaussian_point_clouds(pc_first, pc_second,
+                                                                self.transformation_picker.transformation_matrix)
+
+        merged.save_ply(merge_path)
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:

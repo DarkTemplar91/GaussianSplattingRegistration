@@ -11,6 +11,7 @@
 
 import numpy as np
 import torch
+from plyfile import PlyElement, PlyData
 from torch import nn
 
 from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
@@ -128,6 +129,37 @@ class GaussianModel:
         actual_covariance = L @ L.transpose(1, 2)
         self._covariance = actual_covariance
 
+    def construct_list_of_attributes(self):
+        l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
+        # All channels except the 3 DC
+        for i in range(self._features_dc.shape[1]*self._features_dc.shape[2]):
+            l.append('f_dc_{}'.format(i))
+        for i in range(self._features_rest.shape[1]*self._features_rest.shape[2]):
+            l.append('f_rest_{}'.format(i))
+        l.append('opacity')
+        for i in range(self._scaling.shape[1]):
+            l.append('scale_{}'.format(i))
+        for i in range(self._rotation.shape[1]):
+            l.append('rot_{}'.format(i))
+        return l
+
+    def save_ply(self, path):
+        xyz = self._xyz.detach().cpu().numpy()
+        normals = np.zeros_like(xyz)
+        f_dc = self._features_dc.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
+        f_rest = self._features_rest.detach().transpose(1, 2).flatten(start_dim=1).contiguous().cpu().numpy()
+        opacities = self._opacity.detach().cpu().numpy()
+        scale = self._scaling.detach().cpu().numpy()
+        rotation = self._rotation.detach().cpu().numpy()
+
+        dtype_full = [(attribute, 'f4') for attribute in self.construct_list_of_attributes()]
+
+        elements = np.empty(xyz.shape[0], dtype=dtype_full)
+        attributes = np.concatenate((xyz, normals, f_dc, f_rest, opacities, scale, rotation), axis=1)
+        elements[:] = list(map(tuple, attributes))
+        el = PlyElement.describe(elements, 'vertex')
+        PlyData([el]).write(path)
+
     def clone_gaussian(self):
         new_model = GaussianModel(3)
         new_model._covariance = self._covariance.clone().detach().requires_grad_(True)
@@ -154,7 +186,7 @@ class GaussianModel:
 
 
     @staticmethod
-    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix):
+    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix = None):
         merged_pc = GaussianModel(3)
 
         if transformation_matrix is not None:
