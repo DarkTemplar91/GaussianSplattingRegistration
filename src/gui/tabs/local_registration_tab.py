@@ -4,7 +4,7 @@ from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, \
     QComboBox, QScrollArea, QFrame, QHBoxLayout
 
-from src.gui.widgets.registration_input_field_widget import SimpleInputField
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 import src.utils.graphics_utils as graphic_util

@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLay
 
 from src.gui.tabs.cache_tab import CacheTab
 from src.gui.tabs.evaluation_tab import EvaluationTab
+from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
 from src.gui.tabs.input_tab import InputTab
 from src.gui.tabs.local_registration_tab import LocalRegistrationTab
@@ -21,6 +22,7 @@ from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_gaussian_saver import GaussianSaver
+from src.gui.workers.qt_gaussian_mixture import GaussianMixtureWorker
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
@@ -138,6 +140,7 @@ class RegistrationMainWindow(QMainWindow):
         group_registration.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout = QVBoxLayout()
         group_registration.setLayout(layout)
+        group_registration.setTitle("Registration and evaluation")
 
         registration_tab = QTabWidget()
 
@@ -155,11 +158,14 @@ class RegistrationMainWindow(QMainWindow):
         evaluator_widget.signal_camera_change.connect(self.loaded_camera_changed)
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
-        registration_tab.addTab(global_registration_widget, "Global Registration")
-        registration_tab.addTab(local_registration_widget, "Local Registration")
-        registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
+        hem_widget = GaussianMixtureTab()
+        hem_widget.signal_create_mixture.connect(self.create_mixture)
+
+        registration_tab.addTab(global_registration_widget, "Global")
+        registration_tab.addTab(local_registration_widget, "Local")
         registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
         registration_tab.addTab(evaluator_widget, "Evaluation")
+        registration_tab.addTab(hem_widget, "Mixture")
         layout.addWidget(registration_tab)
 
     # Event Handlers
@@ -242,17 +248,6 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Saving merged point cloud...")
         self.progress_dialog.exec()
 
-
-    def check_if_none_and_throw_error(self, pc_first, pc_second, message):
-        if not pc_first or not pc_second:
-            # TODO: Further error messages. Tracing?
-            dialog = QErrorMessage(self)
-            dialog.setModal(True)
-            dialog.setWindowTitle("Error")
-            dialog.showMessage(message)
-            return True
-
-        return False
 
     def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
@@ -483,6 +478,39 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.setText(message)
         message_dialog.exec()
 
+    def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
+        pc1 = self.pc_originalFirst
+        pc2 = self.pc_originalSecond
+
+        if not pc1 or not pc2:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("There are no gaussian point clouds loaded! "
+                               "Please load two point clouds to create Gaussian mixtures.")
+            return
+
+        worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        worker.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(worker.create_mixture)
+        worker.signal_mixture_created.connect(self.handle_mixture_results)
+        worker.signal_finished.connect(thread.quit)
+        worker.signal_finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        self.progress_dialog.setLabelText("Creating Gaussian mixtures...")
+
+        thread.start()
+        self.progress_dialog.exec()
+
+    def handle_mixture_results(self):
+        pass
+
     def create_error_list_dialog(self, error_list):
         self.progress_dialog.close()
         message_dialog = QMessageBox()
@@ -491,6 +519,19 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.setText("The following error(s) occurred.\n Click \"Show details\" for more information!")
         message_dialog.setDetailedText("\n".join(error_list))
         message_dialog.exec()
+
+
+    def check_if_none_and_throw_error(self, pc_first, pc_second, message):
+        if not pc_first or not pc_second:
+            # TODO: Further error messages. Tracing?
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage(message)
+            return True
+
+        return False
+
 
     def closeEvent(self, event):
         self.pane_open3d.close()

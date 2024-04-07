@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayo
     QHBoxLayout, QGroupBox
 
 from src.gui.widgets.color_picker_widget import ColorPicker
-from src.gui.widgets.registration_input_field_widget import SimpleInputField
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 from src.utils.graphics_utils import fov2focal
 import src.utils.graphics_utils as graphic_util

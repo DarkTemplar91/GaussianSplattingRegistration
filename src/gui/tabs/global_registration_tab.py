@@ -6,7 +6,7 @@ from open3d.cpu.pybind.pipelines.registration import CorrespondenceCheckerBasedO
     CorrespondenceCheckerBasedOnDistance, CorrespondenceCheckerBasedOnNormal
 
 from src.gui.widgets.optional_value_widget import OptionalInputField
-from src.gui.widgets.registration_input_field_widget import SimpleInputField
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.utils.global_registration_util import GlobalRegistrationType, RANSACEstimationMethod
 import src.utils.graphics_utils as graphic_util
 

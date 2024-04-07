@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, 
     QFrame, QScrollArea
 
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.gui.widgets.registration_input_field_widget import SimpleInputField
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 import src.utils.graphics_utils as graphic_util

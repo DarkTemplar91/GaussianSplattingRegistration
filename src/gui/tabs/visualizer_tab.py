@@ -5,7 +5,7 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy, QStyle, QHBoxLayout
 
 from src.gui.widgets.color_picker_widget import ColorPicker
-from src.gui.widgets.registration_input_field_widget import SimpleInputField
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget
 import src.utils.graphics_utils as graphic_util
 
