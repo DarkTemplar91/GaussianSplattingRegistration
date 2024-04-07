@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from e3nn import o3
 import torch
@@ -50,3 +52,42 @@ def get_wigner_from_rotation(order, rotation_matrix):
     wigner_d = o3.wigner_D(order, rot_angles[0], rot_angles[1], rot_angles[2])
 
     return wigner_d.numpy()
+
+def kullback_leibler_distance(child_xyz, child_covariance, parent_xyz, parent_covariance):
+    """Edge cases to consider:
+        * covariance with negative determinant or zero --> leads to NaN or inf resp.
+        * covariance of zero --> trace term is zero. Leads to inf. Should we ignore these?"""
+
+    # TODO: Filter small norms frobenius
+    # TODO: Saját értékek (eigvals) --> filter < epsilon
+    smd = squared_mahalanobis_distance(child_xyz, child_covariance, parent_xyz)
+    trace_term = torch.trace(torch.inverse(parent_covariance) @ child_covariance)
+    parent_det = torch.det(parent_covariance)
+    child_det = torch.det(child_covariance)
+    """if parent_det <= 0:
+        print(parent_det)
+        return math.inf
+
+    if child_det <= 0:
+        print(child_det)
+        return math.inf"""
+
+    det_term = torch.log(torch.abs(child_det / parent_det))
+
+    kld = 0.5 * (smd.double() + trace_term.double() - 3.0 - det_term.double())
+
+    if kld < 0:
+        return math.inf
+
+    return kld
+
+def squared_mahalanobis_distance(child_xyz, child_covariance, parent_xyz):
+    diff = child_xyz - parent_xyz
+    covariance_inv = torch.torch.linalg.inv_ex(child_covariance).inverse
+    return torch.matmul(torch.matmul(diff.unsqueeze(0), covariance_inv), diff.unsqueeze(-1)).squeeze()
+
+def clamp(val, minval, maxval):
+    if val != val: return 1
+    if val < minval: return minval
+    if val > maxval: return maxval
+    return val

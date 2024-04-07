@@ -193,11 +193,11 @@ class GaussianModel:
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
             gaussian1.transform_gaussian(transformation_matrix_tensor)
 
-        merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
+        merged_pc._xyz = torch.cat((gaussian1.xyz, gaussian2.xyz))
         merged_pc._rotation = torch.cat((gaussian1._rotation, gaussian2._rotation))
         merged_pc._scaling = torch.cat((gaussian1._scaling, gaussian2._scaling))
-        merged_pc._features_dc = torch.cat((gaussian1._features_dc, gaussian2._features_dc))
+        merged_pc._features_dc = torch.cat((gaussian1.features_dc, gaussian2.features_dc))
         merged_pc._features_rest = torch.cat((gaussian1._features_rest, gaussian2._features_rest))
-        merged_pc._opacity = torch.cat((gaussian1._opacity, gaussian2._opacity))
+        merged_pc._opacity = torch.cat((gaussian1.opacity, gaussian2.opacity))
 
         return merged_pc
