@@ -27,8 +27,8 @@ class GaussianMixtureTab(QWidget):
         self.setLayout(layout)
 
         self.hem_reduction_field = SimpleInputField("HEM reduction factor:", "3.0", validator = double_validator )
-        self.distance_field = SimpleInputField("Geometric distance delta:", "1.0", validator = double_validator)
-        self.color_field = SimpleInputField("Color distance delta:", "10.0", validator = double_validator)
+        self.distance_field = SimpleInputField("Geometric distance delta:", "0.5", validator = double_validator)
+        self.color_field = SimpleInputField("Color distance delta:", "2.5", validator = double_validator)
         self.cluster_level_field = SimpleInputField("Cluster level:", "1", validator = int_validator)
 
         slider_label = QLabel("Current mixture level")

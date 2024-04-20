@@ -104,7 +104,7 @@ def compute_likelihood_contributions(parent_indices, child_indices, current_mixt
 
 
 def filter_search_tree(pcd_tree, open3d_point, non_parent_indices, search_radius):
-    _, filtered_indices, _ = pcd_tree.search_knn_vector_3d (open3d_point, 200)
+    _, filtered_indices, _ = pcd_tree.search_radius_vector_3d(open3d_point, search_radius)
     filtered_indices_tensor = torch.tensor(list(filtered_indices))
     filtered_non_parent_indices = np.intersect1d(filtered_indices_tensor, non_parent_indices)
     return filtered_non_parent_indices

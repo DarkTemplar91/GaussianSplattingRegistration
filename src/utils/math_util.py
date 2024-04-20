@@ -87,12 +87,12 @@ def kullback_leibler_distance_batch(children_xyz, children_covariance, parent_xy
     smd = squared_mahalanobis_distance_batch(children_xyz, children_covariance, parent_xyz)
 
     # Calculate trace term for all children
-    trace_terms = torch.linalg.solve(parent_covariance, children_covariance).diagonal(offset=0, dim1=-1, dim2=-2).sum(-1)
-
+    inv_terms = torch.linalg.solve(parent_covariance, children_covariance).diagonal(offset=0, dim1=-1, dim2=-2).sum(-1)
+    trace_terms = torch.trace(inv_terms)
     # Calculate determinant terms for all children
     parent_det = torch.det(parent_covariance)
     child_dets = torch.det(children_covariance)
-    det_terms = torch.log(torch.abs(child_dets / parent_det))
+    det_terms = torch.log(child_dets / parent_det)
 
     # Calculate KLD for all children
     kld = 0.5 * (smd.double() + trace_terms.double() - 3.0 - det_terms.double())

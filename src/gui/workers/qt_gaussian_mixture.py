@@ -1,13 +1,10 @@
-import sys
-import time
+import concurrent.futures
 
-import numpy as np
 import torch
-from PyQt5.QtCore import QObject, pyqtSignal, QRunnable, QThreadPool
+from PyQt5.QtCore import QObject, pyqtSignal
 
 from src.models.gaussian_mixture_level import GaussianMixtureLevel
-from src.utils.gaussian_mixture_util import filter_search_tree
-from src.utils.math_util import kullback_leibler_distance, clamp, kullback_leibler_distance_batch
+from src.utils.math_util import kullback_leibler_distance_batch
 import open3d as o3d
 
 class GaussianMixtureWorker(QObject):
@@ -51,9 +48,8 @@ class GaussianMixtureWorker(QObject):
 
         # Cluster
         for l in range(self.cluster_level):
-            search_radius = self.get_largest_search_radius(current_mixture)
             pcd_tree = o3d.geometry.KDTreeFlann(open3d_pcs[l])
-            child_indices = self.get_children_indices(parent_indices, non_parent_indices, current_mixture, pcd_tree, open3d_pcs[l], search_radius)
+            child_indices = self.get_children_indices(parent_indices, non_parent_indices, current_mixture, pcd_tree, open3d_pcs[l])
 
             print("Done")
             """wl_cache, sum_lw = compute_likelihood_contributions(parent_indices, child_indices, current_mixture)
@@ -70,22 +66,30 @@ class GaussianMixtureWorker(QObject):
 
         return current_mixture
 
-    #TODO: Calculate batch-wise
-    def get_children_indices(self, parent_indices, non_parent_indices, current_mixture, pcd_tree, open3d_pc, search_radius):
-        child_indices = []
-        search_radii = torch.sqrt(torch.linalg.eigvalsh(current_mixture.covariance)[..., -1]) * self.distance_delta
-        for idx, parent_index in enumerate(parent_indices):
-            filtered_non_parent_indices = filter_search_tree(pcd_tree, open3d_pc.points[parent_index], non_parent_indices, search_radii[idx])
-            kld = kullback_leibler_distance_batch(
-                current_mixture.xyz[filtered_non_parent_indices],
-                current_mixture.covariance[filtered_non_parent_indices],
-                current_mixture.xyz[parent_index], current_mixture.covariance[parent_index])
+    def get_children_indices(self, parent_indices, non_parent_indices, current_mixture, pcd_tree, open3d_pc):
+        #TODO: Maybe use the search radii and the kd-tree
+        """search_radii = torch.sqrt(torch.linalg.eigvalsh(current_mixture.covariance)[..., -1]) * self.distance_delta
+        filtered_non_parent_indices = filter_search_tree(pcd_tree, open3d_pc.points[parent_index], non_parent_indices, search_radii[idx])"""
 
+        def calculate_single_kld(parent_index):
+            xyz_parent = current_mixture.xyz[parent_index]
+            covariance_parent = current_mixture.covariance[parent_index]
+            xyz_children = current_mixture.xyz[non_parent_indices]
+            covariance_children = current_mixture.covariance[non_parent_indices]
+
+            kld = kullback_leibler_distance_batch(xyz_children, covariance_children, xyz_parent, covariance_parent)
             mask_kld = (kld < self.distance_delta * self.distance_delta * 0.5).detach().cpu()
-            mask_kld = mask_kld.detach().cpu()
-            # mask_color =
-            child_indices.append(non_parent_indices)
-            self.update_progress()
+            child_indices_inner = non_parent_indices[mask_kld]
+            return parent_index, child_indices_inner
+
+        child_indices = [None] * len(parent_indices)
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = {executor.submit(calculate_single_kld, parent_index): parent_index for parent_index in
+                       parent_indices}
+            for future in concurrent.futures.as_completed(futures):
+                parent_index, indices = future.result()
+                child_indices[parent_index] = indices
+                self.update_progress()
 
         return child_indices
 
@@ -119,13 +123,3 @@ class GaussianMixtureWorker(QObject):
         selection_probability = 1 / self.hem_reduction
 
         return int(num_points * (1-selection_probability**(self.cluster_level + 1)) / (1-selection_probability) - num_points)
-
-    def get_largest_search_radius(self, current_mixture):
-        max_eigenvalue = torch.max(torch.linalg.eigvalsh(current_mixture.covariance)[..., -1])
-        return self.distance_delta * torch.sqrt(max_eigenvalue)
-
-
-
-
-
-
