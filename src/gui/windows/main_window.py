@@ -39,8 +39,12 @@ class RegistrationMainWindow(QMainWindow):
         self.setWindowTitle("Gaussian Splatting Registration")
 
         # Point cloud output of the 3D Gaussian Splatting
-        self.pc_originalFirst = None
-        self.pc_originalSecond = None
+        self.pc_gaussian_list_first = []
+        self.pc_gaussian_list_second = []
+
+        # Open3D point clouds to display
+        self.pc_open3d_list_first = []
+        self.pc_open3d_list_second = []
 
         # Dataclass that stores the results and parameters of the last local registration
         self.local_registration_data = None
@@ -185,8 +189,15 @@ class RegistrationMainWindow(QMainWindow):
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        self.pc_originalFirst = original1
-        self.pc_originalSecond = original2
+        self.pc_gaussian_list_first.clear()
+        self.pc_gaussian_list_second.clear()
+        self.pc_open3d_list_first.clear()
+        self.pc_open3d_list_second.clear()
+
+        self.pc_gaussian_list_first.append(original1)
+        self.pc_gaussian_list_second.append(original2)
+        self.pc_open3d_list_first.append(pc_first)
+        self.pc_open3d_list_second.append(pc_second)
 
         if save_point_clouds:
             worker = PointCloudSaver(pc_first, pc_second)
@@ -205,8 +216,12 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_widget.assign_new_values(zoom, front, lookat, up)
 
     def merge_point_clouds(self, is_checked, pc_path1, pc_path2, merge_path):
-        pc_first = self.pc_originalFirst
-        pc_second = self.pc_originalSecond
+        pc_first = None
+        pc_second = None
+
+        if len(self.pc_gaussian_list_second) != 0 and len(self.pc_gaussian_list_first) != 0:
+            pc_first = self.pc_gaussian_list_first[0] # TODO: Use current index
+            pc_second = self.pc_gaussian_list_second[0]
 
         if is_checked:
             pc_first_ply = load_plyfile_pc(pc_path1)
@@ -368,8 +383,8 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.exec()
 
     def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
-        pc1 = self.pc_originalFirst
-        pc2 = self.pc_originalSecond
+        pc1 = self.pc_gaussian_list_first
+        pc2 = self.pc_gaussian_list_second
 
         error_message = 'Load two Gaussian point clouds for rasterization!'
         if not pc1 or not pc2:
@@ -421,8 +436,8 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.apply_camera_transformation(extrinsics)
 
     def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
-        pc1 = self.pc_originalFirst
-        pc2 = self.pc_originalSecond
+        pc1 = self.pc_gaussian_list_first
+        pc2 = self.pc_gaussian_list_second
 
         if not pc1 or not pc2:
             dialog = QErrorMessage(self)
@@ -479,8 +494,16 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.exec()
 
     def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
-        pc1 = self.pc_originalFirst
-        pc2 = self.pc_originalSecond
+        pc1 = pc2 = pc1_open3d = pc2_open3d = None
+
+        if len(self.pc_gaussian_list_first) != 0:
+            pc1 = self.pc_gaussian_list_first[0]
+        if len(self.pc_gaussian_list_second) != 0:
+            pc2 = self.pc_gaussian_list_second[0]
+        if len(self.pc_open3d_list_first) != 0:
+            pc1_open3d = self.pc_open3d_list_first[0]
+        if len(self.pc_open3d_list_second) != 0:
+            pc2_open3d = self.pc_open3d_list_second[0]
 
         if not pc1 or not pc2:
             dialog = QErrorMessage(self)
@@ -490,7 +513,7 @@ class RegistrationMainWindow(QMainWindow):
                                "Please load two point clouds to create Gaussian mixtures.")
             return
 
-        worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level)
+        worker = GaussianMixtureWorker(pc1, pc2, pc1_open3d, pc2_open3d, hem_reduction, distance_delta, color_delta, cluster_level)
 
         # Create thread
         thread = QThread(self)
@@ -504,6 +527,9 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         self.progress_dialog.setLabelText("Creating Gaussian mixtures...")
+        self.progress_dialog.setRange(0, 100)
+        #self.progress_dialog.canceled.connect(worker.cancel_evaluation)
+        worker.signal_update_progress.connect(self.progress_dialog.setValue)
 
         thread.start()
         self.progress_dialog.exec()

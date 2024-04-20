@@ -71,12 +71,17 @@ class GaussianModel:
         return self._features_dc.flatten(start_dim=1)
 
     @property
-    def get_opacity(self):
+    def get_opacity_with_activation(self):
         return self.opacity_activation(self._opacity)
+
+    @property
+    def get_raw_opacity(self):
+        return self._opacity
 
     @property
     def get_covariance3D(self):
         return self._covariance
+
 
     def get_scaled_covariance(self, scaling_modifier=1):
         return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation)

@@ -1,4 +1,5 @@
 import math
+from time import time
 
 import numpy as np
 from e3nn import o3
@@ -81,10 +82,32 @@ def kullback_leibler_distance(child_xyz, child_covariance, parent_xyz, parent_co
 
     return kld
 
+def kullback_leibler_distance_batch(children_xyz, children_covariance, parent_xyz, parent_covariance):
+    # Calculate squared Mahalanobis distance for all children
+    smd = squared_mahalanobis_distance_batch(children_xyz, children_covariance, parent_xyz)
+
+    # Calculate trace term for all children
+    trace_terms = torch.linalg.solve(parent_covariance, children_covariance).diagonal(offset=0, dim1=-1, dim2=-2).sum(-1)
+
+    # Calculate determinant terms for all children
+    parent_det = torch.det(parent_covariance)
+    child_dets = torch.det(children_covariance)
+    det_terms = torch.log(torch.abs(child_dets / parent_det))
+
+    # Calculate KLD for all children
+    kld = 0.5 * (smd.double() + trace_terms.double() - 3.0 - det_terms.double())
+
+    return kld
+
 def squared_mahalanobis_distance(child_xyz, child_covariance, parent_xyz):
     diff = child_xyz - parent_xyz
     covariance_inv = torch.torch.linalg.inv_ex(child_covariance).inverse
     return torch.matmul(torch.matmul(diff.unsqueeze(0), covariance_inv), diff.unsqueeze(-1)).squeeze()
+
+def squared_mahalanobis_distance_batch(children_xyz, children_covariance, parent_xyz):
+    diff = children_xyz - parent_xyz
+    solve_part = torch.linalg.solve(children_covariance, diff)
+    return torch.sum(diff * solve_part, dim=-1)
 
 def clamp(val, minval, maxval):
     if val != val: return 1
