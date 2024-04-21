@@ -2,10 +2,13 @@ import concurrent.futures
 
 import torch
 from PyQt5.QtCore import QObject, pyqtSignal
+from joblib import Parallel, delayed, parallel_config
 
 from src.models.gaussian_mixture_level import GaussianMixtureLevel
 from src.utils.math_util import kullback_leibler_distance_batch
 import open3d as o3d
+
+import dill as pickle
 
 class GaussianMixtureWorker(QObject):
     signal_finished = pyqtSignal()
@@ -28,7 +31,6 @@ class GaussianMixtureWorker(QObject):
 
         self.current_progress = 0
         self.max_progress = self.get_approx_max_progress()
-        self.max_progress = 80000
 
 
     def create_mixture(self):
@@ -66,33 +68,39 @@ class GaussianMixtureWorker(QObject):
 
         return current_mixture
 
+    def calculate_single_kld(self, idx, parent_index, shm_xyz, shm_covariance, non_parent_indices, distance_delta):
+        xyz_parent = shm_xyz[parent_index]
+        covariance_parent = shm_covariance[parent_index]
+        xyz_children = shm_xyz[non_parent_indices]
+        covariance_children = shm_covariance[non_parent_indices]
+
+        kld = kullback_leibler_distance_batch(xyz_children, covariance_children, xyz_parent, covariance_parent)
+        mask_kld = (kld < distance_delta * distance_delta * 0.5).detach().cpu()
+        child_indices_inner = non_parent_indices[mask_kld]
+        self.update_progress()
+        return idx, child_indices_inner
+
     def get_children_indices(self, parent_indices, non_parent_indices, current_mixture, pcd_tree, open3d_pc):
         #TODO: Maybe use the search radii and the kd-tree
         """search_radii = torch.sqrt(torch.linalg.eigvalsh(current_mixture.covariance)[..., -1]) * self.distance_delta
         filtered_non_parent_indices = filter_search_tree(pcd_tree, open3d_pc.points[parent_index], non_parent_indices, search_radii[idx])"""
 
-        def calculate_single_kld(parent_index):
-            xyz_parent = current_mixture.xyz[parent_index]
-            covariance_parent = current_mixture.covariance[parent_index]
-            xyz_children = current_mixture.xyz[non_parent_indices]
-            covariance_children = current_mixture.covariance[non_parent_indices]
+        shm_xyz = current_mixture.xyz.clone().share_memory_()
+        shm_covariance = current_mixture.covariance.clone().share_memory_()
 
-            kld = kullback_leibler_distance_batch(xyz_children, covariance_children, xyz_parent, covariance_parent)
-            mask_kld = (kld < self.distance_delta * self.distance_delta * 0.5).detach().cpu()
-            child_indices_inner = non_parent_indices[mask_kld]
-            return parent_index, child_indices_inner
+        distance_delta = self.distance_delta
+        # Parallelize the loop using Parallel
+        with parallel_config(backend='threading', n_jobs=-1):
+            results = Parallel()(delayed(self.calculate_single_kld)(idx, parent_index, shm_xyz, shm_covariance, non_parent_indices, distance_delta)
+                for idx, parent_index in enumerate(parent_indices)
+        )
 
-        child_indices = [None] * len(parent_indices)
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            futures = {executor.submit(calculate_single_kld, parent_index): parent_index for parent_index in
-                       parent_indices}
-            for future in concurrent.futures.as_completed(futures):
-                parent_index, indices = future.result()
-                child_indices[parent_index] = indices
-                self.update_progress()
+        child_indices = [None] * parent_indices.shape[0]
+        for parent_index, indices in results:
+            child_indices[parent_index] = indices
+            # Update progress here
 
         return child_indices
-
     def handle_index_results(self):
         pass
 
@@ -123,3 +131,4 @@ class GaussianMixtureWorker(QObject):
         selection_probability = 1 / self.hem_reduction
 
         return int(num_points * (1-selection_probability**(self.cluster_level + 1)) / (1-selection_probability) - num_points)
+
