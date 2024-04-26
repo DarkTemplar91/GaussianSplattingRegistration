@@ -94,7 +94,7 @@ def kullback_leibler_distance_batch(children_xyz, children_covariance, parent_xy
     det_terms = torch.log(child_dets / parent_det)
 
     # Calculate KLD for all children
-    kld = 0.5 * (smd.double() + trace_terms.double() - 3.0 - det_terms.double())
+    kld = 0.5 * (smd + trace_terms - 3.0 - det_terms)
 
     return kld
 
@@ -103,9 +103,19 @@ def squared_mahalanobis_distance(child_xyz, child_covariance, parent_xyz):
     covariance_inv = torch.torch.linalg.inv_ex(child_covariance).inverse
     return torch.matmul(torch.matmul(diff.unsqueeze(0), covariance_inv), diff.unsqueeze(-1)).squeeze()
 
+def compute_differences(parent_xyz, children_xyz):
+    return children_xyz - parent_xyz
+
 def squared_mahalanobis_distance_batch(children_xyz, children_covariance, parent_xyz):
-    diff = children_xyz - parent_xyz
-    solve_part = torch.linalg.solve(children_covariance, diff)
+    diff = torch.vmap(compute_differences, in_dims=(0, None))(parent_xyz, children_xyz)
+
+    # Reshape children covariance for batch matrix solve
+    children_covariance_reshaped = children_covariance.unsqueeze(0)  # Add singleton dimension for broadcasting
+
+    # Solve part of the Mahalanobis distance for all parent-child combinations
+    solve_part = torch.linalg.solve(children_covariance_reshaped, diff.transpose(-1, -2)).transpose(-1, -2)
+
+    # Calculate squared Mahalanobis distance for all parent-child combinations
     return torch.sum(diff * solve_part, dim=-1)
 
 def clamp(val, minval, maxval):
