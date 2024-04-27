@@ -220,7 +220,7 @@ class RegistrationMainWindow(QMainWindow):
         pc_second = None
 
         if len(self.pc_gaussian_list_second) != 0 and len(self.pc_gaussian_list_first) != 0:
-            pc_first = self.pc_gaussian_list_first[0] # TODO: Use current index
+            pc_first = self.pc_gaussian_list_first[0]  # TODO: Use current index
             pc_second = self.pc_gaussian_list_second[0]
 
         if is_checked:
@@ -229,7 +229,7 @@ class RegistrationMainWindow(QMainWindow):
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
             if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message) or
-                    not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
+                not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
 
             pc_first = GaussianModel(3)
@@ -237,16 +237,13 @@ class RegistrationMainWindow(QMainWindow):
             pc_first.from_ply(pc_first_ply)
             pc_second.from_ply(pc_second_ply)
 
-
         error_message = ("There were no preloaded point clouds found! Load a Gaussian point cloud before merging, "
                          "or check the \"corresponding inputs\" option and select the point clouds you wish to merge.")
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-
         merged = GaussianModel.get_merged_gaussian_point_clouds(pc_first, pc_second,
                                                                 self.transformation_picker.transformation_matrix)
-
 
         gaussian_saver = GaussianSaver(merged, merge_path)
         thread = QThread(self)
@@ -262,7 +259,6 @@ class RegistrationMainWindow(QMainWindow):
         thread.start()
         self.progress_dialog.setLabelText("Saving merged point cloud...")
         self.progress_dialog.exec()
-
 
     def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
@@ -494,16 +490,12 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.exec()
 
     def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
-        pc1 = pc2 = pc1_open3d = pc2_open3d = None
+        pc1 = pc2 = None
 
         if len(self.pc_gaussian_list_first) != 0:
             pc1 = self.pc_gaussian_list_first[0]
         if len(self.pc_gaussian_list_second) != 0:
             pc2 = self.pc_gaussian_list_second[0]
-        if len(self.pc_open3d_list_first) != 0:
-            pc1_open3d = self.pc_open3d_list_first[0]
-        if len(self.pc_open3d_list_second) != 0:
-            pc2_open3d = self.pc_open3d_list_second[0]
 
         if not pc1 or not pc2:
             dialog = QErrorMessage(self)
@@ -513,14 +505,14 @@ class RegistrationMainWindow(QMainWindow):
                                "Please load two point clouds to create Gaussian mixtures.")
             return
 
-        worker = GaussianMixtureWorker(pc1, pc2, pc1_open3d, pc2_open3d, hem_reduction, distance_delta, color_delta, cluster_level)
+        worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level)
 
         # Create thread
         thread = QThread(self)
         # Move worker to thread
         worker.moveToThread(thread)
         # connect signals to slots
-        thread.started.connect(worker.create_mixture)
+        thread.started.connect(worker.execute)
         worker.signal_mixture_created.connect(self.handle_mixture_results)
         worker.signal_finished.connect(thread.quit)
         worker.signal_finished.connect(worker.deleteLater)
@@ -528,13 +520,25 @@ class RegistrationMainWindow(QMainWindow):
 
         self.progress_dialog.setLabelText("Creating Gaussian mixtures...")
         self.progress_dialog.setRange(0, 100)
-        #self.progress_dialog.canceled.connect(worker.cancel_evaluation)
+        self.progress_dialog.setValue(0)
+        self.progress_dialog.canceled.connect(worker.cancel)
         worker.signal_update_progress.connect(self.progress_dialog.setValue)
 
         thread.start()
         self.progress_dialog.exec()
 
-    def handle_mixture_results(self):
+    def handle_mixture_results(self, gaussian_list_first, gaussian_list_second):
+        self.progress_dialog.close()
+
+        if len(gaussian_list_first) > 1 and len(gaussian_list_second) > 1:
+            base_pc_first = self.pc_gaussian_list_first[0]
+            base_pc_second = self.pc_gaussian_list_second[0]
+            self.pc_gaussian_list_first.clear()
+            self.pc_gaussian_list_second.clear()
+            self.pc_gaussian_list_first.append(base_pc_first)
+            self.pc_gaussian_list_second.append(base_pc_second)
+
+        # TODO: Convert gaussian lists
         pass
 
     def create_error_list_dialog(self, error_list):
@@ -546,7 +550,6 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.setDetailedText("\n".join(error_list))
         message_dialog.exec()
 
-
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:
             # TODO: Further error messages. Tracing?
@@ -557,7 +560,6 @@ class RegistrationMainWindow(QMainWindow):
             return True
 
         return False
-
 
     def closeEvent(self, event):
         self.pane_open3d.close()

@@ -30,6 +30,7 @@ extern "C" {
 	    mixture->CreateMixture(clusterLevel);
 
 	    auto result = mixture->GetResult();
+	    result.erase(result.begin());
 
 	    json resultJson = result;
 	    return resultJson.dump();
