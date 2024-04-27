@@ -14,8 +14,9 @@ import torch
 from plyfile import PlyElement, PlyData
 from torch import nn
 
+from src.models.gaussian_mixture_level import GaussianMixtureModel
 from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
-    inverse_sigmoid, build_rotation, matrices_to_quaternions
+    inverse_sigmoid, build_rotation, matrices_to_quaternions, rebuild_lowerdiag
 
 
 class GaussianModel:
@@ -83,8 +84,12 @@ class GaussianModel:
         return self._opacity
 
     @property
-    def get_covariance3D(self):
+    def get_covariance_precomputed(self):
         return self._covariance
+
+    @property
+    def get_full_covariance_precomputed(self):
+        return rebuild_lowerdiag(self._covariance)
 
     def get_scaled_covariance(self, scaling_modifier=1):
         return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation)
@@ -132,9 +137,20 @@ class GaussianModel:
         self._scaling = nn.Parameter(torch.tensor(scales, dtype=torch.float, device="cuda").requires_grad_(True))
         self._rotation = nn.Parameter(torch.tensor(rots, dtype=torch.float, device="cuda").requires_grad_(True))
 
-        L = build_scaling_rotation(self._scaling, self._rotation)
-        actual_covariance = L @ L.transpose(1, 2)
-        self._covariance = actual_covariance
+        self._covariance = self.get_scaled_covariance()
+
+
+    def from_mixture(self, gaussian_mixture: GaussianMixtureModel):
+        self._xyz = nn.Parameter(torch.tensor(gaussian_mixture.xyz, dtype=torch.float, device="cuda")
+                                 .requires_grad_(True))
+        self._features_dc = nn.Parameter(torch.tensor(gaussian_mixture.colors, dtype=torch.float, device="cuda")
+                                         .view(-1, 1, 3).requires_grad_(True))
+        self._features_rest = nn.Parameter(torch.tensor(gaussian_mixture.features, dtype=torch.float, device="cuda")
+                                           .view(-1, (self.sh_degree + 1) ** 2 - 1, 3).requires_grad_(True))
+        self._opacity = nn.Parameter(torch.tensor(gaussian_mixture.opacities, dtype=torch.float, device="cuda")
+                                     .requires_grad_(True))
+        self._covariance = nn.Parameter(torch.tensor(gaussian_mixture.covariance, dtype=torch.float, device="cuda")
+                                        .requires_grad_(True))
 
     def construct_list_of_attributes(self):
         l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
@@ -195,15 +211,17 @@ class GaussianModel:
     def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix=None):
         merged_pc = GaussianModel(3)
 
-        if transformation_matrix is not None:
+        # TODO: rewrite transformation
+        """if transformation_matrix is not None:
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
-            gaussian1.transform_gaussian(transformation_matrix_tensor)
+            gaussian1.transform_gaussian(transformation_matrix_tensor)"""
 
-        merged_pc._xyz = torch.cat((gaussian1.xyz, gaussian2.xyz))
+        merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
         merged_pc._rotation = torch.cat((gaussian1._rotation, gaussian2._rotation))
         merged_pc._scaling = torch.cat((gaussian1._scaling, gaussian2._scaling))
-        merged_pc._features_dc = torch.cat((gaussian1.features_dc, gaussian2.features_dc))
+        merged_pc._features_dc = torch.cat((gaussian1._features_dc, gaussian2._features_dc))
         merged_pc._features_rest = torch.cat((gaussian1._features_rest, gaussian2._features_rest))
-        merged_pc._opacity = torch.cat((gaussian1.opacity, gaussian2.opacity))
+        merged_pc._opacity = torch.cat((gaussian1._opacity, gaussian2._opacity))
+        merged_pc._covariance = torch.cat((gaussian1._covariance, gaussian2._covariance))
 
         return merged_pc

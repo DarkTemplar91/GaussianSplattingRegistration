@@ -140,3 +140,9 @@ class RasterizerTab(QWidget):
             [0, 0, 1]
         ])
         return intrinsics
+
+    def scale_enable(self, value):
+        if value is False:
+            self.scale.lineedit.setText(str("1.0"))
+
+        self.scale.setEnabled(value)

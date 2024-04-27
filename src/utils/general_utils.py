@@ -29,6 +29,17 @@ def strip_lowerdiag(L):
     return uncertainty
 
 
+def rebuild_lowerdiag(covariance):
+    row1 = covariance[:, [0, 1, 2]]
+    row2 = covariance[:, [1, 3, 4]]
+    row3 = covariance[:, [2, 4, 5]]
+
+    # Stack the rows to create the covariance matrix
+    covariance_matrix = torch.stack([row1, row2, row3], dim=1)
+
+    return covariance_matrix
+
+
 def strip_symmetric(sym):
     return strip_lowerdiag(sym)
 

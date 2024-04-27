@@ -46,6 +46,8 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_open3d_list_first = []
         self.pc_open3d_list_second = []
 
+        self.current_index = 0
+
         # Dataclass that stores the results and parameters of the last local registration
         self.local_registration_data = None
 
@@ -56,6 +58,7 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_widget = None
         self.rasterizer_tab = None
         self.transformation_picker = None
+        self.hem_widget = None
 
         # Image viewer
         self.raster_window = None
@@ -162,14 +165,15 @@ class RegistrationMainWindow(QMainWindow):
         evaluator_widget.signal_camera_change.connect(self.loaded_camera_changed)
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
-        hem_widget = GaussianMixtureTab()
-        hem_widget.signal_create_mixture.connect(self.create_mixture)
+        self.hem_widget = GaussianMixtureTab()
+        self.hem_widget.signal_create_mixture.connect(self.create_mixture)
+        self.hem_widget.signal_slider_changed.connect(self.active_pc_changed)
 
         registration_tab.addTab(global_registration_widget, "Global")
         registration_tab.addTab(local_registration_widget, "Local")
         registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
         registration_tab.addTab(evaluator_widget, "Evaluation")
-        registration_tab.addTab(hem_widget, "Mixture")
+        registration_tab.addTab(self.hem_widget, "Mixture")
         layout.addWidget(registration_tab)
 
     # Event Handlers
@@ -188,6 +192,11 @@ class RegistrationMainWindow(QMainWindow):
                          'path!')
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
+
+        self.current_index = 0
+
+        self.hem_widget.set_slider(0)
+        self.hem_widget.set_slider_enabled(False)
 
         self.pc_gaussian_list_first.clear()
         self.pc_gaussian_list_second.clear()
@@ -229,7 +238,7 @@ class RegistrationMainWindow(QMainWindow):
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
             if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message)
-                    or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
+                or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
 
             pc_first = GaussianModel(3)
@@ -379,8 +388,8 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.exec()
 
     def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
-        pc1 = self.pc_gaussian_list_first
-        pc2 = self.pc_gaussian_list_second
+        pc1 = self.pc_gaussian_list_first[self.current_index]
+        pc2 = self.pc_gaussian_list_second[self.current_index]
 
         error_message = 'Load two Gaussian point clouds for rasterization!'
         if not pc1 or not pc2:
@@ -432,8 +441,8 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.apply_camera_transformation(extrinsics)
 
     def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
-        pc1 = self.pc_gaussian_list_first
-        pc2 = self.pc_gaussian_list_second
+        pc1 = self.pc_gaussian_list_first[self.current_index]
+        pc2 = self.pc_gaussian_list_second[self.current_index]
 
         if not pc1 or not pc2:
             dialog = QErrorMessage(self)
@@ -521,26 +530,51 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Creating Gaussian mixtures...")
         self.progress_dialog.setRange(0, 100)
         self.progress_dialog.setValue(0)
+        self.progress_dialog.setAutoClose(False)
         self.progress_dialog.canceled.connect(worker.cancel)
         worker.signal_update_progress.connect(self.progress_dialog.setValue)
 
         thread.start()
         self.progress_dialog.exec()
 
-    def handle_mixture_results(self, gaussian_list_first, gaussian_list_second):
-        self.progress_dialog.close()
+    def handle_mixture_results(self, gaussian_list_first, gaussian_list_second, open3d_list_first, open3d_list_second):
 
-        if len(gaussian_list_first) > 1 and len(gaussian_list_second) > 1:
+        if len(gaussian_list_first) > 1:
             base_pc_first = self.pc_gaussian_list_first[0]
             base_pc_second = self.pc_gaussian_list_second[0]
+            base_open3d_first = self.pc_open3d_list_first[0]
+            base_open3d_second = self.pc_open3d_list_second[0]
+
             self.pc_gaussian_list_first.clear()
             self.pc_gaussian_list_second.clear()
+            self.pc_open3d_list_first.clear()
+            self.pc_open3d_list_second.clear()
+            self.pc_open3d_list_first.append(base_open3d_first)
+            self.pc_open3d_list_second.append(base_open3d_second)
             self.pc_gaussian_list_first.append(base_pc_first)
             self.pc_gaussian_list_second.append(base_pc_second)
 
-        # TODO: Convert gaussian lists
+        self.pc_open3d_list_first.extend(open3d_list_first)
+        self.pc_open3d_list_second.extend(open3d_list_second)
+        self.pc_gaussian_list_first.extend(gaussian_list_first)
+        self.pc_gaussian_list_second.extend(gaussian_list_second)
 
-        pass
+        self.hem_widget.set_slider(len(self.pc_gaussian_list_first) - 1)
+        self.hem_widget.set_slider_enabled(True)
+
+        self.progress_dialog.close()
+
+    def active_pc_changed(self, index):
+        if self.current_index == index:
+            return
+
+        if self.current_index == 0 and index != 0:
+            self.rasterizer_tab.scale_enable(False)
+        elif self.current_index != 0 and index == 0:
+            self.rasterizer_tab.scale_enable(True)
+
+        self.current_index = index
+        self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index])
 
     def create_error_list_dialog(self, error_list):
         self.progress_dialog.close()

@@ -9,6 +9,7 @@ import src.utils.graphics_utils as graphic_util
 
 class GaussianMixtureTab(QWidget):
     signal_create_mixture = QtCore.pyqtSignal(float, float, float, int)
+    signal_slider_changed = QtCore.pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -27,9 +28,9 @@ class GaussianMixtureTab(QWidget):
         self.setLayout(layout)
 
         self.hem_reduction_field = SimpleInputField("HEM reduction factor:", "3.0", validator=double_validator)
-        self.distance_field = SimpleInputField("Geometric distance delta:", "0.5", validator=double_validator)
+        self.distance_field = SimpleInputField("Geometric distance delta:", "3.0", validator=double_validator)
         self.color_field = SimpleInputField("Color distance delta:", "2.5", validator=double_validator)
-        self.cluster_level_field = SimpleInputField("Cluster level:", "1", validator=int_validator)
+        self.cluster_level_field = SimpleInputField("Cluster level:", "3", validator=int_validator)
 
         slider_label = QLabel("Current mixture level")
         slider_label.setStyleSheet(
@@ -45,6 +46,7 @@ class GaussianMixtureTab(QWidget):
         self.slider.setMaximum(0)
         self.slider.setTickInterval(1)
         self.slider.setEnabled(False)
+        self.slider.valueChanged.connect(self.value_changed)
 
         option_widget = QGroupBox()
         option_widget.setTitle("Inputs")
@@ -78,3 +80,16 @@ class GaussianMixtureTab(QWidget):
         cluster_level = int(self.cluster_level_field.lineedit.text())
 
         self.signal_create_mixture.emit(hem_reduction, distance_delta, color_delta, cluster_level)
+
+    def set_slider(self, value):
+        self.slider.setRange(0, value)
+
+    def set_slider_enabled(self, value):
+        self.slider.setEnabled(value)
+
+    def value_changed(self):
+        if not self.slider.isEnabled():
+            return
+
+        value = self.slider.value()
+        self.signal_slider_changed.emit(value)

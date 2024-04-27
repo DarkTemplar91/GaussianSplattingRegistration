@@ -5,14 +5,16 @@ from PyQt5.QtCore import QObject, pyqtSignal
 import mixture_bind
 from kornia.color import rgb_to_lab
 
+from src.models.gaussian_model import GaussianModel
 from src.utils.graphics_utils import sh2rgb
 
 from src.models.gaussian_mixture_level import GaussianMixtureModel
+from src.utils.point_cloud_converter import convert_gs_to_open3d_pc
 
 
 class GaussianMixtureWorker(QObject):
     signal_finished = pyqtSignal()
-    signal_mixture_created = pyqtSignal(list, list)
+    signal_mixture_created = pyqtSignal(list, list, list, list)
 
     signal_update_progress = pyqtSignal(int)
 
@@ -28,7 +30,7 @@ class GaussianMixtureWorker(QObject):
         self.gaussian_pc_second = pc2
 
         self.current_progress = 0
-        self.max_progress = 6
+        self.max_progress = 8
         self.signal_cancel = False
 
     def execute(self):
@@ -111,7 +113,29 @@ class GaussianMixtureWorker(QObject):
         if self.signal_cancel:
             return
 
-        self.signal_mixture_created.emit(mixture_models_first, mixture_models_second)
+        list_gaussian_first = []
+        list_gaussian_second = []
+        list_open3d_first = []
+        list_open3d_second = []
+
+        for mixture in mixture_models_first:
+            gaussian = GaussianModel()
+            gaussian.from_mixture(mixture)
+
+            result_open3d = convert_gs_to_open3d_pc(gaussian)
+            list_gaussian_first.append(gaussian)
+            list_open3d_first.append(result_open3d)
+
+        for mixture in mixture_models_second:
+            gaussian = GaussianModel()
+            gaussian.from_mixture(mixture)
+
+            result_open3d = convert_gs_to_open3d_pc(gaussian)
+            list_gaussian_second.append(gaussian)
+            list_open3d_second.append(result_open3d)
+
+        self.signal_mixture_created.emit(list_gaussian_first, list_gaussian_second,
+                                         list_open3d_first, list_open3d_second)
 
     def update_progress(self):
         self.current_progress += 1
