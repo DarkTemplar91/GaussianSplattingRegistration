@@ -45,10 +45,11 @@ class GaussianMixtureWorker(QObject):
         mixture_model_first.features = features_first[3:].cpu().tolist()
         mixture_model_first.colors = rgb_to_lab(sh2rgb(self.gaussian_pc_first.get_colors.detach().cpu()
                                                        .view(-1, 3, 1, 1))).view(-1, 3).tolist()"""
-        mixture_model_first.colors = self.gaussian_pc_first.get_colors.detach().cpu().tolist()
 
+        mixture_model_first.colors = self.gaussian_pc_first.get_colors.detach().cpu().tolist()
         mixture_model_first.opacities = self.gaussian_pc_first.get_raw_opacity.detach().cpu().view(-1).tolist()
         mixture_model_first.covariance = self.gaussian_pc_first.get_scaled_covariance(1).detach().cpu().tolist()
+        mixture_model_first.features = self.gaussian_pc_first.get_spherical_harmonics.detach().cpu().tolist()
 
         mixture_model_second = GaussianMixtureModel()
         mixture_model_second.cluster_level = self.cluster_level
@@ -62,17 +63,17 @@ class GaussianMixtureWorker(QObject):
         mixture_model_second.features = features_second[3:].cpu().tolist()
         mixture_model_second.colors = rgb_to_lab(sh2rgb(self.gaussian_pc_second.get_colors.detach().cpu()
                                                        .view(-1, 3, 1, 1))).view(-1, 3).tolist()"""
-        mixture_model_second.colors = self.gaussian_pc_second.get_colors.detach().cpu().tolist()
 
+        mixture_model_second.colors = self.gaussian_pc_second.get_colors.detach().cpu().tolist()
         mixture_model_second.opacities = self.gaussian_pc_second.get_raw_opacity.detach().view(-1).cpu().tolist()
         mixture_model_second.covariance = self.gaussian_pc_second.get_scaled_covariance(1).detach().cpu().tolist()
+        mixture_model_second.features = self.gaussian_pc_second.get_spherical_harmonics.detach().cpu().tolist()
+
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
             return
 
         json_string_first = json.dumps(mixture_model_first.__dict__)
-        #with open('data.json', 'w') as file:
-        #    file.write(json_string_first)
         self.update_progress()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:

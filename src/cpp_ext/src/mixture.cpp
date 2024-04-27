@@ -16,6 +16,7 @@ namespace hem
 		, distanceDelta( distanceDelta )
 		, colorDelta( colorDelta )
 		, mixtureList()
+		, featureSize(0)
 	{
 		initMixture(initialMixture);
 	}
@@ -163,6 +164,7 @@ namespace hem
 			vec3 sumcol_i(0, 0, 0);
 			smat3 sumcov_i(0, 0, 0, 0, 0, 0);
 			vec3 resultant(0, 0, 0);
+			FeatureVector sum_featureVector = FeatureVector(featureSize);
 			float sum_opacity = 0.0f;
 			float nvar = 0.0f;
 
@@ -197,6 +199,7 @@ namespace hem
 				resultant += w * c_normal;
 				nvar += w * c_nvar;
 				sum_opacity += w * child.opacity;
+				sum_featureVector += w * child.featureVector;
 			}
 
 			// normalize and condition new cov matrix
@@ -206,6 +209,7 @@ namespace hem
 			//cov_s = conditionCov(cov_s);
 			vec3 col_s = inv_w * sumcol_i;
 			float opacity_s = inv_w * sum_opacity;
+			FeatureVector featureVector_s = inv_w * sum_featureVector;
 
 			// mixture of normals
 			float variance1 = nvar * inv_w;			// normalized sum of the variances of the child clusters
@@ -222,6 +226,7 @@ namespace hem
 			newComponent.weight = w_s;
 			newComponent.color = col_s;
 			newComponent.opacity = opacity_s;
+			newComponent.featureVector = featureVector_s;
 			newComponent.nvar = newMeanNormal * (variance1 + variance2);
 
 			newComponents.push_back(newComponent);
@@ -258,6 +263,8 @@ namespace hem
 		auto& colors = initialMixtureLevel.colorSet;
 		auto& covariances = initialMixtureLevel.covarianceSet;
 		auto& opacities = initialMixtureLevel.opacities;
+		std::vector<FeatureVector>& features = initialMixtureLevel.features;
+		featureSize = features[0].GetSize();
 
 		initialMixture = std::vector<Component>();
 		initialMixture.resize(points.size());
@@ -267,6 +274,7 @@ namespace hem
 			const vec3& color = colors[i];
 			const smat3& covariance = covariances[i];
 			const float opacity = opacities[i];
+			const FeatureVector feature = features[i];
 			Component& c = initialMixture.at(i);
 
 
@@ -275,7 +283,9 @@ namespace hem
 			c.cov = covariance;
 			//c.cov = conditionCov(c.cov); Try with and without
 			c.opacity = opacity;
+			c.featureVector = feature;
 			c.weight = 1.0f;
+
 
 			// Compute the initial normal and set initial normal variance of this point cluster
 			// the normal variance is encoded in the length of the normal vector
@@ -308,6 +318,7 @@ namespace hem
 			mixtureLevelCurrent.colorSet.resize(size);
 			mixtureLevelCurrent.covarianceSet.resize(size);
 			mixtureLevelCurrent.opacities.resize(size);
+			mixtureLevelCurrent.features.resize(size);
 
 			std::transform(currectComponents.begin(), currectComponents.end(), mixtureLevelCurrent.pointSet.begin(),
 				[](const Component& comp) { return comp.mean; });
@@ -320,6 +331,9 @@ namespace hem
 
 			std::transform(currectComponents.begin(), currectComponents.end(), mixtureLevelCurrent.opacities.begin(),
 				[](const Component& comp) { return comp.opacity; });
+
+			std::transform(currectComponents.begin(), currectComponents.end(), mixtureLevelCurrent.features.begin(),
+				[](const Component& comp) { return comp.featureVector; });
 
 			resultVector.push_back(mixtureLevelCurrent);
 		}

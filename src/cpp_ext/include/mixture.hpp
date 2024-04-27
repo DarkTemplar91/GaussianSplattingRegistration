@@ -68,6 +68,8 @@ namespace hem
 		std::vector<Component> initialMixture;
 		std::vector<std::vector<Component>> mixtureList;
 
+		int featureSize;
+
 	};
 
 }

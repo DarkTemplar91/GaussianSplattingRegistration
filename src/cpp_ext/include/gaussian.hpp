@@ -19,6 +19,7 @@
 #include <iostream>
 
 #include "vec.hpp"
+#include "featurevector.hpp"
 
 
 using namespace std;
@@ -27,7 +28,8 @@ using namespace std;
 
 namespace hem
 {
-	
+	class FeatureVector;
+
 #pragma region covariance matrix operators
 
 	// Conditioning by off diagonal dampening
@@ -87,14 +89,16 @@ namespace hem
 
 	struct Gaussian
 	{
-		vec3 mean;		// xyz coordinates of the Gaussian
-		vec3 color;		// color values of the Gaussian
-		smat3 cov;		// symmetric covariance matrix
-		float opacity;  // opacity of splat
-		float weight;	// weight
+		vec3 mean;		             // xyz coordinates of the Gaussian
+		vec3 color;		             // color values of the Gaussian
+		smat3 cov;		             // symmetric covariance matrix
+		float opacity;               // opacity of splat
+		float weight;	             // weight
+		FeatureVector featureVector; // Spherical Harmonics
 
 		Gaussian(){}
-		Gaussian(const vec3& mean, const vec3& color, const smat3& cov, float opacity, float weight = 1.0f) : mean(mean), color(color), cov(cov), opacity(opacity), weight(weight){}
+		Gaussian(const vec3& mean, const vec3& color, const smat3& cov, const FeatureVector featureVector, float opacity, float weight = 1.0f)
+			: mean(mean), color(color), cov(cov), featureVector(featureVector), opacity(opacity), weight(weight){}
 
 	};
 

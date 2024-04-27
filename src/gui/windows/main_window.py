@@ -539,6 +539,7 @@ class RegistrationMainWindow(QMainWindow):
             self.pc_gaussian_list_second.append(base_pc_second)
 
         # TODO: Convert gaussian lists
+
         pass
 
     def create_error_list_dialog(self, error_list):

@@ -6,7 +6,7 @@
 
 namespace hem
 {
-
+	class FeatureVector;
 class MixtureLevel
 {
 public:
@@ -17,6 +17,7 @@ public:
 	ColorSet colorSet;
 	CovarianceSet covarianceSet;
 	std::vector<float> opacities;
+	std::vector<FeatureVector> features;
 };
 
 void from_json(const nlohmann::json& j, MixtureLevel& mixtureLevel);
