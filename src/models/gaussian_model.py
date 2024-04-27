@@ -37,7 +37,7 @@ class GaussianModel:
 
         self.rotation_activation = torch.nn.functional.normalize
 
-    def __init__(self, sh_degree: int):
+    def __init__(self, sh_degree: int = 3):
         self.sh_degree = sh_degree
         self._xyz = torch.empty(0)
         self._features_dc = torch.empty(0)
@@ -82,10 +82,8 @@ class GaussianModel:
     def get_covariance3D(self):
         return self._covariance
 
-
     def get_scaled_covariance(self, scaling_modifier=1):
         return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation)
-
 
     def from_ply(self, plydata):
         xyz = np.stack((np.asarray(plydata.elements[0]["x"]),
@@ -137,9 +135,9 @@ class GaussianModel:
     def construct_list_of_attributes(self):
         l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
         # All channels except the 3 DC
-        for i in range(self._features_dc.shape[1]*self._features_dc.shape[2]):
+        for i in range(self._features_dc.shape[1] * self._features_dc.shape[2]):
             l.append('f_dc_{}'.format(i))
-        for i in range(self._features_rest.shape[1]*self._features_rest.shape[2]):
+        for i in range(self._features_rest.shape[1] * self._features_rest.shape[2]):
             l.append('f_rest_{}'.format(i))
         l.append('opacity')
         for i in range(self._scaling.shape[1]):
@@ -178,7 +176,7 @@ class GaussianModel:
 
     def transform_gaussian(self, transformation_matrix):
         points = torch.cat((self._xyz.T, torch.zeros(1, self._xyz.shape[0],
-                                                                     device=self._xyz.device)))
+                                                     device=self._xyz.device)))
         self._xyz = torch.matmul(transformation_matrix, points).T[:, :3]
 
         self._xyz[:, 0] += transformation_matrix[0, 3]
@@ -189,9 +187,8 @@ class GaussianModel:
         new_rotation = transformation_matrix[:3, :3] @ new_rotation
         self._rotation = matrices_to_quaternions(new_rotation)
 
-
     @staticmethod
-    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix = None):
+    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix=None):
         merged_pc = GaussianModel(3)
 
         if transformation_matrix is not None:

@@ -3,6 +3,9 @@ import json
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal
 import mixture_bind
+from kornia.color import rgb_to_lab
+
+from src.utils.graphics_utils import sh2rgb
 
 from src.models.gaussian_mixture_level import GaussianMixtureModel
 
@@ -36,7 +39,15 @@ class GaussianMixtureWorker(QObject):
         mixture_model_first.distance_delta = self.distance_delta
         mixture_model_first.color_delta = self.color_delta
         mixture_model_first.xyz = self.gaussian_pc_first.get_xyz.detach().cpu().tolist()
+        """features_first = self.gaussian_pc_first.get_features.detach()
+        mixture_model_first.colors = rgb_to_lab(sh2rgb(features_first[0:3].cpu()
+                                                       .view(-1, 3, 1, 1))).view(-1, 3).tolist()
+        mixture_model_first.features = features_first[3:].cpu().tolist()
+        mixture_model_first.colors = rgb_to_lab(sh2rgb(self.gaussian_pc_first.get_colors.detach().cpu()
+                                                       .view(-1, 3, 1, 1))).view(-1, 3).tolist()"""
         mixture_model_first.colors = self.gaussian_pc_first.get_colors.detach().cpu().tolist()
+
+        mixture_model_first.opacities = self.gaussian_pc_first.get_raw_opacity.detach().cpu().view(-1).tolist()
         mixture_model_first.covariance = self.gaussian_pc_first.get_scaled_covariance(1).detach().cpu().tolist()
 
         mixture_model_second = GaussianMixtureModel()
@@ -45,13 +56,23 @@ class GaussianMixtureWorker(QObject):
         mixture_model_second.distance_delta = self.distance_delta
         mixture_model_second.color_delta = self.color_delta
         mixture_model_second.xyz = self.gaussian_pc_second.get_xyz.detach().cpu().tolist()
+        """features_second = self.gaussian_pc_first.get_features.detach()
+        mixture_model_second.colors = rgb_to_lab(sh2rgb(features_second[0:3].cpu()
+                                                        .view(-1, 3, 1, 1))).view(-1, 3).tolist()
+        mixture_model_second.features = features_second[3:].cpu().tolist()
+        mixture_model_second.colors = rgb_to_lab(sh2rgb(self.gaussian_pc_second.get_colors.detach().cpu()
+                                                       .view(-1, 3, 1, 1))).view(-1, 3).tolist()"""
         mixture_model_second.colors = self.gaussian_pc_second.get_colors.detach().cpu().tolist()
+
+        mixture_model_second.opacities = self.gaussian_pc_second.get_raw_opacity.detach().view(-1).cpu().tolist()
         mixture_model_second.covariance = self.gaussian_pc_second.get_scaled_covariance(1).detach().cpu().tolist()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
             return
 
         json_string_first = json.dumps(mixture_model_first.__dict__)
+        #with open('data.json', 'w') as file:
+        #    file.write(json_string_first)
         self.update_progress()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
@@ -91,8 +112,6 @@ class GaussianMixtureWorker(QObject):
 
         self.signal_mixture_created.emit(mixture_models_first, mixture_models_second)
 
-
-
     def update_progress(self):
         self.current_progress += 1
         new_percent = int(self.current_progress / self.max_progress * 100)
@@ -100,4 +119,3 @@ class GaussianMixtureWorker(QObject):
 
     def cancel(self):
         self.signal_cancel = True
-

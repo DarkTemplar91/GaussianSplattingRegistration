@@ -163,6 +163,7 @@ namespace hem
 			vec3 sumcol_i(0, 0, 0);
 			smat3 sumcov_i(0, 0, 0, 0, 0, 0);
 			vec3 resultant(0, 0, 0);
+			float sum_opacity = 0.0f;
 			float nvar = 0.0f;
 
 			// iterate over children and accumulate
@@ -195,6 +196,7 @@ namespace hem
 				sumcov_i += w * (child.cov + smat3::outer(child.mean - parent.mean));	// accumulates generic cov relative to parent µ, numerically more stable than origin, due to smaller distances
 				resultant += w * c_normal;
 				nvar += w * c_nvar;
+				sum_opacity += w * child.opacity;
 			}
 
 			// normalize and condition new cov matrix
@@ -203,6 +205,7 @@ namespace hem
 			smat3 cov_s = inv_w * sumcov_i - smat3::outer(mean_s - parent.mean);
 			//cov_s = conditionCov(cov_s);
 			vec3 col_s = inv_w * sumcol_i;
+			float opacity_s = inv_w * sum_opacity;
 
 			// mixture of normals
 			float variance1 = nvar * inv_w;			// normalized sum of the variances of the child clusters
@@ -218,6 +221,7 @@ namespace hem
 			newComponent.cov = cov_s;
 			newComponent.weight = w_s;
 			newComponent.color = col_s;
+			newComponent.opacity = opacity_s;
 			newComponent.nvar = newMeanNormal * (variance1 + variance2);
 
 			newComponents.push_back(newComponent);
@@ -253,6 +257,7 @@ namespace hem
 		auto& points = initialMixtureLevel.pointSet;
 		auto& colors = initialMixtureLevel.colorSet;
 		auto& covariances = initialMixtureLevel.covarianceSet;
+		auto& opacities = initialMixtureLevel.opacities;
 
 		initialMixture = std::vector<Component>();
 		initialMixture.resize(points.size());
@@ -261,6 +266,7 @@ namespace hem
 			const vec3& mean = points[i];
 			const vec3& color = colors[i];
 			const smat3& covariance = covariances[i];
+			const float opacity = opacities[i];
 			Component& c = initialMixture.at(i);
 
 
@@ -268,6 +274,7 @@ namespace hem
 			c.color = color;
 			c.cov = covariance;
 			//c.cov = conditionCov(c.cov); Try with and without
+			c.opacity = opacity;
 			c.weight = 1.0f;
 
 			// Compute the initial normal and set initial normal variance of this point cluster
@@ -300,17 +307,19 @@ namespace hem
 			mixtureLevelCurrent.pointSet.resize(size);
 			mixtureLevelCurrent.colorSet.resize(size);
 			mixtureLevelCurrent.covarianceSet.resize(size);
+			mixtureLevelCurrent.opacities.resize(size);
 
 			std::transform(currectComponents.begin(), currectComponents.end(), mixtureLevelCurrent.pointSet.begin(),
 				[](const Component& comp) { return comp.mean; });
 
-			// Extract color values from components vector
 			std::transform(currectComponents.begin(), currectComponents.end(), mixtureLevelCurrent.colorSet.begin(),
 				[](const Component& comp) { return comp.color; });
 
-			// Extract covariance values from components vector
 			std::transform(currectComponents.begin(), currectComponents.end(), mixtureLevelCurrent.covarianceSet.begin(),
 				[](const Component& comp) { return comp.cov; });
+
+			std::transform(currectComponents.begin(), currectComponents.end(), mixtureLevelCurrent.opacities.begin(),
+				[](const Component& comp) { return comp.opacity; });
 
 			resultVector.push_back(mixtureLevelCurrent);
 		}

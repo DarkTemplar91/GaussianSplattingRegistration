@@ -16,6 +16,7 @@ public:
 	PointSet pointSet;
 	ColorSet colorSet;
 	CovarianceSet covarianceSet;
+	std::vector<float> opacities;
 };
 
 void from_json(const nlohmann::json& j, MixtureLevel& mixtureLevel);

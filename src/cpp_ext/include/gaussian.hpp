@@ -90,10 +90,11 @@ namespace hem
 		vec3 mean;		// xyz coordinates of the Gaussian
 		vec3 color;		// color values of the Gaussian
 		smat3 cov;		// symmetric covariance matrix
+		float opacity;  // opacity of splat
 		float weight;	// weight
 
 		Gaussian(){}
-		Gaussian(const vec3& mean, const vec3& color, const smat3& cov, float weight = 1.0f) : mean(mean), color(color), cov(cov), weight(weight){}
+		Gaussian(const vec3& mean, const vec3& color, const smat3& cov, float opacity, float weight = 1.0f) : mean(mean), color(color), cov(cov), opacity(opacity), weight(weight){}
 
 	};
 
