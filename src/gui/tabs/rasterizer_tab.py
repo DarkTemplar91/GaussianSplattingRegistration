@@ -12,6 +12,7 @@ from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.utils.graphics_utils import fov2focal
 import src.utils.graphics_utils as graphic_util
 
+
 class RasterizerTab(QWidget):
     signal_rasterize = pyqtSignal(int, int, float, np.ndarray, object)
 

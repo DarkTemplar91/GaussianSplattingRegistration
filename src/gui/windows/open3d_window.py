@@ -123,7 +123,7 @@ class Open3DWindow(QMainWindow):
         parameters = view_control.convert_to_pinhole_camera_parameters()
         extrinsic = parameters.extrinsic
 
-        right = extrinsic[0:1, 0:3].transpose()
+        right = extrinsic[0:1, 0:3].transpose() # TODO: investigate
         up = -extrinsic[1:2, 0:3].transpose()
         front = -extrinsic[2:3, 0:3].transpose()
         eye = np.linalg.inv(extrinsic[0:3, 0:3]) @ (extrinsic[0:3, 3:4] * -1.0)
@@ -140,7 +140,7 @@ class Open3DWindow(QMainWindow):
         distance = view_ratio / np.tan(fov * 0.5 / 180.0 * np.pi)
         lookat = eye - front * distance
 
-        zoom_float = 0.0
+        zoom_float: float
         try:
             zoom_float = zoom.flatten()[0]
         except AttributeError:

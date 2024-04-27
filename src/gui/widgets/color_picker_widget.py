@@ -3,9 +3,8 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QColorDia
 import src.utils.graphics_utils as graphic_util
 
 
-
 class ColorPicker(QWidget):
-    def __init__(self, label_text="", default_color=np.ones(3, dtype=int)*255):
+    def __init__(self, label_text="", default_color=np.ones(3, dtype=int) * 255):
         super().__init__()
         self.color_debug = default_color
 

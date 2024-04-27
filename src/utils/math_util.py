@@ -1,9 +1,7 @@
-import math
-from time import time
-
 import numpy as np
 from e3nn import o3
 import torch
+
 
 # Not sure if this is actually needed.
 def rotate_sh(pc, points, transformation_matrix):
@@ -42,6 +40,8 @@ def rotate_sh(pc, points, transformation_matrix):
 
     for idx, attr_name in enumerate(extra_f_names):
         vertex_data[attr_name] = features_flattened[:, idx]
+
+
 def get_wigner_from_rotation(order, rotation_matrix):
     # Convert the rotation_matrix to a tensor
     rotation_matrix_tensor = torch.tensor(rotation_matrix, dtype=torch.float64)
@@ -54,69 +54,6 @@ def get_wigner_from_rotation(order, rotation_matrix):
 
     return wigner_d.numpy()
 
-def kullback_leibler_distance(child_xyz, child_covariance, parent_xyz, parent_covariance):
-    """Edge cases to consider:
-        * covariance with negative determinant or zero --> leads to NaN or inf resp.
-        * covariance of zero --> trace term is zero. Leads to inf. Should we ignore these?"""
-
-    # TODO: Filter small norms frobenius
-    # TODO: Saját értékek (eigvals) --> filter < epsilon
-    smd = squared_mahalanobis_distance(child_xyz, child_covariance, parent_xyz)
-    trace_term = torch.trace(torch.inverse(parent_covariance) @ child_covariance)
-    parent_det = torch.det(parent_covariance)
-    child_det = torch.det(child_covariance)
-    """if parent_det <= 0:
-        print(parent_det)
-        return math.inf
-
-    if child_det <= 0:
-        print(child_det)
-        return math.inf"""
-
-    det_term = torch.log(torch.abs(child_det / parent_det))
-
-    kld = 0.5 * (smd.double() + trace_term.double() - 3.0 - det_term.double())
-
-    if kld < 0:
-        return math.inf
-
-    return kld
-
-def kullback_leibler_distance_batch(children_xyz, children_covariance, parent_xyz, parent_covariance):
-    # Calculate squared Mahalanobis distance for all children
-    smd = squared_mahalanobis_distance_batch(children_xyz, children_covariance, parent_xyz)
-
-    # Calculate trace term for all children
-    trace_terms = torch.linalg.solve(parent_covariance, children_covariance).diagonal(offset=0, dim1=-1, dim2=-2).sum(-1)
-    # Calculate determinant terms for all children
-    parent_det = torch.det(parent_covariance)
-    child_dets = torch.det(children_covariance)
-    det_terms = torch.log(child_dets / parent_det)
-
-    # Calculate KLD for all children
-    kld = 0.5 * (smd + trace_terms - 3.0 - det_terms)
-
-    return kld
-
-def squared_mahalanobis_distance(child_xyz, child_covariance, parent_xyz):
-    diff = child_xyz - parent_xyz
-    covariance_inv = torch.torch.linalg.inv_ex(child_covariance).inverse
-    return torch.matmul(torch.matmul(diff.unsqueeze(0), covariance_inv), diff.unsqueeze(-1)).squeeze()
-
-def compute_differences(parent_xyz, children_xyz):
-    return children_xyz - parent_xyz
-
-def squared_mahalanobis_distance_batch(children_xyz, children_covariance, parent_xyz):
-    diff = torch.vmap(compute_differences, in_dims=(0, None))(parent_xyz, children_xyz)
-
-    # Reshape children covariance for batch matrix solve
-    children_covariance_reshaped = children_covariance.unsqueeze(0)  # Add singleton dimension for broadcasting
-
-    # Solve part of the Mahalanobis distance for all parent-child combinations
-    solve_part = torch.linalg.solve(children_covariance_reshaped, diff.transpose(-1, -2)).transpose(-1, -2)
-
-    # Calculate squared Mahalanobis distance for all parent-child combinations
-    return torch.sum(diff * solve_part, dim=-1)
 
 def clamp(val, minval, maxval):
     if val != val: return 1

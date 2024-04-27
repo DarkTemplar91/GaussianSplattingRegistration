@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton, QSizePolicy, QStyle, QFileDialog
 import src.utils.graphics_utils as graphic_util
 
+
 class FileSelector(QWidget):
     def __init__(self, parent=None, text="", base_path=None, label_width=120, file_type=QFileDialog.ExistingFile,
                  name_filter="All files (*.*);;*.ply;;*.stl;;*.obj;;*.off"):

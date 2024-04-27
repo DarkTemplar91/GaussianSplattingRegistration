@@ -2,7 +2,6 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit, QCheckBox
 import src.utils.graphics_utils as graphic_util
 
 
-
 class OptionalInputField(QWidget):
 
     def __init__(self, label_text, value, label_width=150, line_edit_width=60, validator=None):

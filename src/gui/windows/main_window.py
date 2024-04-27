@@ -228,8 +228,8 @@ class RegistrationMainWindow(QMainWindow):
             pc_second_ply = load_plyfile_pc(pc_path2)
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
-            if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message) or
-                not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
+            if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message)
+                    or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
 
             pc_first = GaussianModel(3)

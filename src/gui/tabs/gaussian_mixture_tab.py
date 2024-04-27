@@ -1,4 +1,3 @@
-import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, QLocale, Qt
 from PyQt5.QtGui import QDoubleValidator, QIntValidator
@@ -6,6 +5,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizeP
 
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 import src.utils.graphics_utils as graphic_util
+
 
 class GaussianMixtureTab(QWidget):
     signal_create_mixture = QtCore.pyqtSignal(float, float, float, int)
@@ -26,10 +26,10 @@ class GaussianMixtureTab(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        self.hem_reduction_field = SimpleInputField("HEM reduction factor:", "3.0", validator = double_validator )
-        self.distance_field = SimpleInputField("Geometric distance delta:", "0.5", validator = double_validator)
-        self.color_field = SimpleInputField("Color distance delta:", "2.5", validator = double_validator)
-        self.cluster_level_field = SimpleInputField("Cluster level:", "1", validator = int_validator)
+        self.hem_reduction_field = SimpleInputField("HEM reduction factor:", "3.0", validator=double_validator)
+        self.distance_field = SimpleInputField("Geometric distance delta:", "0.5", validator=double_validator)
+        self.color_field = SimpleInputField("Color distance delta:", "2.5", validator=double_validator)
+        self.cluster_level_field = SimpleInputField("Cluster level:", "1", validator=int_validator)
 
         slider_label = QLabel("Current mixture level")
         slider_label.setStyleSheet(
@@ -69,9 +69,7 @@ class GaussianMixtureTab(QWidget):
         layout.addWidget(option_widget)
         layout.addWidget(bt_apply)
 
-
         bt_apply.clicked.connect(self.hem_execute_button_pressed)
-
 
     def hem_execute_button_pressed(self):
         hem_reduction = float(self.hem_reduction_field.lineedit.text())

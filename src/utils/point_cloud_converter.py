@@ -1,7 +1,6 @@
 """
 Converts PLYFILE Point Clouds to the Open3D format
 """
-import time
 
 import open3d as o3d
 import numpy as np
@@ -29,6 +28,7 @@ def convert_input_pc_to_open3d_pc(pc):
     o3d_pc.orient_normals_consistent_tangent_plane(30)
     return o3d_pc
 
+
 def convert_gs_to_open3d_pc(gaussian):
     o3d_pc = o3d.geometry.PointCloud()
     points = gaussian.get_xyz.double().detach().cpu().numpy()
@@ -47,4 +47,3 @@ def convert_gs_to_open3d_pc(gaussian):
     #o3d_pc.orient_normals_consistent_tangent_plane(30)
 
     return o3d_pc
-

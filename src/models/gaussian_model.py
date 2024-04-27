@@ -71,6 +71,10 @@ class GaussianModel:
         return self._features_dc.flatten(start_dim=1)
 
     @property
+    def get_shs(self):
+        return self._features_rest.flatten(start_dim=1)
+
+    @property
     def get_opacity_with_activation(self):
         return self.opacity_activation(self._opacity)
 

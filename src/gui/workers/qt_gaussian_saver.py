@@ -1,5 +1,3 @@
-import copy
-
 import torch
 from PyQt5.QtCore import QObject, pyqtSignal
 
