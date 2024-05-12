@@ -81,11 +81,14 @@ class GaussianMixtureTab(QWidget):
 
         self.signal_create_mixture.emit(hem_reduction, distance_delta, color_delta, cluster_level)
 
-    def set_slider(self, value):
+    def set_slider_range(self, value):
         self.slider.setRange(0, value)
 
     def set_slider_enabled(self, value):
         self.slider.setEnabled(value)
+
+    def set_slider_to(self, value):
+        self.slider.setValue(value)
 
     def value_changed(self):
         if not self.slider.isEnabled():

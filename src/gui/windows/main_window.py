@@ -192,7 +192,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.current_index = 0
 
-        self.hem_widget.set_slider(0)
+        self.hem_widget.set_slider_range(0)
         self.hem_widget.set_slider_enabled(False)
 
         self.pc_gaussian_list_first.clear()
@@ -561,8 +561,9 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_gaussian_list_first.extend(gaussian_list_first)
         self.pc_gaussian_list_second.extend(gaussian_list_second)
 
-        self.hem_widget.set_slider(len(self.pc_gaussian_list_first) - 1)
+        self.hem_widget.set_slider_range(len(self.pc_gaussian_list_first) - 1)
         self.hem_widget.set_slider_enabled(True)
+        self.hem_widget.set_slider_to(0)
 
         self.progress_dialog.close()
 
