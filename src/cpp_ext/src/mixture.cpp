@@ -50,6 +50,11 @@ namespace hem
 		return powf(f, child.weight);
 	}
 
+	float Mixture::hemLikelihoodOpacity(const Gaussian& child)
+    {
+	    return child.opacity * sqrtf(det(child.cov));
+    }
+
 	void Mixture::createClusterLevel(vector<Component>& parentMixture)
 	{
 		size_t nComponents = parentMixture.size();
@@ -141,7 +146,8 @@ namespace hem
 
 				const float maxL = 1e8f;
 				const float minL = FLT_MIN;
-				float wL_si = parent.weight * clamp(hemLikelihood(parent, parentMixture.at(i)), minL, maxL);
+				//float wL_si = parent.weight * clamp(hemLikelihood(parent, parentMixture.at(i)), minL, maxL);
+				float wL_si = parent.weight * clamp(hemLikelihoodOpacity(parentMixture.at(i)), minL, maxL);
 
 				// save likelihood contribution
 				wL_cache[s_][i_] = wL_si;

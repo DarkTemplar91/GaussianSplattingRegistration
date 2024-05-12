@@ -57,6 +57,7 @@ namespace hem
 	protected:
 
 		float hemLikelihood(const Gaussian& parent, const Gaussian& child);
+		float hemLikelihoodOpacity(const Gaussian& child);
 		void createClusterLevel(vector<Component>& newComponents);
 		void initMixture(MixtureLevel &initialMixtureLevel);
 
