@@ -211,12 +211,13 @@ class RegistrationMainWindow(QMainWindow):
 
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
-    def change_visualizer(self, use_debug_color, dc1, dc2, zoom, front, lookat, up):
-        dc1 = dc2 = None
-        if use_debug_color:
-            dc1, dc2 = self.visualizer_widget.get_debug_colors()
+    def change_visualizer(self, use_debug_colors, zoom, front, lookat, up, dc1, dc2):
+        dc1_real = dc2_real = None
+        if use_debug_colors:
+            dc1_real = dc1
+            dc2_real = dc2
 
-        self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
+        self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1_real, dc2_real)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
 
     def get_current_view(self):

@@ -118,7 +118,6 @@ class Open3DWindow(QMainWindow):
         view_control.set_front(front)
         view_control.set_lookat(lookat)
         view_control.set_up(up)
-        pass
 
     def get_current_view(self):
         view_control = self.vis.get_view_control()
