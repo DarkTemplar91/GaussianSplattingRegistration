@@ -346,6 +346,13 @@ class RegistrationMainWindow(QMainWindow):
 
     def handle_registration_result(self, results, data):
         self.progress_dialog.close()
+
+        # Otherwise the registration is global
+        if data is not None:
+            self.local_registration_data = data
+
+        self.transformation_picker.set_transformation(results.transformation)
+
         message_dialog = QMessageBox()
         message_dialog.setWindowTitle("Successful registration")
         message_dialog.setText(f"The registration of the point clouds is finished.\n"
@@ -353,11 +360,7 @@ class RegistrationMainWindow(QMainWindow):
                                f"Fitness: {results.fitness}\n"
                                f"RMSE: {results.inlier_rmse}\n")
         message_dialog.exec()
-        # Otherwise the registration is global
-        if data is not None:
-            self.local_registration_data = data
 
-        self.transformation_picker.set_transformation(results.transformation)
 
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
