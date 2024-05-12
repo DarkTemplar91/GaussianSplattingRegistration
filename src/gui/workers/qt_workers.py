@@ -37,6 +37,7 @@ class PointCloudLoaderGaussian(QThread):
         pc1 = load_plyfile_pc(self.point_cloud1)
         pc2 = load_plyfile_pc(self.point_cloud2)
 
+        # TODO: Check type
         original1 = GaussianModel(3)
         original2 = GaussianModel(3)
         original1.from_ply(pc1)

@@ -35,10 +35,10 @@ namespace hem
 
 	float Mixture::hemLikelihood(const Gaussian& parent, const Gaussian& child)
 	{
-		vec3 µ_diff = parent.mean - child.mean;
+		vec3 mean_diff = parent.mean - child.mean;
 		smat3 pCovInv = inverse(parent.cov);
 
-		float smd = dot(µ_diff, pCovInv * µ_diff);
+		float smd = dot(mean_diff, pCovInv * mean_diff);
 		smat3 ipcCov = pCovInv * child.cov;
 		float ipcTrace = ipcCov.e00 + ipcCov.e11 + ipcCov.e22;
 
@@ -195,7 +195,7 @@ namespace hem
 				w_s += w;
 				summean_i += w * child.mean;
 				sumcol_i += w * child.color;
-				sumcov_i += w * (child.cov + smat3::outer(child.mean - parent.mean));	// accumulates generic cov relative to parent µ, numerically more stable than origin, due to smaller distances
+				sumcov_i += w * (child.cov + smat3::outer(child.mean - parent.mean));	// accumulates generic cov relative to parent mean, numerically more stable than origin, due to smaller distances
 				resultant += w * c_normal;
 				nvar += w * c_nvar;
 				sum_opacity += w * child.opacity;
@@ -249,7 +249,7 @@ namespace hem
 			const vec3& mean = newComponents[i].mean;
 			const smat3& cov = newComponents[i].cov;
 			if (isnan(mean) || det(cov) <= 0 || isnan(det(cov)))
-				cerr << "[clusterLevel] Error @ new component " << i << ": µ = " << mean << ", cov = " << cov << ", det = " << det(cov) << endl;
+				cerr << "[clusterLevel] Error @ new component " << i << ": mean = " << mean << ", cov = " << cov << ", det = " << det(cov) << endl;
 		}*/
 
 		mixtureList.push_back(newComponents);

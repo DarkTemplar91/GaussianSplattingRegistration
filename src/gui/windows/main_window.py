@@ -178,14 +178,11 @@ class RegistrationMainWindow(QMainWindow):
 
     # Event Handlers
     def update_point_clouds(self, transformation_matrix):
+        dc1 = dc2 = None
         if self.visualizer_widget.get_use_debug_color():
             dc1, dc2 = self.visualizer_widget.get_debug_colors()
-            self.pane_open3d.update_transform_with_colors(dc1, dc2, transformation_matrix)
-        else:
-            self.pane_open3d.update_transform(transformation_matrix)
 
-        zoom, front, lookat, up = self.visualizer_widget.get_current_transformations()
-        self.pane_open3d.update_visualizer(zoom, front, lookat, up)
+        self.pane_open3d.update_transform(transformation_matrix, dc1, dc2)
 
     def handle_result(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
         error_message = ('Importing one or both of the point clouds failed.\nPlease check that you entered the correct '
@@ -215,9 +212,11 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
     def change_visualizer(self, use_debug_color, dc1, dc2, zoom, front, lookat, up):
+        dc1 = dc2 = None
         if use_debug_color:
-            self.pane_open3d.update_transform_with_colors(dc1, dc2, self.transformation_picker.transformation_matrix)
+            dc1, dc2 = self.visualizer_widget.get_debug_colors()
 
+        self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
 
     def get_current_view(self):
@@ -574,7 +573,7 @@ class RegistrationMainWindow(QMainWindow):
             self.rasterizer_tab.scale_enable(True)
 
         self.current_index = index
-        self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index])
+        self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True)
 
     def create_error_list_dialog(self, error_list):
         self.progress_dialog.close()
