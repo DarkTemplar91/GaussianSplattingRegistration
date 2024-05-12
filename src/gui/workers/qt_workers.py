@@ -3,7 +3,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 from src.models.gaussian_model import GaussianModel
 from src.utils.file_loader import load_sparse_pc, load_o3d_pc, save_point_clouds_to_cache, \
-    load_plyfile_pc
+    load_plyfile_pc, is_point_cloud_gaussian
 from src.utils.point_cloud_converter import convert_gs_to_open3d_pc
 
 
@@ -37,7 +37,10 @@ class PointCloudLoaderGaussian(QThread):
         pc1 = load_plyfile_pc(self.point_cloud1)
         pc2 = load_plyfile_pc(self.point_cloud2)
 
-        # TODO: Check type
+        if not is_point_cloud_gaussian(pc1) or not is_point_cloud_gaussian(pc2):
+            self.result_signal.emit(None, None, None, None)
+            return
+
         original1 = GaussianModel(3)
         original2 = GaussianModel(3)
         original1.from_ply(pc1)

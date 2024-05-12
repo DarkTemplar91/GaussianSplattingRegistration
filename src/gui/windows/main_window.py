@@ -186,7 +186,7 @@ class RegistrationMainWindow(QMainWindow):
 
     def handle_result(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
         error_message = ('Importing one or both of the point clouds failed.\nPlease check that you entered the correct '
-                         'path!')
+                         'path and the point clouds are of the appropriate type!')
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
@@ -209,6 +209,7 @@ class RegistrationMainWindow(QMainWindow):
             worker = PointCloudSaver(pc_first, pc_second)
             worker.run()
 
+        self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
     def change_visualizer(self, use_debug_colors, zoom, front, lookat, up, dc1, dc2):
@@ -228,10 +229,6 @@ class RegistrationMainWindow(QMainWindow):
         pc_first = None
         pc_second = None
 
-        if len(self.pc_gaussian_list_second) != 0 and len(self.pc_gaussian_list_first) != 0:
-            pc_first = self.pc_gaussian_list_first[0]  # TODO: Use current index
-            pc_second = self.pc_gaussian_list_second[0]
-
         if is_checked:
             pc_first_ply = load_plyfile_pc(pc_path1)
             pc_second_ply = load_plyfile_pc(pc_path2)
@@ -245,6 +242,9 @@ class RegistrationMainWindow(QMainWindow):
             pc_second = GaussianModel(3)
             pc_first.from_ply(pc_first_ply)
             pc_second.from_ply(pc_second_ply)
+        elif len(self.pc_gaussian_list_second) != 0 and len(self.pc_gaussian_list_first) != 0:
+            pc_first = self.pc_gaussian_list_first[self.current_index]
+            pc_second = self.pc_gaussian_list_second[self.current_index]
 
         error_message = ("There were no preloaded point clouds found! Load a Gaussian point cloud before merging, "
                          "or check the \"corresponding inputs\" option and select the point clouds you wish to merge.")
@@ -360,7 +360,6 @@ class RegistrationMainWindow(QMainWindow):
                                f"Fitness: {results.fitness}\n"
                                f"RMSE: {results.inlier_rmse}\n")
         message_dialog.exec()
-
 
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
