@@ -152,6 +152,13 @@ class GaussianModel:
         self._covariance = nn.Parameter(torch.tensor(gaussian_mixture.covariance, dtype=torch.float, device="cuda")
                                         .requires_grad_(True))
 
+        eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance_precomputed)
+
+        self._scaling = torch.sqrt(eigenvalues)
+        self._scaling = nn.Parameter(torch.diag_embed(self._scaling).requires_grad_(True))
+        self._rotation = nn.Parameter(matrices_to_quaternions(eigenvectors).requires_grad_(True))
+
+
     def construct_list_of_attributes(self):
         l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
         # All channels except the 3 DC
@@ -212,9 +219,9 @@ class GaussianModel:
         merged_pc = GaussianModel(3)
 
         # TODO: rewrite transformation
-        """if transformation_matrix is not None:
+        if transformation_matrix is not None:
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
-            gaussian1.transform_gaussian(transformation_matrix_tensor)"""
+            gaussian1.transform_gaussian(transformation_matrix_tensor)
 
         merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
         merged_pc._rotation = torch.cat((gaussian1._rotation, gaussian2._rotation))
