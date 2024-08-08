@@ -207,7 +207,7 @@ class RegistrationMainWindow(QMainWindow):
 
         if save_point_clouds:
             worker = PointCloudSaver(pc_first, pc_second)
-            worker.run()
+            worker.start()
 
         self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)

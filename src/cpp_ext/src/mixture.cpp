@@ -212,7 +212,7 @@ namespace hem
 			float inv_w = 1.0f / w_s;		// w_s > 0 is certain
 			vec3 mean_s = inv_w * summean_i;
 			smat3 cov_s = inv_w * sumcov_i - smat3::outer(mean_s - parent.mean);
-			//cov_s = conditionCov(cov_s);
+            //cov_s = conditionCov(cov_s);
 			vec3 col_s = inv_w * sumcol_i;
 			float opacity_s = inv_w * sum_opacity;
 			FeatureVector featureVector_s = inv_w * sum_featureVector;
@@ -250,13 +250,28 @@ namespace hem
 		for (uint i = 0; i < newComponents.size(); ++i)
 			newComponents[i].is_parent = rand01() < parentProbability;
 
-		/*for (uint i = 0; i < newComponents.size(); ++i)
-		{
-			const vec3& mean = newComponents[i].mean;
-			const smat3& cov = newComponents[i].cov;
-			if (isnan(mean) || det(cov) <= 0 || isnan(det(cov)))
-				cerr << "[clusterLevel] Error @ new component " << i << ": mean = " << mean << ", cov = " << cov << ", det = " << det(cov) << endl;
-		}*/
+
+		vector<Component>::iterator it = newComponents.begin();
+        while (it != newComponents.end())
+        {
+        	const vec3& mean = it->mean;
+        	const smat3& cov = it->cov;
+        	try
+        	{
+        	    float determinant = det(cov);
+                if (isnan(mean) || isnan(determinant) || determinant <= 0)
+        	    {
+        	    	cerr << "[clusterLevel] Error @ new component!" << ": mean = " << mean << ", cov = " << cov << ", det = " << det(cov) << endl;
+        	    	it = newComponents.erase(it);
+        	    }
+        	    else it++;
+        	}
+        	catch(exception e)
+            {
+	            cerr << e.what();
+            }
+
+        }
 
 		mixtureList.push_back(newComponents);
 	}
@@ -287,7 +302,7 @@ namespace hem
 			c.mean = mean;
 			c.color = color;
 			c.cov = covariance;
-			//c.cov = conditionCov(c.cov); Try with and without
+			//c.cov = conditionCov(covariance); //Try with and without
 			c.opacity = opacity;
 			c.featureVector = feature;
 			c.weight = 1.0f;

@@ -62,14 +62,4 @@ FeatureVector& FeatureVector::operator+=(const FeatureVector& other)
     return *this;
 }
 
-void from_json(const nlohmann::json& j, FeatureVector& featureVector)
-{
-    featureVector = j.get<std::vector<float>>();
-}
-
-void to_json(nlohmann::json& j, const FeatureVector& featureVector)
-{
-    j = featureVector.GetVector();
-}
-
 }

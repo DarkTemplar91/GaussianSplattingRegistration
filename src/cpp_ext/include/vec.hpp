@@ -11,15 +11,12 @@
 // http://opensource.org/licenses/BSD-3-Clause
 // Contact: rp@cg.tuwien.ac.at
 //=============================================================================
-
-
 #pragma once
 
 #include "base.hpp"
 #include <sstream>
 #include <iostream>
-#include "json.hpp"
-
+#include <vector>
 
 namespace hem
 {
@@ -30,7 +27,7 @@ namespace hem
 		vec3i() { x = y = z = 0; }
 		vec3i(int X, int Y, int Z) { x = X; y = Y; z = Z; }
 		template<class vec3T> vec3i(const vec3T& rhs) { x = (int)rhs.x; y = (int)rhs.y; z = (int)rhs.z; }
-		
+
 		void operator=(const vec3i& rhs) { x = rhs.x; y = rhs.y; z = rhs.z; }
 
 		bool operator==(const vec3i& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
@@ -90,22 +87,20 @@ namespace hem
 		vec3() { x = y = z = 0; }
 		vec3(float X, float Y, float Z) { x = X; y = Y; z = Z; }
 		vec3(const vec3i& rhs) { x = (float)rhs.x; y = (float)rhs.y; z = (float)rhs.z; }
+		vec3(const std::vector<float> vector)
+		{
+		    if (vector.size() != 3) {
+                throw std::runtime_error("Python list must have exactly 3 elements.");
+            }
+		    x=vector[0];
+		    y=vector[1];
+		    z=vector[2];
+		}
 
 		void operator=(const vec3& rhs) { x = rhs.x; y = rhs.y; z = rhs.z; }
 
 		float x, y, z;
 	};
-
-	inline void from_json(const nlohmann::json& j, vec3& vec) {
-		vec.x = j.at(0).get<float>();
-		vec.y = j.at(1).get<float>();
-		vec.z = j.at(2).get<float>();
-	}
-
-	inline void to_json(nlohmann::json& j, const vec3& vec)
-	{
-		j = nlohmann::json{ vec.x, vec.y, vec.z };
-	}
 
 	inline vec3 operator-(const vec3& a)
 	{
@@ -198,7 +193,6 @@ namespace hem
 	//--------------------------------------------------------------------------------------
 	#pragma endregion
 
-	
 	#pragma region mat3
 	//--------------------------------------------------------------------------------------
 	// mat3 class - ROW MAJOR!
@@ -269,7 +263,7 @@ namespace hem
 			//ASSERT( (r>=0) && (c>=0) && (r<3) && (c<3) );
 			return a[r * 3 + c];
 		}
-		
+
 		// Dereferencing operator
 		operator float* ()
 		{
@@ -312,7 +306,7 @@ namespace hem
 			for (int k = 0; k < 3 * 3; ++k) a[k] /= w;
 			return *this;
 		}
-		
+
 		// Matrix Multiplication
 		mat3 & operator*=(const mat3& m)
 		{
@@ -436,7 +430,7 @@ namespace hem
 		result.transpose();
 		return result;
 	}
-	
+
 	inline float det(const mat3& m)
 	{
 		return	m(0, 0)*m(1, 1)*m(2, 2) + m(0, 1)*m(1, 2)*m(2, 0) + m(0, 2)*m(1, 0)*m(2, 1) -
@@ -455,306 +449,6 @@ namespace hem
 	}
 	//--------------------------------------------------------------------------------------
 	#pragma endregion
-	
-
-	#pragma region mat4
-	//--------------------------------------------------------------------------------------
-	// mat4 class - ROW MAJOR!
-	class mat4
-	{
-		float a[4 * 4];
-
-	public:
-		// Default constructor
-		mat4()
-		{}
-
-		// Initializing constructor
-		mat4(float e00, float e01, float e02, float e03,
-			float e10, float e11, float e12, float e13,
-			float e20, float e21, float e22, float e23,
-			float e30, float e31, float e32, float e33)
-		{
-			a[0] = e00;		a[1] = e01;		a[2] = e02;		a[3] = e03;
-			a[4] = e10;		a[5] = e11;		a[6] = e12;		a[7] = e13;
-			a[8] = e20;		a[9] = e21;		a[10] = e22;	a[11] = e23;
-			a[12] = e30;	a[13] = e31;	a[14] = e32;	a[15] = e33;
-		}
-
-		// identity matrix
-		static mat4 identity()
-		{
-			return mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-		}
-
-		// Copy constructor
-		mat4(const mat4& m)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] = m.a[k];
-		}
-
-		// Copy constructor with a given array (must have a length >= 4*4)
-		mat4(const float* m)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] = m[k];
-		}
-
-		// Constructor with upper left triangle matrix provided, optional constant value for remaining elements
-		mat4(const mat3& m, float w = 0)
-		{
-			a[0] = m[0];	a[1] = m[1];	a[2] = m[2];	a[3] = w;
-			a[4] = m[3];	a[5] = m[4];	a[6] = m[5];	a[7] = w;
-			a[8] = m[6];	a[9] = m[7];	a[10] = m[8];	a[11] = w;
-			a[12] = w;		a[13] = w;		a[14] = w;		a[15] = w;
-		}
-
-		// Constructor with an initial value for all elements
-		explicit mat4(float w)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] = w;
-		}
-
-		float& operator[](int k)
-		{
-			//ASSERT( (k>=0) && (k<4*4) );
-			return a[k];
-		}
-
-		const float& operator[](int k) const
-		{
-			//ASSERT( (k>=0) && (k<4*4) );
-			return a[k];
-		}
-
-		// Matrix access
-		float& operator() (int k, int l)
-		{
-			//ASSERT( (k>=0) && (l>=0) && (k<4) && (l<4) );
-			return a[k * 4 + l];
-		}
-
-		const float& operator() (int k, int l) const
-		{
-			//ASSERT( (k>=0) && (l>=0) && (k<4) && (l<4) );
-			return a[k * 4 + l];
-		}
-		
-		// Dereferencing operator
-		operator float* ()
-		{
-			return a;
-		}
-
-		// Constant dereferencing operator
-		operator const float* () const
-		{
-			return a;
-		}
-
-		// Comparison operators
-		bool operator==(const mat4& m) const
-		{
-			for (int k = 0; k < 4 * 4; ++k) 
-				if (a[k] != m.a[k])
-					return false;
-			return true;
-		}
-		bool operator!=(const mat4& m) const
-		{
-			return !(*this == m);
-		}
-
-		// Assignment operator
-		mat4& operator=(const mat4& m)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] = m.a[k];
-			return (*this);
-		}
-
-		mat4& operator+=(const mat4& m)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] += m.a[k];
-			return *this;
-		}
-
-		mat4& operator-=(const mat4& m)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] -= m.a[k];
-			return *this;
-		}
-
-		mat4& operator*=(float w)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] *= w;
-			return *this;
-		}
-
-		mat4& operator/=(float w)
-		{
-			for (int k = 0; k < 4 * 4; ++k) a[k] /= w;
-			return *this;
-		}
-
-		mat3 toMat3() const
-		{
-			return mat3(a[0], a[1], a[2], a[4], a[5], a[6], a[8], a[9], a[10]);
-		}
-
-		// Matrix Multiplication
-		mat4 & operator*=(const mat4& m)
-		{
-			mat4 result;
-			for (int i = 0; i < 4; ++i)
-			for (int j = 0; j < 4; ++j)
-			{
-				float sum(0);
-				for (int k = 0; k < 4; k++)
-					sum += a[i * 4 + k] * m.a[k * 4 + j];
-				result[i * 4 + j] = sum;
-			}
-			*this = result;
-			return *this;
-		}
-		
-		mat4 operator+(const mat4& m) const
-		{
-			mat4 res;
-			for (int k = 0; k < 4 * 4; ++k) res[k] = a[k] + m.a[k];
-			return res;
-		}
-
-		mat4 operator-(const mat4& m) const
-		{
-			mat4 res;
-			for (int k = 0; k < 4 * 4; ++k) res[k] = a[k] - m.a[k];
-			return res;
-		}
-
-		mat4 operator*(float w) const
-		{
-			mat4 res;
-			for (int k = 0; k < 4 * 4; ++k) res[k] = a[k] * w;
-			return res;
-		}
-
-		mat4 operator/(float w) const
-		{
-			float invw = 1.0f / w;
-			return (*this) * invw;
-		}
-
-		// Product of two matrices
-		mat4 operator*(const mat4& m) const
-		{
-			mat4 res;
-			for (int i = 0; i < 4; ++i)
-			for (int j = 0; j < 4; ++j)
-			{
-				float sum(0);
-				for (int k = 0; k < 4; k++)
-					sum += a[i * 4 + k] * m.a[k * 4 + j];
-				res[i * 4 + j] = sum;
-			}
-			return res;
-		}
-
-		// Unary -
-		mat4 operator-() const
-		{
-			mat4 res;
-			for (int k = 0; k < 4 * 4; ++k) res[k] = -a[k];
-			return res;
-		}
-
-		// Clear the matrix to zero
-		void clear()
-		{
-			for (int k = 0; k < 4 * 4; ++k)
-				a[k] = 0.0f;
-		}
-
-		// Transpose matrix
-		void transpose()
-		{
-			float help;
-			for (int i = 0; i < 4; ++i)
-			for (int j = 0; j<4; ++j)
-			if (i > j)
-			{
-				help = a[i * 4 + j];
-				a[i * 4 + j] = a[j * 4 + i];
-				a[j * 4 + i] = help;
-			}
-		}
-	};
-
-	inline mat4 translationMatrix(const vec3& t)
-	{
-		return mat4(
-			1, 0, 0, t.x,
-			0, 1, 0, t.y,
-			0, 0, 1, t.z,
-			0, 0, 0, 1
-		);
-	}
-
-	inline mat4 transpose(mat4 const & m)
-	{
-		mat4 result = m;
-		result.transpose();
-		return result;
-	}
-	
-	inline float det(const mat4& m)
-	{
-		return	m(3, 0)*m(2, 1)*m(1, 2)*m(0, 3) - m(2, 0)*m(3, 1)*m(1, 2)*m(0, 3) - m(3, 0)*m(1, 1)*m(2, 2)*m(0, 3) + m(1, 0)*m(3, 1)*m(2, 2)*m(0, 3) +
-			m(2, 0)*m(1, 1)*m(3, 2)*m(0, 3) - m(1, 0)*m(2, 1)*m(3, 2)*m(0, 3) - m(3, 0)*m(2, 1)*m(0, 2)*m(1, 3) + m(2, 0)*m(3, 1)*m(0, 2)*m(1, 3) +
-			m(3, 0)*m(0, 1)*m(2, 2)*m(1, 3) - m(0, 0)*m(3, 1)*m(2, 2)*m(1, 3) - m(2, 0)*m(0, 1)*m(3, 2)*m(1, 3) + m(0, 0)*m(2, 1)*m(3, 2)*m(1, 3) +
-			m(3, 0)*m(1, 1)*m(0, 2)*m(2, 3) - m(1, 0)*m(3, 1)*m(0, 2)*m(2, 3) - m(3, 0)*m(0, 1)*m(1, 2)*m(2, 3) + m(0, 0)*m(3, 1)*m(1, 2)*m(2, 3) +
-			m(1, 0)*m(0, 1)*m(3, 2)*m(2, 3) - m(0, 0)*m(1, 1)*m(3, 2)*m(2, 3) - m(2, 0)*m(1, 1)*m(0, 2)*m(3, 3) + m(1, 0)*m(2, 1)*m(0, 2)*m(3, 3) +
-			m(2, 0)*m(0, 1)*m(1, 2)*m(3, 3) - m(0, 0)*m(2, 1)*m(1, 2)*m(3, 3) - m(1, 0)*m(0, 1)*m(2, 2)*m(3, 3) + m(0, 0)*m(1, 1)*m(2, 2)*m(3, 3);
-	}
-	
-	inline mat4 inverse(const mat4& m)
-	{
-		float d = det(m);
-		mat4 r = mat4(
-			m(2, 1)*m(3, 2)*m(1, 3) - m(3, 1)*m(2, 2)*m(1, 3) + m(3, 1)*m(1, 2)*m(2, 3) - m(1, 1)*m(3, 2)*m(2, 3) - m(2, 1)*m(1, 2)*m(3, 3) + m(1, 1)*m(2, 2)*m(3, 3),
-			m(3, 0)*m(2, 2)*m(1, 3) - m(2, 0)*m(3, 2)*m(1, 3) - m(3, 0)*m(1, 2)*m(2, 3) + m(1, 0)*m(3, 2)*m(2, 3) + m(2, 0)*m(1, 2)*m(3, 3) - m(1, 0)*m(2, 2)*m(3, 3),
-			m(2, 0)*m(3, 1)*m(1, 3) - m(3, 0)*m(2, 1)*m(1, 3) + m(3, 0)*m(1, 1)*m(2, 3) - m(1, 0)*m(3, 1)*m(2, 3) - m(2, 0)*m(1, 1)*m(3, 3) + m(1, 0)*m(2, 1)*m(3, 3),
-			m(3, 0)*m(2, 1)*m(1, 2) - m(2, 0)*m(3, 1)*m(1, 2) - m(3, 0)*m(1, 1)*m(2, 2) + m(1, 0)*m(3, 1)*m(2, 2) + m(2, 0)*m(1, 1)*m(3, 2) - m(1, 0)*m(2, 1)*m(3, 2),
-
-			m(3, 1)*m(2, 2)*m(0, 3) - m(2, 1)*m(3, 2)*m(0, 3) - m(3, 1)*m(0, 2)*m(2, 3) + m(0, 1)*m(3, 2)*m(2, 3) + m(2, 1)*m(0, 2)*m(3, 3) - m(0, 1)*m(2, 2)*m(3, 3),
-			m(2, 0)*m(3, 2)*m(0, 3) - m(3, 0)*m(2, 2)*m(0, 3) + m(3, 0)*m(0, 2)*m(2, 3) - m(0, 0)*m(3, 2)*m(2, 3) - m(2, 0)*m(0, 2)*m(3, 3) + m(0, 0)*m(2, 2)*m(3, 3),
-			m(3, 0)*m(2, 1)*m(0, 3) - m(2, 0)*m(3, 1)*m(0, 3) - m(3, 0)*m(0, 1)*m(2, 3) + m(0, 0)*m(3, 1)*m(2, 3) + m(2, 0)*m(0, 1)*m(3, 3) - m(0, 0)*m(2, 1)*m(3, 3),
-			m(2, 0)*m(3, 1)*m(0, 2) - m(3, 0)*m(2, 1)*m(0, 2) + m(3, 0)*m(0, 1)*m(2, 2) - m(0, 0)*m(3, 1)*m(2, 2) - m(2, 0)*m(0, 1)*m(3, 2) + m(0, 0)*m(2, 1)*m(3, 2),
-
-			m(1, 1)*m(3, 2)*m(0, 3) - m(3, 1)*m(1, 2)*m(0, 3) + m(3, 1)*m(0, 2)*m(1, 3) - m(0, 1)*m(3, 2)*m(1, 3) - m(1, 1)*m(0, 2)*m(3, 3) + m(0, 1)*m(1, 2)*m(3, 3),
-			m(3, 0)*m(1, 2)*m(0, 3) - m(1, 0)*m(3, 2)*m(0, 3) - m(3, 0)*m(0, 2)*m(1, 3) + m(0, 0)*m(3, 2)*m(1, 3) + m(1, 0)*m(0, 2)*m(3, 3) - m(0, 0)*m(1, 2)*m(3, 3),
-			m(1, 0)*m(3, 1)*m(0, 3) - m(3, 0)*m(1, 1)*m(0, 3) + m(3, 0)*m(0, 1)*m(1, 3) - m(0, 0)*m(3, 1)*m(1, 3) - m(1, 0)*m(0, 1)*m(3, 3) + m(0, 0)*m(1, 1)*m(3, 3),
-			m(3, 0)*m(1, 1)*m(0, 2) - m(1, 0)*m(3, 1)*m(0, 2) - m(3, 0)*m(0, 1)*m(1, 2) + m(0, 0)*m(3, 1)*m(1, 2) + m(1, 0)*m(0, 1)*m(3, 2) - m(0, 0)*m(1, 1)*m(3, 2),
-
-			m(2, 1)*m(1, 2)*m(0, 3) - m(1, 1)*m(2, 2)*m(0, 3) - m(2, 1)*m(0, 2)*m(1, 3) + m(0, 1)*m(2, 2)*m(1, 3) + m(1, 1)*m(0, 2)*m(2, 3) - m(0, 1)*m(1, 2)*m(2, 3),
-			m(1, 0)*m(2, 2)*m(0, 3) - m(2, 0)*m(1, 2)*m(0, 3) + m(2, 0)*m(0, 2)*m(1, 3) - m(0, 0)*m(2, 2)*m(1, 3) - m(1, 0)*m(0, 2)*m(2, 3) + m(0, 0)*m(1, 2)*m(2, 3),
-			m(2, 0)*m(1, 1)*m(0, 3) - m(1, 0)*m(2, 1)*m(0, 3) - m(2, 0)*m(0, 1)*m(1, 3) + m(0, 0)*m(2, 1)*m(1, 3) + m(1, 0)*m(0, 1)*m(2, 3) - m(0, 0)*m(1, 1)*m(2, 3),
-			m(1, 0)*m(2, 1)*m(0, 2) - m(2, 0)*m(1, 1)*m(0, 2) + m(2, 0)*m(0, 1)*m(1, 2) - m(0, 0)*m(2, 1)*m(1, 2) - m(1, 0)*m(0, 1)*m(2, 2) + m(0, 0)*m(1, 1)*m(2, 2)
-			);
-
-		return r / d;
-	}
-	
-	inline std::ostream& operator<< (std::ostream& os, const mat4& m)
-	{
-		os << "((" << m(0, 0) << ", " << m(0, 1) << ", " << m(0, 2) << ", " << m(0, 3) << "), "
-			<< "(" << m(1, 0) << ", " << m(1, 1) << ", " << m(1, 2) << ", " << m(1, 3) << "), "
-			<< "(" << m(2, 0) << ", " << m(2, 1) << ", " << m(2, 2) << ", " << m(2, 3) << "), "
-			<< "(" << m(3, 0) << ", " << m(3, 1) << ", " << m(3, 2) << ", " << m(3, 3) << "))";
-
-		return os;
-	}
-	//--------------------------------------------------------------------------------------
-	#pragma endregion
-
 
 	#pragma region smat3
 	//--------------------------------------------------------------------------------------
@@ -762,7 +456,7 @@ namespace hem
 	struct smat3
 	{
 		float e00, e01, e02, e11, e12, e22;
-		
+
 		smat3() {}
 
 		smat3(float _e00, float _e01, float _e02, float _e11, float _e12, float _e22) :
@@ -773,6 +467,19 @@ namespace hem
 		smat3(const mat3& mat) :
 			e00(mat(0, 0)), e01(mat(0, 1)), e02(mat(0, 2)), e11(mat(1, 1)), e12(mat(1, 2)), e22(mat(2, 2))
 		{}
+
+		smat3(const std::vector<float> vector)
+		{
+		    if (vector.size() != 6) {
+                throw std::runtime_error("Python list must have exactly 6 elements.");
+            }
+		    e00=vector[0];
+		    e01=vector[1];
+		    e02=vector[2];
+		    e11=vector[3];
+		    e12=vector[4];
+		    e22=vector[5];
+		}
 
 		const smat3& operator=(const mat3& mat)
 		{
@@ -854,7 +561,7 @@ namespace hem
 		{
 			return smat3(-e00, -e01, -e02, -e11, -e12, -e22);
 		}
-						
+
 		std::string toString() const
 		{
 			std::stringstream s;
@@ -866,22 +573,22 @@ namespace hem
 		{
 			return smat3(1, 0, 0, 1, 0, 1);
 		};
-		
+
 		static smat3 zero()
 		{
 			return smat3(0, 0, 0, 0, 0, 0);
 		}
 
-		static smat3 outer(const vec3& v) 
+		static smat3 outer(const vec3& v)
 		{
 			return smat3 (v.x*v.x, v.x*v.y, v.x*v.z, v.y*v.y, v.y*v.z, v.z*v.z);
 		}
 
-		static smat3 diag(const vec3& v) 
+		static smat3 diag(const vec3& v)
 		{
 			return smat3 (v.x, 0, 0, v.y, 0, v.z);
 		}
-		
+
 		#pragma region eigenvalue decomposition methods
 	private:
 		int computeRank(mat3& M, float epsilon = 0) const
@@ -955,7 +662,7 @@ namespace hem
 				M(1, 2) = 0;
 				M(2, 2) = 0;
 			}
-			
+
 			// Compute the maximum-magnitude entry of the last two rows of the row-reduced matrix.
 			max = -1;
 			maxRow = -1;
@@ -998,7 +705,7 @@ namespace hem
 			// The rank is 2. The eigenvalue has multiplicity 1.
 			return 2;
 		}
-		
+
 		void getComplement2(vec3 u, vec3& v, vec3& w) const
 		{
 			u = normalize(u);
@@ -1069,7 +776,7 @@ namespace hem
 				if (fabsf(*eptr) > emax)
 					emax = fabsf(*eptr);
 			smat3 cn = (*this) / emax;
-			
+
 			vec3 evalues;				// pivoted eigen values
 			float eps = 2 * FLT_MIN;	// Note: if epsilon is zero, small numeric instabilities can pretty fast result in a false rank-estimation, which can result in bad eigenvectors
 			{
@@ -1125,7 +832,7 @@ namespace hem
 				evecs[0].z, evecs[1].z, evecs[2].z
 				);
 		}
-		
+
 		void eigenvectors(vec3 out_evectors[3]) const
 		{
 			vec3 evalues;
@@ -1142,25 +849,11 @@ namespace hem
 				evecs[0].z, evecs[1].z, evecs[2].z
 			);
 		}
-				
+
 		#pragma endregion
 	};
 
 	#pragma region smat3	non-member operators
-
-	inline void from_json(const nlohmann::json& j, smat3& cov) {
-		cov.e00 = j.at(0).get<float>();
-		cov.e01 = j.at(1).get<float>();
-		cov.e02 = j.at(2).get<float>();
-		cov.e11 = j.at(3).get<float>();
-		cov.e12 = j.at(4).get<float>();
-		cov.e22 = j.at(5).get<float>();
-	}
-
-	inline void to_json(nlohmann::json& j, const smat3& cov)
-	{
-		j = nlohmann::json{ cov.e00, cov.e01, cov.e02, cov.e11, cov.e12, cov.e22 };
-	}
 
 	inline smat3 operator* (float s, const smat3& cov)
 	{

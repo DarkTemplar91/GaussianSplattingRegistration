@@ -1,38 +1,24 @@
-#include "mixture_wrapper.h"
-#include "json.hpp"
+#include "mixture_wrapper.hpp"
 #include "mixturelevel.hpp"
 #include "mixture.hpp"
 #include "vec.hpp"
 #include <string>
 
 using namespace hem;
-using json = nlohmann::json;
 
-extern "C" {
-    std::string call_mixture_creation(std::string gaussianJson) {
-	    // Parse the JSON data
-	    json data;
-	    try {
-	    	data = json::parse(gaussianJson);
-	    }
-	    catch (const json::parse_error& e) {
-	    	return "Failed to parse JSON";
-	    }
 
-	    uint clusterLevel = data["cluster_level"];
-	    float hemReduction = data["hem_reduction"];
-	    float distanceDelta = data["distance_delta"];
-	    float colorDelta = data["color_delta"];
+std::vector<MixtureLevel> MixtureCreator::CreateMixture(unsigned int clusterLevel, float hemReduction, float distanceDelta, float colorDelta, MixtureLevel &mixtureLevel) {
 
-	    MixtureLevel mixtureLevel = data.get<MixtureLevel>();
+    std::cout << "cluster level: " << clusterLevel << std::endl;
+    std::cout << "hem reduction: " << hemReduction << std::endl;
+    std::cout << "distance delta: " << distanceDelta << std::endl;
+    std::cout << "color delta: " << colorDelta << std::endl;
 
-	    Mixture* mixture = new Mixture(mixtureLevel, hemReduction, distanceDelta, colorDelta);
-	    mixture->CreateMixture(clusterLevel);
+    Mixture* mixture = new Mixture(mixtureLevel, hemReduction, distanceDelta, colorDelta);
+    mixture->CreateMixture(clusterLevel);
 
-	    auto result = mixture->GetResult();
-	    result.erase(result.begin());
+    auto result = mixture->GetResult();
+    result.erase(result.begin());
 
-	    json resultJson = result;
-	    return resultJson.dump();
-    }
+    return result;
 }

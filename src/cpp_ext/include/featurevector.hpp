@@ -1,11 +1,9 @@
 #pragma once
-
 #include <vector>
-#include "json.hpp"
 
 namespace hem
 {
-
+class MixtureLevel;
 class FeatureVector
 {
 public:
@@ -22,15 +20,10 @@ public:
     //FeatureVector& operator=(std::vector<float> other);
     FeatureVector& operator+=(const FeatureVector& other);
 
-    
-
 private:
 	std::vector<float> valueVector;
 };
 
 const FeatureVector operator*(const float n, const FeatureVector& featureVector);
-
-void from_json(const nlohmann::json& j, FeatureVector& featureVector);
-void to_json(nlohmann::json& j, const FeatureVector& featureVector);
 
 }
