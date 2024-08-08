@@ -13,6 +13,7 @@ __pycache__/
 *.ply
 *.log
 *.pyd
+*.txt
 
 /output
 /inputs
