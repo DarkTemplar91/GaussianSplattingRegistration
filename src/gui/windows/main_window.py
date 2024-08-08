@@ -577,7 +577,13 @@ class RegistrationMainWindow(QMainWindow):
             self.rasterizer_tab.scale_enable(True)
 
         self.current_index = index
-        self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True)
+
+        dc1 = dc2 = None
+        if self.visualizer_widget.get_use_debug_color():
+            dc1, dc2 = self.visualizer_widget.get_debug_colors()
+
+        self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True,
+                                           self.transformation_picker.transformation_matrix, dc1, dc2)
 
     def create_error_list_dialog(self, error_list):
         self.progress_dialog.close()
