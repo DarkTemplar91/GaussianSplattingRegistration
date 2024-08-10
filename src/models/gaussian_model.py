@@ -139,7 +139,6 @@ class GaussianModel:
 
         self._covariance = self.get_scaled_covariance()
 
-
     def from_mixture(self, gaussian_mixture: GaussianMixtureModel):
         self._xyz = nn.Parameter(torch.tensor(gaussian_mixture.xyz, dtype=torch.float, device="cuda")
                                  .requires_grad_(True))
@@ -152,12 +151,31 @@ class GaussianModel:
         self._covariance = nn.Parameter(torch.tensor(gaussian_mixture.covariance, dtype=torch.float, device="cuda")
                                         .requires_grad_(True))
 
+        # TODO: Reorder in different method
         eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance_precomputed)
 
-        self._scaling = torch.sqrt(eigenvalues)
-        self._scaling = nn.Parameter(torch.diag_embed(self._scaling).requires_grad_(True))
-        self._rotation = nn.Parameter(matrices_to_quaternions(eigenvectors).requires_grad_(True))
+        # Standard basis vectors for x, y, z axes
+        x_axis = torch.tensor([1, 0, 0], dtype=torch.float32, device="cuda")
+        y_axis = torch.tensor([0, 1, 0], dtype=torch.float32, device="cuda")
+        z_axis = torch.tensor([0, 0, 1], dtype=torch.float32, device="cuda")
 
+        axes = torch.stack([x_axis, y_axis, z_axis])
+
+        # Compute dot products to determine the correspondence of each eigenvector
+        dot_products = torch.abs(torch.matmul(eigenvectors.transpose(1, 2), axes.T))
+
+        # Get the indices that would sort each eigenvector to align with x, y, z axes
+        correspondence = torch.argmax(dot_products, dim=2)
+
+        # Reorder eigenvalues and eigenvectors accordingly
+        sorted_eigenvalues = torch.zeros_like(eigenvalues)
+        sorted_eigenvectors = torch.zeros_like(eigenvectors)
+
+        sorted_eigenvalues.scatter_(1, correspondence, eigenvalues)
+        sorted_eigenvectors.scatter_(1, correspondence.unsqueeze(-1).expand(-1, -1, 3), eigenvectors)
+
+        self._scaling = nn.Parameter(self.scaling_inverse_activation(torch.sqrt(sorted_eigenvalues)).requires_grad_(True))
+        self._rotation = nn.Parameter(matrices_to_quaternions(sorted_eigenvectors).requires_grad_(True))
 
     def construct_list_of_attributes(self):
         l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
