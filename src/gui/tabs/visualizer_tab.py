@@ -102,8 +102,10 @@ class VisualizerTab(QWidget):
 
     def apply_to_vis(self):
         use_debug_color = self.get_use_debug_color()
-        dc1 = np.asarray(self.debug_color_dialog_first.color_debug)
-        dc2 = np.asarray(self.debug_color_dialog_second.color_debug)
+        dc1 = dc2 = None
+        if use_debug_color:
+            dc1 = np.asarray(self.debug_color_dialog_first.color_debug)
+            dc2 = np.asarray(self.debug_color_dialog_second.color_debug)
 
         self.signal_change_vis.emit(use_debug_color, float(self.zoom_widget.lineedit.text()),
                                     self.front_widget.values, self.lookat_widget.values, self.up_widget.values,
@@ -112,7 +114,7 @@ class VisualizerTab(QWidget):
     def get_current_view(self):
         self.signal_get_current_view.emit()
 
-    def assign_new_values(self, zoom, front, lookat, up):
+    def set_visualizer_attributes(self, zoom, front, lookat, up):
         self.zoom_widget.lineedit.setText(str(zoom))
         self.zoom_widget.lineedit.setCursorPosition(0)
         self.front_widget.set_values(front)

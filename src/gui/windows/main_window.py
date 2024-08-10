@@ -34,6 +34,7 @@ from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 
 class RegistrationMainWindow(QMainWindow):
 
+    # Constructor
     def __init__(self, parent=None):
         super(RegistrationMainWindow, self).__init__(parent)
         self.setWindowTitle("Gaussian Splatting Registration")
@@ -109,6 +110,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.setCentralWidget(splitter)
 
+    # GUI setup functions
     def setup_input_group(self, group_input_data):
         group_input_data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         group_input_data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -127,8 +129,8 @@ class RegistrationMainWindow(QMainWindow):
         self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
-        self.input_tab.result_signal.connect(self.handle_result)
-        self.cache_tab.result_signal.connect(self.handle_result)
+        self.input_tab.result_signal.connect(self.handle_point_cloud_loading)
+        self.cache_tab.result_signal.connect(self.handle_point_cloud_loading)
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
@@ -162,7 +164,7 @@ class RegistrationMainWindow(QMainWindow):
         multi_scale_registration_widget.signal_do_registration.connect(self.do_multi_scale_registration)
 
         evaluator_widget = EvaluationTab()
-        evaluator_widget.signal_camera_change.connect(self.loaded_camera_changed)
+        evaluator_widget.signal_camera_change.connect(self.pane_open3d.apply_camera_transformation)
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
         self.hem_widget = GaussianMixtureTab()
@@ -184,7 +186,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.pane_open3d.update_transform(transformation_matrix, dc1, dc2)
 
-    def handle_result(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
+    def handle_point_cloud_loading(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
         error_message = ('Importing one or both of the point clouds failed.\nPlease check that you entered the correct '
                          'path and the point clouds are of the appropriate type!')
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
@@ -213,23 +215,18 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
     def change_visualizer(self, use_debug_colors, zoom, front, lookat, up, dc1, dc2):
-        dc1_real = dc2_real = None
-        if use_debug_colors:
-            dc1_real = dc1
-            dc2_real = dc2
-
-        self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1_real, dc2_real)
+        self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
 
     def get_current_view(self):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
-        self.visualizer_widget.assign_new_values(zoom, front, lookat, up)
+        self.visualizer_widget.set_visualizer_attributes(zoom, front, lookat, up)
 
-    def merge_point_clouds(self, is_checked, pc_path1, pc_path2, merge_path):
+    def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
         pc_first = None
         pc_second = None
 
-        if is_checked:
+        if use_corresponding_pc:
             pc_first_ply = load_plyfile_pc(pc_path1)
             pc_second_ply = load_plyfile_pc(pc_path2)
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
@@ -269,12 +266,14 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Saving merged point cloud...")
         self.progress_dialog.exec()
 
+    # Registration
     def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
-        # Create worker for local registration
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.pc_open3d_list_first[self.current_index]
+        pc2 = self.pc_open3d_list_first[self.current_index]
         init_trans = self.transformation_picker.transformation_matrix
+
+        # Create worker for local registration
         local_registrator = LocalRegistrator(pc1, pc2, init_trans, registration_type, max_correspondence,
                                              relative_fitness, relative_rmse, max_iteration, rejection_type,
                                              k_value)
@@ -285,7 +284,7 @@ class RegistrationMainWindow(QMainWindow):
         local_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(local_registrator.do_registration)
-        local_registrator.signal_registration_done.connect(self.handle_registration_result)
+        local_registrator.signal_registration_done.connect(self.handle_registration_result_local)
         local_registrator.signal_finished.connect(thread.quit)
         local_registrator.signal_finished.connect(local_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -297,8 +296,8 @@ class RegistrationMainWindow(QMainWindow):
     def do_ransac_registration(self, voxel_size, mutual_filter, max_correspondence, estimation_method,
                                ransac_n, checkers, max_iteration, confidence):
 
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.pc_open3d_list_first[self.current_index]
+        pc2 = self.pc_open3d_list_first[self.current_index]
 
         ransac_registrator = RANSACRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                                voxel_size, mutual_filter, max_correspondence,
@@ -310,7 +309,7 @@ class RegistrationMainWindow(QMainWindow):
         ransac_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(ransac_registrator.do_registration)
-        ransac_registrator.signal_registration_done.connect(self.handle_registration_result)
+        ransac_registrator.signal_registration_done.connect(self.handle_registration_result_global)
         ransac_registrator.signal_finished.connect(thread.quit)
         ransac_registrator.signal_finished.connect(ransac_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -321,8 +320,8 @@ class RegistrationMainWindow(QMainWindow):
 
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.pc_open3d_list_first[self.current_index]
+        pc2 = self.pc_open3d_list_first[self.current_index]
 
         fgr_registrator = FGRRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                          voxel_size, division_factor, use_absolute_scale, decrease_mu,
@@ -335,7 +334,7 @@ class RegistrationMainWindow(QMainWindow):
         fgr_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(fgr_registrator.do_registration)
-        fgr_registrator.signal_registration_done.connect(self.handle_registration_result)
+        fgr_registrator.signal_registration_done.connect(self.handle_registration_result_global)
         fgr_registrator.signal_finished.connect(thread.quit)
         fgr_registrator.signal_finished.connect(fgr_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -344,28 +343,11 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
-    def handle_registration_result(self, results, data):
-        self.progress_dialog.close()
-
-        # Otherwise the registration is global
-        if data is not None:
-            self.local_registration_data = data
-
-        self.transformation_picker.set_transformation(results.transformation)
-
-        message_dialog = QMessageBox()
-        message_dialog.setWindowTitle("Successful registration")
-        message_dialog.setText(f"The registration of the point clouds is finished.\n"
-                               f"The transformation will be applied.\n\n"
-                               f"Fitness: {results.fitness}\n"
-                               f"RMSE: {results.inlier_rmse}\n")
-        message_dialog.exec()
-
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
                                     k_value):
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.pc_gaussian_list_first[self.current_index]
+        pc2 = self.pc_gaussian_list_second[self.current_index]
 
         multi_scale_registrator = MultiScaleRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                                         use_corresponding, sparse_first, sparse_second,
@@ -379,7 +361,7 @@ class RegistrationMainWindow(QMainWindow):
         multi_scale_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(multi_scale_registrator.do_registration)
-        multi_scale_registrator.signal_registration_done.connect(self.handle_registration_result)
+        multi_scale_registrator.signal_registration_done.connect(self.handle_registration_result_local)
         multi_scale_registrator.signal_error_occurred.connect(self.create_error_list_dialog)
         multi_scale_registrator.signal_finished.connect(thread.quit)
         multi_scale_registrator.signal_finished.connect(multi_scale_registrator.deleteLater)
@@ -388,6 +370,26 @@ class RegistrationMainWindow(QMainWindow):
         thread.start()
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
+
+    def handle_registration_result_local(self, results, data):
+        self.local_registration_data = data
+        self.handle_registration_result_base(results.transformation, results.fitness, results.inlier_rmse)
+
+    def handle_registration_result_global(self, results):
+        transformation_actual = self.transformation_picker.transformation_matrix + results.transformation
+        self.handle_registration_result_base(transformation_actual, results.fitness, results.inlier_rmse)
+
+    def handle_registration_result_base(self, transformation, fitness, inlier_rmse):
+        self.progress_dialog.close()
+        self.transformation_picker.set_transformation(transformation)
+
+        message_dialog = QMessageBox()
+        message_dialog.setWindowTitle("Successful registration")
+        message_dialog.setText(f"The registration of the point clouds is finished.\n"
+                               f"The transformation will be applied.\n\n"
+                               f"Fitness: {fitness}\n"
+                               f"RMSE: {inlier_rmse}\n")
+        message_dialog.exec()
 
     def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
         pc1 = self.pc_gaussian_list_first[self.current_index]
@@ -438,9 +440,6 @@ class RegistrationMainWindow(QMainWindow):
         self.raster_window.setWindowTitle("Rasterized point clouds")
         self.raster_window.setWindowModality(Qt.WindowModal)
         self.raster_window.show()
-
-    def loaded_camera_changed(self, extrinsics):
-        self.pane_open3d.apply_camera_transformation(extrinsics)
 
     def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
         pc1 = self.pc_gaussian_list_first[self.current_index]
@@ -571,6 +570,7 @@ class RegistrationMainWindow(QMainWindow):
         if self.current_index == index:
             return
 
+        # TODO: Is this necessary?
         if self.current_index == 0 and index != 0:
             self.rasterizer_tab.scale_enable(False)
         elif self.current_index != 0 and index == 0:

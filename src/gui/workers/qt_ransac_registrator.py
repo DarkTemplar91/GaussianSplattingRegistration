@@ -16,6 +16,7 @@ class RANSACRegistrator(QObject):
 
         self.pc1 = copy.deepcopy(pc1)
         self.pc2 = copy.deepcopy(pc2)
+        self.init_transformation = init_transformation
         self.pc1.transform(init_transformation)
 
         self.voxel_size = voxel_size
