@@ -52,10 +52,6 @@ class Open3DWindow(QMainWindow):
         demo_icp_pcds = o3d.data.DemoICPPointClouds()
         source = o3d.io.read_point_cloud(demo_icp_pcds.paths[0])
         target = o3d.io.read_point_cloud(demo_icp_pcds.paths[1])
-        # For debugging
-        trans_init = np.asarray([[0.0, 0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 0.0],
-                                 [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
-        source.transform(trans_init)
 
         self.pc1_copy = source
         self.pc2_copy = target

@@ -269,8 +269,8 @@ class RegistrationMainWindow(QMainWindow):
     # Registration
     def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
-        pc1 = self.pc_open3d_list_first[self.current_index]
-        pc2 = self.pc_open3d_list_second[self.current_index]
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
         init_trans = self.transformation_picker.transformation_matrix
 
         # Create worker for local registration
@@ -295,9 +295,8 @@ class RegistrationMainWindow(QMainWindow):
 
     def do_ransac_registration(self, voxel_size, mutual_filter, max_correspondence, estimation_method,
                                ransac_n, checkers, max_iteration, confidence):
-
-        pc1 = self.pc_open3d_list_first[self.current_index]
-        pc2 = self.pc_open3d_list_second[self.current_index]
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
 
         ransac_registrator = RANSACRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                                voxel_size, mutual_filter, max_correspondence,
@@ -347,8 +346,8 @@ class RegistrationMainWindow(QMainWindow):
                                     relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
                                     k_value):
 
-        pc1 = self.pc_gaussian_list_first[self.current_index]
-        pc2 = self.pc_gaussian_list_second[self.current_index]
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
 
         multi_scale_registrator = MultiScaleRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                                         use_corresponding, sparse_first, sparse_second,
@@ -393,8 +392,8 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.exec()
 
     def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
-        pc1 = self.pc_gaussian_list_first[self.current_index]
-        pc2 = self.pc_gaussian_list_second[self.current_index]
+        pc1 = self.pc_gaussian_list_first[self.current_index] if self.pc_gaussian_list_first else None
+        pc2 = self.pc_gaussian_list_second[self.current_index] if self.pc_gaussian_list_second else None
 
         error_message = 'Load two Gaussian point clouds for rasterization!'
         if not pc1 or not pc2:
