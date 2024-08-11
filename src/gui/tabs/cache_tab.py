@@ -6,7 +6,6 @@ from src.gui.workers.qt_workers import PointCloudLoaderO3D
 import src.utils.graphics_utils as graphic_util
 
 
-
 class CacheTab(QWidget):
     result_signal = pyqtSignal(object, object, bool)
 

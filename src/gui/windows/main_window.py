@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QSplitter, QWidget, QGroupBox, QVBoxLay
 
 from src.gui.tabs.cache_tab import CacheTab
 from src.gui.tabs.evaluation_tab import EvaluationTab
+from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
 from src.gui.tabs.input_tab import InputTab
 from src.gui.tabs.local_registration_tab import LocalRegistrationTab
@@ -21,6 +22,7 @@ from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_gaussian_saver import GaussianSaver
+from src.gui.workers.qt_gaussian_mixture import GaussianMixtureWorker
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
@@ -32,13 +34,20 @@ from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 
 class RegistrationMainWindow(QMainWindow):
 
+    # Constructor
     def __init__(self, parent=None):
         super(RegistrationMainWindow, self).__init__(parent)
         self.setWindowTitle("Gaussian Splatting Registration")
 
         # Point cloud output of the 3D Gaussian Splatting
-        self.pc_originalFirst = None
-        self.pc_originalSecond = None
+        self.pc_gaussian_list_first = []
+        self.pc_gaussian_list_second = []
+
+        # Open3D point clouds to display
+        self.pc_open3d_list_first = []
+        self.pc_open3d_list_second = []
+
+        self.current_index = 0
 
         # Dataclass that stores the results and parameters of the last local registration
         self.local_registration_data = None
@@ -50,6 +59,7 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_widget = None
         self.rasterizer_tab = None
         self.transformation_picker = None
+        self.hem_widget = None
 
         # Image viewer
         self.raster_window = None
@@ -100,6 +110,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.setCentralWidget(splitter)
 
+    # GUI setup functions
     def setup_input_group(self, group_input_data):
         group_input_data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         group_input_data.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -118,8 +129,8 @@ class RegistrationMainWindow(QMainWindow):
         self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
-        self.input_tab.result_signal.connect(self.handle_result)
-        self.cache_tab.result_signal.connect(self.handle_result)
+        self.input_tab.result_signal.connect(self.handle_point_cloud_loading)
+        self.cache_tab.result_signal.connect(self.handle_point_cloud_loading)
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
@@ -138,6 +149,7 @@ class RegistrationMainWindow(QMainWindow):
         group_registration.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         layout = QVBoxLayout()
         group_registration.setLayout(layout)
+        group_registration.setTitle("Registration and evaluation")
 
         registration_tab = QTabWidget()
 
@@ -152,80 +164,92 @@ class RegistrationMainWindow(QMainWindow):
         multi_scale_registration_widget.signal_do_registration.connect(self.do_multi_scale_registration)
 
         evaluator_widget = EvaluationTab()
-        evaluator_widget.signal_camera_change.connect(self.loaded_camera_changed)
+        evaluator_widget.signal_camera_change.connect(self.pane_open3d.apply_camera_transformation)
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
-        registration_tab.addTab(global_registration_widget, "Global Registration")
-        registration_tab.addTab(local_registration_widget, "Local Registration")
-        registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
+        self.hem_widget = GaussianMixtureTab()
+        self.hem_widget.signal_create_mixture.connect(self.create_mixture)
+        self.hem_widget.signal_slider_changed.connect(self.active_pc_changed)
+
+        registration_tab.addTab(global_registration_widget, "Global")
+        registration_tab.addTab(local_registration_widget, "Local")
         registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
         registration_tab.addTab(evaluator_widget, "Evaluation")
+        registration_tab.addTab(self.hem_widget, "Mixture")
         layout.addWidget(registration_tab)
 
     # Event Handlers
     def update_point_clouds(self, transformation_matrix):
+        dc1 = dc2 = None
         if self.visualizer_widget.get_use_debug_color():
             dc1, dc2 = self.visualizer_widget.get_debug_colors()
-            self.pane_open3d.update_transform_with_colors(dc1, dc2, transformation_matrix)
-        else:
-            self.pane_open3d.update_transform(transformation_matrix)
 
-        zoom, front, lookat, up = self.visualizer_widget.get_current_transformations()
-        self.pane_open3d.update_visualizer(zoom, front, lookat, up)
+        self.pane_open3d.update_transform(transformation_matrix, dc1, dc2)
 
-    def handle_result(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
+    def handle_point_cloud_loading(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
         error_message = ('Importing one or both of the point clouds failed.\nPlease check that you entered the correct '
-                         'path!')
+                         'path and the point clouds are of the appropriate type!')
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-        self.pc_originalFirst = original1
-        self.pc_originalSecond = original2
+        self.current_index = 0
+
+        self.hem_widget.set_slider_range(0)
+        self.hem_widget.set_slider_enabled(False)
+
+        self.pc_gaussian_list_first.clear()
+        self.pc_gaussian_list_second.clear()
+        self.pc_open3d_list_first.clear()
+        self.pc_open3d_list_second.clear()
+
+        self.pc_gaussian_list_first.append(original1)
+        self.pc_gaussian_list_second.append(original2)
+        self.pc_open3d_list_first.append(pc_first)
+        self.pc_open3d_list_second.append(pc_second)
 
         if save_point_clouds:
             worker = PointCloudSaver(pc_first, pc_second)
-            worker.run()
+            worker.start()
 
+        self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
-    def change_visualizer(self, use_debug_color, dc1, dc2, zoom, front, lookat, up):
-        if use_debug_color:
-            self.pane_open3d.update_transform_with_colors(dc1, dc2, self.transformation_picker.transformation_matrix)
-
+    def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
+        self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
 
     def get_current_view(self):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
-        self.visualizer_widget.assign_new_values(zoom, front, lookat, up)
+        self.visualizer_widget.set_visualizer_attributes(zoom, front, lookat, up)
 
-    def merge_point_clouds(self, is_checked, pc_path1, pc_path2, merge_path):
-        pc_first = self.pc_originalFirst
-        pc_second = self.pc_originalSecond
+    def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
+        pc_first = None
+        pc_second = None
 
-        if is_checked:
+        if use_corresponding_pc:
             pc_first_ply = load_plyfile_pc(pc_path1)
             pc_second_ply = load_plyfile_pc(pc_path2)
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
-            if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message) or
-                    not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
+            if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message)
+                    or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
 
             pc_first = GaussianModel(3)
             pc_second = GaussianModel(3)
             pc_first.from_ply(pc_first_ply)
             pc_second.from_ply(pc_second_ply)
-
+        elif len(self.pc_gaussian_list_second) != 0 and len(self.pc_gaussian_list_first) != 0:
+            pc_first = self.pc_gaussian_list_first[self.current_index]
+            pc_second = self.pc_gaussian_list_second[self.current_index]
 
         error_message = ("There were no preloaded point clouds found! Load a Gaussian point cloud before merging, "
                          "or check the \"corresponding inputs\" option and select the point clouds you wish to merge.")
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
-
         merged = GaussianModel.get_merged_gaussian_point_clouds(pc_first, pc_second,
                                                                 self.transformation_picker.transformation_matrix)
-
 
         gaussian_saver = GaussianSaver(merged, merge_path)
         thread = QThread(self)
@@ -242,24 +266,14 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Saving merged point cloud...")
         self.progress_dialog.exec()
 
-
-    def check_if_none_and_throw_error(self, pc_first, pc_second, message):
-        if not pc_first or not pc_second:
-            # TODO: Further error messages. Tracing?
-            dialog = QErrorMessage(self)
-            dialog.setModal(True)
-            dialog.setWindowTitle("Error")
-            dialog.showMessage(message)
-            return True
-
-        return False
-
+    # Registration
     def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
-        # Create worker for local registration
         pc1 = self.pane_open3d.pc1
         pc2 = self.pane_open3d.pc2
         init_trans = self.transformation_picker.transformation_matrix
+
+        # Create worker for local registration
         local_registrator = LocalRegistrator(pc1, pc2, init_trans, registration_type, max_correspondence,
                                              relative_fitness, relative_rmse, max_iteration, rejection_type,
                                              k_value)
@@ -270,7 +284,7 @@ class RegistrationMainWindow(QMainWindow):
         local_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(local_registrator.do_registration)
-        local_registrator.signal_registration_done.connect(self.handle_registration_result)
+        local_registrator.signal_registration_done.connect(self.handle_registration_result_local)
         local_registrator.signal_finished.connect(thread.quit)
         local_registrator.signal_finished.connect(local_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -281,7 +295,6 @@ class RegistrationMainWindow(QMainWindow):
 
     def do_ransac_registration(self, voxel_size, mutual_filter, max_correspondence, estimation_method,
                                ransac_n, checkers, max_iteration, confidence):
-
         pc1 = self.pane_open3d.pc1
         pc2 = self.pane_open3d.pc2
 
@@ -295,7 +308,7 @@ class RegistrationMainWindow(QMainWindow):
         ransac_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(ransac_registrator.do_registration)
-        ransac_registrator.signal_registration_done.connect(self.handle_registration_result)
+        ransac_registrator.signal_registration_done.connect(self.handle_registration_result_global)
         ransac_registrator.signal_finished.connect(thread.quit)
         ransac_registrator.signal_finished.connect(ransac_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -306,8 +319,8 @@ class RegistrationMainWindow(QMainWindow):
 
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.pc_open3d_list_first[self.current_index]
+        pc2 = self.pc_open3d_list_second[self.current_index]
 
         fgr_registrator = FGRRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                          voxel_size, division_factor, use_absolute_scale, decrease_mu,
@@ -320,7 +333,7 @@ class RegistrationMainWindow(QMainWindow):
         fgr_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(fgr_registrator.do_registration)
-        fgr_registrator.signal_registration_done.connect(self.handle_registration_result)
+        fgr_registrator.signal_registration_done.connect(self.handle_registration_result_global)
         fgr_registrator.signal_finished.connect(thread.quit)
         fgr_registrator.signal_finished.connect(fgr_registrator.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -329,24 +342,10 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
-    def handle_registration_result(self, results, data):
-        self.progress_dialog.close()
-        message_dialog = QMessageBox()
-        message_dialog.setWindowTitle("Successful registration")
-        message_dialog.setText(f"The registration of the point clouds is finished.\n"
-                               f"The transformation will be applied.\n\n"
-                               f"Fitness: {results.fitness}\n"
-                               f"RMSE: {results.inlier_rmse}\n")
-        message_dialog.exec()
-        # Otherwise the registration is global
-        if data is not None:
-            self.local_registration_data = data
-
-        self.transformation_picker.set_transformation(results.transformation)
-
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
                                     k_value):
+
         pc1 = self.pane_open3d.pc1
         pc2 = self.pane_open3d.pc2
 
@@ -362,7 +361,7 @@ class RegistrationMainWindow(QMainWindow):
         multi_scale_registrator.moveToThread(thread)
         # connect signals to slots
         thread.started.connect(multi_scale_registrator.do_registration)
-        multi_scale_registrator.signal_registration_done.connect(self.handle_registration_result)
+        multi_scale_registrator.signal_registration_done.connect(self.handle_registration_result_local)
         multi_scale_registrator.signal_error_occurred.connect(self.create_error_list_dialog)
         multi_scale_registrator.signal_finished.connect(thread.quit)
         multi_scale_registrator.signal_finished.connect(multi_scale_registrator.deleteLater)
@@ -372,9 +371,29 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
+    def handle_registration_result_local(self, results, data):
+        self.local_registration_data = data
+        self.handle_registration_result_base(results.transformation, results.fitness, results.inlier_rmse)
+
+    def handle_registration_result_global(self, results):
+        transformation_actual = np.dot(results.transformation, self.transformation_picker.transformation_matrix)
+        self.handle_registration_result_base(transformation_actual, results.fitness, results.inlier_rmse)
+
+    def handle_registration_result_base(self, transformation, fitness, inlier_rmse):
+        self.progress_dialog.close()
+        self.transformation_picker.set_transformation(transformation)
+
+        message_dialog = QMessageBox()
+        message_dialog.setWindowTitle("Successful registration")
+        message_dialog.setText(f"The registration of the point clouds is finished.\n"
+                               f"The transformation will be applied.\n\n"
+                               f"Fitness: {fitness}\n"
+                               f"RMSE: {inlier_rmse}\n")
+        message_dialog.exec()
+
     def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
-        pc1 = self.pc_originalFirst
-        pc2 = self.pc_originalSecond
+        pc1 = self.pc_gaussian_list_first[self.current_index] if self.pc_gaussian_list_first else None
+        pc2 = self.pc_gaussian_list_second[self.current_index] if self.pc_gaussian_list_second else None
 
         error_message = 'Load two Gaussian point clouds for rasterization!'
         if not pc1 or not pc2:
@@ -422,12 +441,9 @@ class RegistrationMainWindow(QMainWindow):
         self.raster_window.setWindowModality(Qt.WindowModal)
         self.raster_window.show()
 
-    def loaded_camera_changed(self, extrinsics):
-        self.pane_open3d.apply_camera_transformation(extrinsics)
-
     def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
-        pc1 = self.pc_originalFirst
-        pc2 = self.pc_originalSecond
+        pc1 = self.pc_gaussian_list_first[self.current_index]
+        pc2 = self.pc_gaussian_list_second[self.current_index]
 
         if not pc1 or not pc2:
             dialog = QErrorMessage(self)
@@ -483,14 +499,105 @@ class RegistrationMainWindow(QMainWindow):
         message_dialog.setText(message)
         message_dialog.exec()
 
+    def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
+        pc1 = pc2 = None
+
+        if len(self.pc_gaussian_list_first) != 0:
+            pc1 = self.pc_gaussian_list_first[0]
+        if len(self.pc_gaussian_list_second) != 0:
+            pc2 = self.pc_gaussian_list_second[0]
+
+        if not pc1 or not pc2:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("There are no gaussian point clouds loaded! "
+                               "Please load two point clouds to create Gaussian mixtures.")
+            return
+
+        worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level)
+
+        # Create thread
+        thread = QThread(self)
+        # Move worker to thread
+        worker.moveToThread(thread)
+        # connect signals to slots
+        thread.started.connect(worker.execute)
+        worker.signal_mixture_created.connect(self.handle_mixture_results)
+        worker.signal_finished.connect(thread.quit)
+        worker.signal_finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+
+        self.progress_dialog.setLabelText("Creating Gaussian mixtures...")
+        self.progress_dialog.setRange(0, 100)
+        self.progress_dialog.setValue(0)
+        self.progress_dialog.setAutoClose(False)
+        self.progress_dialog.canceled.connect(worker.cancel)
+        worker.signal_update_progress.connect(self.progress_dialog.setValue)
+
+        thread.start()
+        self.progress_dialog.exec()
+
+    def handle_mixture_results(self, gaussian_list_first, gaussian_list_second, open3d_list_first, open3d_list_second):
+
+        if len(gaussian_list_first) > 1:
+            base_pc_first = self.pc_gaussian_list_first[0]
+            base_pc_second = self.pc_gaussian_list_second[0]
+            base_open3d_first = self.pc_open3d_list_first[0]
+            base_open3d_second = self.pc_open3d_list_second[0]
+
+            self.pc_gaussian_list_first.clear()
+            self.pc_gaussian_list_second.clear()
+            self.pc_open3d_list_first.clear()
+            self.pc_open3d_list_second.clear()
+            self.pc_open3d_list_first.append(base_open3d_first)
+            self.pc_open3d_list_second.append(base_open3d_second)
+            self.pc_gaussian_list_first.append(base_pc_first)
+            self.pc_gaussian_list_second.append(base_pc_second)
+
+        self.pc_open3d_list_first.extend(open3d_list_first)
+        self.pc_open3d_list_second.extend(open3d_list_second)
+        self.pc_gaussian_list_first.extend(gaussian_list_first)
+        self.pc_gaussian_list_second.extend(gaussian_list_second)
+
+        self.hem_widget.set_slider_range(len(self.pc_gaussian_list_first) - 1)
+        self.hem_widget.set_slider_enabled(True)
+        self.hem_widget.set_slider_to(0)
+
+        self.progress_dialog.close()
+
+    def active_pc_changed(self, index):
+        if self.current_index == index:
+            return
+
+        self.current_index = index
+
+        dc1 = dc2 = None
+        if self.visualizer_widget.get_use_debug_color():
+            dc1, dc2 = self.visualizer_widget.get_debug_colors()
+
+        self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True,
+                                           self.transformation_picker.transformation_matrix, dc1, dc2)
+
     def create_error_list_dialog(self, error_list):
         self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setModal(True)
-        message_dialog.setWindowTitle("Error occured")
+        message_dialog.setWindowTitle("Error occurred")
         message_dialog.setText("The following error(s) occurred.\n Click \"Show details\" for more information!")
         message_dialog.setDetailedText("\n".join(error_list))
         message_dialog.exec()
+
+    def check_if_none_and_throw_error(self, pc_first, pc_second, message):
+        if not pc_first or not pc_second:
+            # TODO: Further error messages. Tracing?
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage(message)
+            return True
+
+        return False
 
     def closeEvent(self, event):
         self.pane_open3d.close()

@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 import torch
 from PIL import Image
@@ -44,7 +42,7 @@ class RasterizerWorker(QObject):
             camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
                             self.width, self.height)
 
-            image_tensor, _ = rasterize_image(point_cloud, camera, self.scale, self.color, self.device)
+            image_tensor, _ = rasterize_image(point_cloud, camera, self.scale, self.color, self.device, False)
 
             pix = self.get_pixmap_from_tensor(image_tensor)
             self.signal_rasterization_done.emit(pix)

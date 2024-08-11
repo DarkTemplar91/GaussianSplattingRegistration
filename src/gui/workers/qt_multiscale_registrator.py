@@ -68,8 +68,8 @@ class MultiScaleRegistrator(QObject):
 
             try:
                 results = do_icp_registration(source_down, target_down, current_trans, self.registration_type,
-                                          radius, self.relative_fitness, self.relative_rmse, max_iter,
-                                          self.rejection_type, self.k_value)
+                                              radius, self.relative_fitness, self.relative_rmse, max_iter,
+                                              self.rejection_type, self.k_value)
             except RuntimeError as e:
                 error_str = str(e)
                 error_str += f"\nSource: \"{str(source_down)}\"\nTarget: \"{str(target_down)}\""

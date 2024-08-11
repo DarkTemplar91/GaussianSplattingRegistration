@@ -7,10 +7,11 @@ from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayo
     QHBoxLayout, QGroupBox
 
 from src.gui.widgets.color_picker_widget import ColorPicker
-from src.gui.widgets.registration_input_field_widget import SimpleInputField
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 from src.utils.graphics_utils import fov2focal
 import src.utils.graphics_utils as graphic_util
+
 
 class RasterizerTab(QWidget):
     signal_rasterize = pyqtSignal(int, int, float, np.ndarray, object)
@@ -139,3 +140,9 @@ class RasterizerTab(QWidget):
             [0, 0, 1]
         ])
         return intrinsics
+
+    def scale_enable(self, value):
+        if value is False:
+            self.scale.lineedit.setText(str("1.0"))
+
+        self.scale.setEnabled(value)

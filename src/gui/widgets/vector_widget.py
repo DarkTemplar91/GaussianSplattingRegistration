@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
 import src.utils.graphics_utils as graphic_util
 
 
-
 class VectorWidget(QWidget):
     class VectorCell(QLineEdit):
 
@@ -66,4 +65,3 @@ class VectorWidget(QWidget):
             self.cells[i].setText(str(values[i]))
             self.values[i] = values[i]
             self.cells[i].setCursorPosition(0)
-

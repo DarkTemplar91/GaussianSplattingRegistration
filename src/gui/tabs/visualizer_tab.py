@@ -5,13 +5,13 @@ from PyQt5.QtGui import QDoubleValidator
 from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy, QStyle, QHBoxLayout
 
 from src.gui.widgets.color_picker_widget import ColorPicker
-from src.gui.widgets.registration_input_field_widget import SimpleInputField
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget
 import src.utils.graphics_utils as graphic_util
 
 
 class VisualizerTab(QWidget):
-    signal_change_vis = QtCore.pyqtSignal(bool, np.ndarray, np.ndarray, float, np.ndarray, np.ndarray, np.ndarray)
+    signal_change_vis = QtCore.pyqtSignal(float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     signal_get_current_view = QtCore.pyqtSignal()
     signal_pop_visualizer = QtCore.pyqtSignal()
 
@@ -101,16 +101,20 @@ class VisualizerTab(QWidget):
         self.debug_color_dialog_second.setEnabled(state)
 
     def apply_to_vis(self):
-        use_debug_color = self.debug_color_checkbox.isChecked()
-        self.signal_change_vis.emit(use_debug_color, np.asarray(self.debug_color_dialog_first.color_debug),
-                                    np.asarray(self.debug_color_dialog_second.color_debug),
-                                    float(self.zoom_widget.lineedit.text()),
-                                    self.front_widget.values, self.lookat_widget.values, self.up_widget.values)
+        use_debug_color = self.get_use_debug_color()
+        dc1 = dc2 = None
+        if use_debug_color:
+            dc1 = np.asarray(self.debug_color_dialog_first.color_debug)
+            dc2 = np.asarray(self.debug_color_dialog_second.color_debug)
+
+        self.signal_change_vis.emit(float(self.zoom_widget.lineedit.text()),
+                                    self.front_widget.values, self.lookat_widget.values, self.up_widget.values,
+                                    dc1, dc2)
 
     def get_current_view(self):
         self.signal_get_current_view.emit()
 
-    def assign_new_values(self, zoom, front, lookat, up):
+    def set_visualizer_attributes(self, zoom, front, lookat, up):
         self.zoom_widget.lineedit.setText(str(zoom))
         self.zoom_widget.lineedit.setCursorPosition(0)
         self.front_widget.set_values(front)

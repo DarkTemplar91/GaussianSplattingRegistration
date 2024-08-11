@@ -2,6 +2,7 @@ import numpy as np
 from e3nn import o3
 import torch
 
+
 # Not sure if this is actually needed.
 def rotate_sh(pc, points, transformation_matrix):
     vertex_data = pc["vertex"].data
@@ -39,6 +40,8 @@ def rotate_sh(pc, points, transformation_matrix):
 
     for idx, attr_name in enumerate(extra_f_names):
         vertex_data[attr_name] = features_flattened[:, idx]
+
+
 def get_wigner_from_rotation(order, rotation_matrix):
     # Convert the rotation_matrix to a tensor
     rotation_matrix_tensor = torch.tensor(rotation_matrix, dtype=torch.float64)

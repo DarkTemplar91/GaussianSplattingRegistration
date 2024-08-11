@@ -29,6 +29,17 @@ def strip_lowerdiag(L):
     return uncertainty
 
 
+def rebuild_lowerdiag(covariance):
+    row1 = covariance[:, [0, 1, 2]]
+    row2 = covariance[:, [1, 3, 4]]
+    row3 = covariance[:, [2, 4, 5]]
+
+    # Stack the rows to create the covariance matrix
+    covariance_matrix = torch.stack([row1, row2, row3], dim=1)
+
+    return covariance_matrix
+
+
 def strip_symmetric(sym):
     return strip_lowerdiag(sym)
 
@@ -81,7 +92,7 @@ def convert_to_camera_transform(rot, pos):
 
 
 def matrices_to_quaternions(rotation_matrices):
-    trace = torch.vmap(torch.trace)(rotation_matrices)
+    trace = torch.sum(rotation_matrices.diagonal(dim1=-2, dim2=-1), dim=-1)
     w = torch.sqrt(1 + trace) / 2
     x = (rotation_matrices[:, 2, 1] - rotation_matrices[:, 1, 2]) / (4 * w)
     y = (rotation_matrices[:, 0, 2] - rotation_matrices[:, 2, 0]) / (4 * w)

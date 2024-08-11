@@ -6,6 +6,7 @@ from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.workers.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian
 import src.utils.graphics_utils as graphic_util
 
+
 class InputTab(QWidget):
     result_signal = pyqtSignal(object, object, bool, object, object)
 
