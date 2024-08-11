@@ -571,12 +571,6 @@ class RegistrationMainWindow(QMainWindow):
         if self.current_index == index:
             return
 
-        # TODO: Is this necessary?
-        """if self.current_index == 0 and index != 0:
-            self.rasterizer_tab.scale_enable(False)
-        elif self.current_index != 0 and index == 0:
-            self.rasterizer_tab.scale_enable(True)"""
-
         self.current_index = index
 
         dc1 = dc2 = None

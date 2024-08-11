@@ -245,7 +245,6 @@ class GaussianModel:
     def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix=None):
         merged_pc = GaussianModel(3)
 
-        # TODO: rewrite transformation
         if transformation_matrix is not None:
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
             gaussian1.transform_gaussian_model(transformation_matrix_tensor)
