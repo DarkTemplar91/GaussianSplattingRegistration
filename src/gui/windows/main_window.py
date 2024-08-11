@@ -346,6 +346,7 @@ class RegistrationMainWindow(QMainWindow):
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
                                     k_value):
+        
         pc1 = self.pc_gaussian_list_first[self.current_index]
         pc2 = self.pc_gaussian_list_second[self.current_index]
 
@@ -376,7 +377,7 @@ class RegistrationMainWindow(QMainWindow):
         self.handle_registration_result_base(results.transformation, results.fitness, results.inlier_rmse)
 
     def handle_registration_result_global(self, results):
-        transformation_actual = self.transformation_picker.transformation_matrix + results.transformation
+        transformation_actual = np.dot(results.transformation, self.transformation_picker.transformation_matrix)
         self.handle_registration_result_base(transformation_actual, results.fitness, results.inlier_rmse)
 
     def handle_registration_result_base(self, transformation, fitness, inlier_rmse):
