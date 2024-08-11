@@ -1,11 +1,8 @@
-import json
-
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QObject, pyqtSignal
 import mixture_bind
 
 from src.models.gaussian_model import GaussianModel
-from src.utils.graphics_utils import sh2rgb
 
 from src.models.gaussian_mixture_level import GaussianMixtureModel
 from src.utils.point_cloud_converter import convert_gs_to_open3d_pc
@@ -62,14 +59,18 @@ class GaussianMixtureWorker(QObject):
             return
 
         print("Creating Gaussian Mixture Model for the first point cloud.")
-        mixture_models_first = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction, self.distance_delta, self.color_delta, mixture_level_first)
+        mixture_models_first = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction,
+                                                                         self.distance_delta, self.color_delta,
+                                                                         mixture_level_first)
         self.update_progress()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
             return
 
         print("Creating Gaussian Mixture Model for the second point cloud.")
-        mixture_models_second = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction, self.distance_delta, self.color_delta, mixture_level_second)
+        mixture_models_second = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction,
+                                                                          self.distance_delta, self.color_delta,
+                                                                          mixture_level_second)
         self.update_progress()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:

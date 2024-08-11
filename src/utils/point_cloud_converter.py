@@ -44,6 +44,6 @@ def convert_gs_to_open3d_pc(gaussian):
     normal_matrices = get_normals_from_covariance(covariances_tensor)
 
     o3d_pc.normals = o3d.utility.Vector3dVector(normal_matrices.double().detach().cpu().numpy())
-    #o3d_pc.orient_normals_consistent_tangent_plane(30)
+    # o3d_pc.orient_normals_consistent_tangent_plane(30)
 
     return o3d_pc

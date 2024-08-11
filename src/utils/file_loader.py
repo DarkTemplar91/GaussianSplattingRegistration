@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import IntEnum, auto
 
 import plyfile
 import os.path
@@ -7,7 +7,11 @@ import os.path
 from src.utils.point_cloud_converter import convert_input_pc_to_open3d_pc
 import open3d as o3d
 
-PointCloudType = Enum('PointCloudType', 'input gaussian unknow')
+
+class PointCloudType(IntEnum):
+    GAUSSIAN = auto()
+    INPUT = auto()
+    UNKNOWN = auto()
 
 
 def load_sparse_pc(pc_path):
@@ -17,7 +21,7 @@ def load_sparse_pc(pc_path):
     point_cloud_plyfile = plyfile.PlyData.read(pc_path)
 
     pc_type = check_point_cloud_type(point_cloud_plyfile)
-    if pc_type is not PointCloudType.input:
+    if pc_type is not PointCloudType.INPUT:
         return None
 
     return convert_input_pc_to_open3d_pc(point_cloud_plyfile)
@@ -37,7 +41,7 @@ def load_plyfile_pc(pc_path):
     point_cloud_plyfile = plyfile.PlyData.read(pc_path)
 
     pc_type = check_point_cloud_type(point_cloud_plyfile)
-    if pc_type is not PointCloudType.gaussian:
+    if pc_type is not PointCloudType.GAUSSIAN:
         return None
 
     return point_cloud_plyfile
@@ -47,19 +51,19 @@ def check_point_cloud_type(point_cloud):
     props = [p.name for p in point_cloud['vertex'].properties]
 
     if "red" in props:
-        return PointCloudType.input
+        return PointCloudType.INPUT
 
     if "f_dc_0" in props:
-        return PointCloudType.gaussian
+        return PointCloudType.GAUSSIAN
 
-    return PointCloudType.unkown
+    return PointCloudType.UNKNOWN
 
 
 def is_point_cloud_gaussian(point_cloud):
     if not point_cloud:
         return False
 
-    return check_point_cloud_type(point_cloud) == PointCloudType.gaussian
+    return check_point_cloud_type(point_cloud) == PointCloudType.GAUSSIAN
 
 
 def save_point_clouds_to_cache(pc_first, pc_second):

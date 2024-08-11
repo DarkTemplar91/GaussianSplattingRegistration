@@ -184,7 +184,7 @@ class Open3DWindow(QMainWindow):
         parameters = view_control.convert_to_pinhole_camera_parameters()
         return parameters.intrinsic.intrinsic_matrix
 
-    # FOV of 5 means that open3d uses ortho projection
+    # FOV of 5 means that Open3D uses ortho projection
     def is_ortho(self):
         return self.vis.get_view_control().get_field_of_view() == 5
 

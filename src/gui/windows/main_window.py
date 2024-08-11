@@ -214,7 +214,7 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
-    def change_visualizer(self, use_debug_colors, zoom, front, lookat, up, dc1, dc2):
+    def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
         self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
 
@@ -232,7 +232,7 @@ class RegistrationMainWindow(QMainWindow):
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
             if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message)
-                or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
+                    or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
 
             pc_first = GaussianModel(3)
@@ -590,7 +590,7 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setModal(True)
-        message_dialog.setWindowTitle("Error occured")
+        message_dialog.setWindowTitle("Error occurred")
         message_dialog.setText("The following error(s) occurred.\n Click \"Show details\" for more information!")
         message_dialog.setDetailedText("\n".join(error_list))
         message_dialog.exec()

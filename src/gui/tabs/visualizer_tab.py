@@ -11,7 +11,7 @@ import src.utils.graphics_utils as graphic_util
 
 
 class VisualizerTab(QWidget):
-    signal_change_vis = QtCore.pyqtSignal(bool, float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    signal_change_vis = QtCore.pyqtSignal(float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     signal_get_current_view = QtCore.pyqtSignal()
     signal_pop_visualizer = QtCore.pyqtSignal()
 
@@ -107,7 +107,7 @@ class VisualizerTab(QWidget):
             dc1 = np.asarray(self.debug_color_dialog_first.color_debug)
             dc2 = np.asarray(self.debug_color_dialog_second.color_debug)
 
-        self.signal_change_vis.emit(use_debug_color, float(self.zoom_widget.lineedit.text()),
+        self.signal_change_vis.emit(float(self.zoom_widget.lineedit.text()),
                                     self.front_widget.values, self.lookat_widget.values, self.up_widget.values,
                                     dc1, dc2)
 

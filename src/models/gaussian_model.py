@@ -34,8 +34,8 @@ class GaussianModel:
         def build_covariance_from_scaling_rotation(scaling, scaling_modifier, rotation):
             L = build_scaling_rotation(scaling_modifier * scaling, rotation)
             actual_covariance = L @ L.transpose(1, 2)
-            symm = strip_symmetric(actual_covariance)
-            return symm
+            symmetric = strip_symmetric(actual_covariance)
+            return symmetric
 
         self.scaling_activation = torch.exp
         self.scaling_inverse_activation = torch.log
@@ -108,7 +108,7 @@ class GaussianModel:
         features_extra = np.zeros((xyz.shape[0], len(extra_f_names)))
         for idx, attr_name in enumerate(extra_f_names):
             features_extra[:, idx] = np.asarray(plydata.elements[0][attr_name])
-        # Reshape (P,F*SH_coeffs) to (P, F, SH_coeffs except DC)
+        # Reshape (P,F*SH_coefficients) to (P, F, SH_coefficients except DC)
         features_extra = features_extra.reshape((features_extra.shape[0], 3, (self.sh_degree + 1) ** 2 - 1))
 
         scale_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("scale_")]
@@ -152,18 +152,18 @@ class GaussianModel:
         self._rotation = nn.Parameter(matrices_to_quaternions(eigenvectors).requires_grad_(True))
 
     def construct_list_of_attributes(self):
-        l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
+        attribute_list = ['x', 'y', 'z', 'nx', 'ny', 'nz']
         # All channels except the 3 DC
         for i in range(self._features_dc.shape[1] * self._features_dc.shape[2]):
-            l.append('f_dc_{}'.format(i))
+            attribute_list.append('f_dc_{}'.format(i))
         for i in range(self._features_rest.shape[1] * self._features_rest.shape[2]):
-            l.append('f_rest_{}'.format(i))
-        l.append('opacity')
+            attribute_list.append('f_rest_{}'.format(i))
+        attribute_list.append('opacity')
         for i in range(self._scaling.shape[1]):
-            l.append('scale_{}'.format(i))
+            attribute_list.append('scale_{}'.format(i))
         for i in range(self._rotation.shape[1]):
-            l.append('rot_{}'.format(i))
-        return l
+            attribute_list.append('rot_{}'.format(i))
+        return attribute_list
 
     def save_ply(self, path):
         xyz = self._xyz.detach().cpu().numpy()
@@ -211,11 +211,11 @@ class GaussianModel:
         self._rotation = matrices_to_quaternions(
             new_rotation)  # FIXME: Due to limited precision, we sometimes get back inf values.
 
-
     """
     Executes eigendecomposition of the covariance matrix. The function is not used, but left in for completeness.
     Hopefully no one wants to save a downscaled gaussian model.
     """
+
     def decompose_covariance_matrix(self):
         eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance_precomputed)
 
