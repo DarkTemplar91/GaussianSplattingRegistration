@@ -39,10 +39,7 @@ def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True
     means3D = point_cloud.get_xyz
     means2D = screenspace_points
     opacity = point_cloud.get_opacity_with_activation
-    if scale != 1.0:
-        cov3D_precomp = point_cloud.get_scaled_covariance(scale)
-    else:
-        cov3D_precomp = point_cloud.get_covariance_precomputed
+    cov3D_precomp = point_cloud.get_covariance(scale)
 
     shs = point_cloud.get_features
 

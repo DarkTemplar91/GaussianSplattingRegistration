@@ -21,23 +21,6 @@ from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
 
 class GaussianModel:
 
-    def setup_functions(self):
-        def build_covariance_from_scaling_rotation(scaling, scaling_modifier, rotation):
-            L = build_scaling_rotation(scaling_modifier * scaling, rotation)
-            actual_covariance = L @ L.transpose(1, 2)
-            symm = strip_symmetric(actual_covariance)
-            return symm
-
-        self.scaling_activation = torch.exp
-        self.scaling_inverse_activation = torch.log
-
-        self.covariance_activation = build_covariance_from_scaling_rotation
-
-        self.opacity_activation = torch.sigmoid
-        self.inverse_opacity_activation = inverse_sigmoid
-
-        self.rotation_activation = torch.nn.functional.normalize
-
     def __init__(self, sh_degree: int = 3):
         self.sh_degree = sh_degree
         self._xyz = torch.empty(0)
@@ -47,7 +30,19 @@ class GaussianModel:
         self._rotation = torch.empty(0)
         self._opacity = torch.empty(0)
         self._covariance = torch.empty(0)
-        self.setup_functions()
+
+        def build_covariance_from_scaling_rotation(scaling, scaling_modifier, rotation):
+            L = build_scaling_rotation(scaling_modifier * scaling, rotation)
+            actual_covariance = L @ L.transpose(1, 2)
+            symm = strip_symmetric(actual_covariance)
+            return symm
+
+        self.scaling_activation = torch.exp
+        self.scaling_inverse_activation = torch.log
+        self.covariance_activation = build_covariance_from_scaling_rotation
+        self.opacity_activation = torch.sigmoid
+        self.inverse_opacity_activation = inverse_sigmoid
+        self.rotation_activation = torch.nn.functional.normalize
 
     @property
     def get_scaling(self):
@@ -84,15 +79,17 @@ class GaussianModel:
         return self._opacity
 
     @property
-    def get_covariance_precomputed(self):
-        return self._covariance
-
-    @property
     def get_full_covariance_precomputed(self):
         return rebuild_lowerdiag(self._covariance)
 
-    def get_scaled_covariance(self, scaling_modifier=1):
-        return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation)
+    def get_covariance(self, scaling_modifier=1):
+        if scaling_modifier == 1:
+            return self._covariance
+
+        transformation_matrix = torch.Tensor([scaling_modifier] * 3, device=self._covariance.device)
+        transformed_covariances = transformation_matrix @ self.get_full_covariance_precomputed @ transformation_matrix.transpose(
+            0, 1)
+        return strip_symmetric(transformed_covariances)
 
     def from_ply(self, plydata):
         xyz = np.stack((np.asarray(plydata.elements[0]["x"]),
@@ -136,8 +133,7 @@ class GaussianModel:
         self._opacity = nn.Parameter(torch.tensor(opacities, dtype=torch.float, device="cuda").requires_grad_(True))
         self._scaling = nn.Parameter(torch.tensor(scales, dtype=torch.float, device="cuda").requires_grad_(True))
         self._rotation = nn.Parameter(torch.tensor(rots, dtype=torch.float, device="cuda").requires_grad_(True))
-
-        self._covariance = self.get_scaled_covariance()
+        self._covariance = self.covariance_activation(self._scaling, 1.0, self._rotation)
 
     def from_mixture(self, gaussian_mixture: GaussianMixtureModel):
         self._xyz = nn.Parameter(torch.tensor(gaussian_mixture.xyz, dtype=torch.float, device="cuda")
@@ -151,31 +147,9 @@ class GaussianModel:
         self._covariance = nn.Parameter(torch.tensor(gaussian_mixture.covariance, dtype=torch.float, device="cuda")
                                         .requires_grad_(True))
 
-        # TODO: Reorder in different method
-        eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance_precomputed)
-
-        # Standard basis vectors for x, y, z axes
-        x_axis = torch.tensor([1, 0, 0], dtype=torch.float32, device="cuda")
-        y_axis = torch.tensor([0, 1, 0], dtype=torch.float32, device="cuda")
-        z_axis = torch.tensor([0, 0, 1], dtype=torch.float32, device="cuda")
-
-        axes = torch.stack([x_axis, y_axis, z_axis])
-
-        # Compute dot products to determine the correspondence of each eigenvector
-        dot_products = torch.abs(torch.matmul(eigenvectors.transpose(1, 2), axes.T))
-
-        # Get the indices that would sort each eigenvector to align with x, y, z axes
-        correspondence = torch.argmax(dot_products, dim=2)
-
-        # Reorder eigenvalues and eigenvectors accordingly
-        sorted_eigenvalues = torch.zeros_like(eigenvalues)
-        sorted_eigenvectors = torch.zeros_like(eigenvectors)
-
-        sorted_eigenvalues.scatter_(1, correspondence, eigenvalues)
-        sorted_eigenvectors.scatter_(1, correspondence.unsqueeze(-1).expand(-1, -1, 3), eigenvectors)
-
-        self._scaling = nn.Parameter(self.scaling_inverse_activation(torch.sqrt(sorted_eigenvalues)).requires_grad_(True))
-        self._rotation = nn.Parameter(matrices_to_quaternions(sorted_eigenvectors).requires_grad_(True))
+        eigenvalues, eigenvectors = self.decompose_covariance_matrix()
+        self._scaling = nn.Parameter(eigenvalues.requires_grad_(True))
+        self._rotation = nn.Parameter(matrices_to_quaternions(eigenvectors).requires_grad_(True))
 
     def construct_list_of_attributes(self):
         l = ['x', 'y', 'z', 'nx', 'ny', 'nz']
@@ -219,18 +193,53 @@ class GaussianModel:
         new_model._opacity = self._opacity.clone().detach().requires_grad_(True)
         return new_model
 
-    def transform_gaussian(self, transformation_matrix):
-        points = torch.cat((self._xyz.T, torch.zeros(1, self._xyz.shape[0],
-                                                     device=self._xyz.device)))
-        self._xyz = torch.matmul(transformation_matrix, points).T[:, :3]
-
+    def transform_gaussian_model(self, transformation_matrix):
+        points = torch.cat((self._xyz, torch.zeros(self._xyz.shape[0], 1,
+                                                   device=self._xyz.device)), 1)
+        self._xyz = torch.matmul(transformation_matrix, points.T).T[:, :3]
         self._xyz[:, 0] += transformation_matrix[0, 3]
         self._xyz[:, 1] += transformation_matrix[1, 3]
         self._xyz[:, 2] += transformation_matrix[2, 3]
 
+        transformation = transformation_matrix[:3, :3]
+        transformed_covariances = transformation @ self.get_full_covariance_precomputed @ transformation.transpose(
+            0, 1)
+        self._covariance = strip_symmetric(transformed_covariances)
+
         new_rotation = build_rotation(self._rotation)
-        new_rotation = transformation_matrix[:3, :3] @ new_rotation
-        self._rotation = matrices_to_quaternions(new_rotation)
+        new_rotation = transformation @ new_rotation
+        self._rotation = matrices_to_quaternions(
+            new_rotation)  # FIXME: Due to limited precision, we sometimes get back inf values.
+
+
+    """
+    Executes eigendecomposition of the covariance matrix. The function is not used, but left in for completeness.
+    Hopefully no one wants to save a downscaled gaussian model.
+    """
+    def decompose_covariance_matrix(self):
+        eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance_precomputed)
+
+        # Standard basis vectors for x, y, z axes
+        x_axis = torch.tensor([1, 0, 0], dtype=torch.float32, device="cuda")
+        y_axis = torch.tensor([0, 1, 0], dtype=torch.float32, device="cuda")
+        z_axis = torch.tensor([0, 0, 1], dtype=torch.float32, device="cuda")
+
+        axes = torch.stack([x_axis, y_axis, z_axis])
+
+        # Compute dot products to determine the correspondence of each eigenvector
+        dot_products = torch.abs(torch.matmul(eigenvectors.transpose(1, 2), axes.T))
+
+        # Get the indices that would sort each eigenvector to align with x, y, z axes
+        correspondence = torch.argmax(dot_products, dim=2)
+
+        # Reorder eigenvalues and eigenvectors accordingly
+        sorted_eigenvalues = torch.zeros_like(eigenvalues)
+        sorted_eigenvectors = torch.zeros_like(eigenvectors)
+
+        sorted_eigenvalues.scatter_(1, correspondence, eigenvalues)
+        sorted_eigenvectors.scatter_(1, correspondence.unsqueeze(-1).expand(-1, -1, 3), eigenvectors)
+
+        return sorted_eigenvalues, sorted_eigenvectors
 
     @staticmethod
     def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix=None):
@@ -239,7 +248,7 @@ class GaussianModel:
         # TODO: rewrite transformation
         if transformation_matrix is not None:
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
-            gaussian1.transform_gaussian(transformation_matrix_tensor)
+            gaussian1.transform_gaussian_model(transformation_matrix_tensor)
 
         merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
         merged_pc._rotation = torch.cat((gaussian1._rotation, gaussian2._rotation))

@@ -53,10 +53,3 @@ def get_wigner_from_rotation(order, rotation_matrix):
     wigner_d = o3.wigner_D(order, rot_angles[0], rot_angles[1], rot_angles[2])
 
     return wigner_d.numpy()
-
-
-def clamp(val, minval, maxval):
-    if val != val: return 1
-    if val < minval: return minval
-    if val > maxval: return maxval
-    return val

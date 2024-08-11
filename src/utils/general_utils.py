@@ -92,7 +92,7 @@ def convert_to_camera_transform(rot, pos):
 
 
 def matrices_to_quaternions(rotation_matrices):
-    trace = torch.vmap(torch.trace)(rotation_matrices)
+    trace = torch.sum(rotation_matrices.diagonal(dim1=-2, dim2=-1), dim=-1)
     w = torch.sqrt(1 + trace) / 2
     x = (rotation_matrices[:, 2, 1] - rotation_matrices[:, 1, 2]) / (4 * w)
     y = (rotation_matrices[:, 0, 2] - rotation_matrices[:, 2, 0]) / (4 * w)

@@ -270,7 +270,7 @@ class RegistrationMainWindow(QMainWindow):
     def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
         pc1 = self.pc_open3d_list_first[self.current_index]
-        pc2 = self.pc_open3d_list_first[self.current_index]
+        pc2 = self.pc_open3d_list_second[self.current_index]
         init_trans = self.transformation_picker.transformation_matrix
 
         # Create worker for local registration
@@ -297,7 +297,7 @@ class RegistrationMainWindow(QMainWindow):
                                ransac_n, checkers, max_iteration, confidence):
 
         pc1 = self.pc_open3d_list_first[self.current_index]
-        pc2 = self.pc_open3d_list_first[self.current_index]
+        pc2 = self.pc_open3d_list_second[self.current_index]
 
         ransac_registrator = RANSACRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                                voxel_size, mutual_filter, max_correspondence,
@@ -321,7 +321,7 @@ class RegistrationMainWindow(QMainWindow):
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
         pc1 = self.pc_open3d_list_first[self.current_index]
-        pc2 = self.pc_open3d_list_first[self.current_index]
+        pc2 = self.pc_open3d_list_second[self.current_index]
 
         fgr_registrator = FGRRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                          voxel_size, division_factor, use_absolute_scale, decrease_mu,
@@ -346,7 +346,7 @@ class RegistrationMainWindow(QMainWindow):
     def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
                                     relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
                                     k_value):
-        
+
         pc1 = self.pc_gaussian_list_first[self.current_index]
         pc2 = self.pc_gaussian_list_second[self.current_index]
 
@@ -572,10 +572,10 @@ class RegistrationMainWindow(QMainWindow):
             return
 
         # TODO: Is this necessary?
-        if self.current_index == 0 and index != 0:
+        """if self.current_index == 0 and index != 0:
             self.rasterizer_tab.scale_enable(False)
         elif self.current_index != 0 and index == 0:
-            self.rasterizer_tab.scale_enable(True)
+            self.rasterizer_tab.scale_enable(True)"""
 
         self.current_index = index
 

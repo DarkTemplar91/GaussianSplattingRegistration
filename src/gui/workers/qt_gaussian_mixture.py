@@ -42,7 +42,7 @@ class GaussianMixtureWorker(QObject):
             self.gaussian_pc_first.get_xyz.detach().cpu().tolist(),
             self.gaussian_pc_first.get_colors.detach().cpu().tolist(),
             self.gaussian_pc_first.get_raw_opacity.detach().view(-1).cpu().tolist(),
-            self.gaussian_pc_first.get_scaled_covariance(1).detach().cpu().tolist(),
+            self.gaussian_pc_first.get_covariance(1).detach().cpu().tolist(),
             self.gaussian_pc_first.get_spherical_harmonics.detach().cpu().tolist())
 
         QtWidgets.QApplication.processEvents()
@@ -53,7 +53,7 @@ class GaussianMixtureWorker(QObject):
             self.gaussian_pc_second.get_xyz.detach().cpu().tolist(),
             self.gaussian_pc_second.get_colors.detach().cpu().tolist(),
             self.gaussian_pc_second.get_raw_opacity.detach().view(-1).cpu().tolist(),
-            self.gaussian_pc_second.get_scaled_covariance(1).detach().cpu().tolist(),
+            self.gaussian_pc_second.get_covariance(1).detach().cpu().tolist(),
             self.gaussian_pc_second.get_spherical_harmonics.detach().cpu().tolist())
 
         self.update_progress()
