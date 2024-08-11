@@ -133,7 +133,7 @@ class GaussianModel:
         self._opacity = nn.Parameter(torch.tensor(opacities, dtype=torch.float, device="cuda").requires_grad_(True))
         self._scaling = nn.Parameter(torch.tensor(scales, dtype=torch.float, device="cuda").requires_grad_(True))
         self._rotation = nn.Parameter(torch.tensor(rots, dtype=torch.float, device="cuda").requires_grad_(True))
-        self._covariance = self.covariance_activation(self._scaling, 1.0, self._rotation)
+        self._covariance = self.covariance_activation(self.get_scaling, 1.0, self._rotation)
 
     def from_mixture(self, gaussian_mixture: GaussianMixtureModel):
         self._xyz = nn.Parameter(torch.tensor(gaussian_mixture.xyz, dtype=torch.float, device="cuda")
