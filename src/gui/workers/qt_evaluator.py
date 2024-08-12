@@ -36,8 +36,8 @@ class RegistrationEvaluator(QObject):
         self.log_path = log_path
 
         self.color = color
-        self.device = "cuda:0"
         self.use_gpu = use_gpu  # Whether the actual evaluation happens on the gpu or not
+        self.device = "cuda:0"
 
         self.registration_result = registration_result
         self.mean_rmses = None
@@ -51,9 +51,9 @@ class RegistrationEvaluator(QObject):
 
     def do_evaluation(self):
         point_cloud = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, self.transformation)
+        point_cloud.move_to_device(self.device)
 
         error_list = []
-
         mses = []
         rmses = []
         ssims = []
@@ -90,8 +90,6 @@ class RegistrationEvaluator(QObject):
                 continue
 
             image_tensor = image_tensor.unsqueeze(0)
-            if self.use_gpu:
-                image_tensor = image_tensor.cuda()
 
             current_mse = mse(image_tensor, gt_image)
             mses.append(current_mse)
@@ -100,6 +98,7 @@ class RegistrationEvaluator(QObject):
             psnrs.append(psnr(image_tensor, gt_image))
             lpipss.append(lpips(image_tensor, gt_image))
 
+            del image_tensor, gt_image
             torch.cuda.empty_cache()
 
         self.mean_mses = torch.tensor(mses).mean().item()
@@ -110,6 +109,7 @@ class RegistrationEvaluator(QObject):
 
         log = self.create_and_save_log_file(error_list)
 
+        del point_cloud
         torch.cuda.empty_cache()
         import gc
         gc.collect()

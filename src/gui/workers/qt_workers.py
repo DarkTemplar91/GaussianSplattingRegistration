@@ -1,3 +1,5 @@
+import time
+
 import torch
 from PyQt5.QtCore import QThread, pyqtSignal
 
@@ -41,10 +43,13 @@ class PointCloudLoaderGaussian(QThread):
             self.result_signal.emit(None, None, None, None)
             return
 
-        original1 = GaussianModel(3)
-        original2 = GaussianModel(3)
+        original1 = GaussianModel(device_name="cuda:0")
         original1.from_ply(pc1)
+        original1.move_to_device("cpu")
+
+        original2 = GaussianModel(device_name="cuda:0")
         original2.from_ply(pc2)
+        original2.move_to_device("cpu")
 
         result1 = convert_gs_to_open3d_pc(original1)
         result2 = convert_gs_to_open3d_pc(original2)

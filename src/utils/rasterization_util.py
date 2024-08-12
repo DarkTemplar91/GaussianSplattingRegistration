@@ -6,12 +6,8 @@ from diff_gaussian_rasterization import GaussianRasterizer, GaussianRasterizatio
 
 def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True):
     # Create zero tensor. We will use it to make pytorch return gradients of the 2D (screen-space) means
-    screenspace_points = torch.zeros_like(point_cloud.get_xyz, dtype=point_cloud.get_xyz.dtype, requires_grad=True,
+    screenspace_points = torch.zeros_like(point_cloud.get_xyz, dtype=point_cloud.get_xyz.dtype, requires_grad=False,
                                           device=device) + 0
-    try:
-        screenspace_points.retain_grad()
-    except:
-        pass
 
     bg_color = torch.tensor(color, dtype=torch.float32, device=device)
 
@@ -40,7 +36,6 @@ def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True
     means2D = screenspace_points
     opacity = point_cloud.get_opacity_with_activation
     cov3D_precomp = point_cloud.get_covariance(scale)
-
     shs = point_cloud.get_features
 
     image_tensor, radii = rasterizer(

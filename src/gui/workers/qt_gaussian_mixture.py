@@ -83,8 +83,9 @@ class GaussianMixtureWorker(QObject):
 
         for mixture in mixture_models_first:
             mixture_model = GaussianMixtureModel(*mixture_bind.MixtureLevel.CreatePythonLists(mixture))
-            gaussian = GaussianModel()
+            gaussian = GaussianModel(device_name="cuda:0")
             gaussian.from_mixture(mixture_model)
+            gaussian.move_to_device("cpu")
 
             result_open3d = convert_gs_to_open3d_pc(gaussian)
             list_gaussian_first.append(gaussian)

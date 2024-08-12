@@ -18,8 +18,8 @@ class RasterizerWorker(QObject):
         super().__init__()
 
         self.device = torch.device("cuda:0")
-        self.pc1 = pc1.clone_gaussian()
-        self.pc2 = pc2.clone_gaussian()
+        self.pc1 = pc1
+        self.pc2 = pc2
 
         self.transformation = transformation
         self.width = img_width
@@ -42,9 +42,13 @@ class RasterizerWorker(QObject):
             camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
                             self.width, self.height)
 
+            point_cloud.move_to_device(self.device)
             image_tensor, _ = rasterize_image(point_cloud, camera, self.scale, self.color, self.device, False)
 
             pix = self.get_pixmap_from_tensor(image_tensor)
+
+            del point_cloud
+            torch.cuda.empty_cache()
             self.signal_rasterization_done.emit(pix)
 
         self.signal_finished.emit()

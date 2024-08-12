@@ -21,8 +21,9 @@ from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
 
 class GaussianModel:
 
-    def __init__(self, sh_degree: int = 3):
+    def __init__(self, sh_degree: int = 3, device_name="cpu"):
         self.sh_degree = sh_degree
+        self.device_name = device_name
         self._xyz = torch.empty(0)
         self._features_dc = torch.empty(0)
         self._features_rest = torch.empty(0)
@@ -123,33 +124,26 @@ class GaussianModel:
         for idx, attr_name in enumerate(rot_names):
             rots[:, idx] = np.asarray(plydata.elements[0][attr_name])
 
-        self._xyz = nn.Parameter(torch.tensor(xyz, dtype=torch.float, device="cuda").requires_grad_(True))
-        self._features_dc = nn.Parameter(
-            torch.tensor(features_dc, dtype=torch.float, device="cuda").transpose(1, 2).contiguous().requires_grad_(
-                True))
-        self._features_rest = nn.Parameter(
-            torch.tensor(features_extra, dtype=torch.float, device="cuda").transpose(1, 2).contiguous().requires_grad_(
-                True))
-        self._opacity = nn.Parameter(torch.tensor(opacities, dtype=torch.float, device="cuda").requires_grad_(True))
-        self._scaling = nn.Parameter(torch.tensor(scales, dtype=torch.float, device="cuda").requires_grad_(True))
-        self._rotation = nn.Parameter(torch.tensor(rots, dtype=torch.float, device="cuda").requires_grad_(True))
+        self._xyz = torch.tensor(xyz, dtype=torch.float, device=self.device_name)
+        self._features_dc = torch.tensor(features_dc, dtype=torch.float, device=self.device_name).transpose(1, 2).contiguous()
+        self._features_rest = torch.tensor(features_extra, dtype=torch.float, device=self.device_name).transpose(1, 2).contiguous()
+        self._opacity = torch.tensor(opacities, dtype=torch.float, device=self.device_name)
+        self._scaling = torch.tensor(scales, dtype=torch.float, device=self.device_name)
+        self._rotation = torch.tensor(rots, dtype=torch.float, device=self.device_name)
         self._covariance = self.covariance_activation(self.get_scaling, 1.0, self._rotation)
 
     def from_mixture(self, gaussian_mixture: GaussianMixtureModel):
-        self._xyz = nn.Parameter(torch.tensor(gaussian_mixture.xyz, dtype=torch.float, device="cuda")
-                                 .requires_grad_(True))
-        self._features_dc = nn.Parameter(torch.tensor(gaussian_mixture.colors, dtype=torch.float, device="cuda")
-                                         .view(-1, 1, 3).requires_grad_(True))
-        self._features_rest = nn.Parameter(torch.tensor(gaussian_mixture.features, dtype=torch.float, device="cuda")
-                                           .view(-1, (self.sh_degree + 1) ** 2 - 1, 3).requires_grad_(True))
-        self._opacity = nn.Parameter(torch.tensor(gaussian_mixture.opacities, dtype=torch.float, device="cuda")
-                                     .requires_grad_(True))
-        self._covariance = nn.Parameter(torch.tensor(gaussian_mixture.covariance, dtype=torch.float, device="cuda")
-                                        .requires_grad_(True))
+        self._xyz = torch.tensor(gaussian_mixture.xyz, dtype=torch.float, device=self.device_name)
+        self._features_dc = (torch.tensor(gaussian_mixture.colors, dtype=torch.float, device=self.device_name)
+                             .view(-1, 1, 3))
+        self._features_rest = (torch.tensor(gaussian_mixture.features, dtype=torch.float, device=self.device_name)
+                               .view(-1, (self.sh_degree + 1) ** 2 - 1, 3))
+        self._opacity = torch.tensor(gaussian_mixture.opacities, dtype=torch.float, device=self.device_name)
+        self._covariance = torch.tensor(gaussian_mixture.covariance, dtype=torch.float, device=self.device_name)
 
         eigenvalues, eigenvectors = self.decompose_covariance_matrix()
-        self._scaling = nn.Parameter(eigenvalues.requires_grad_(True))
-        self._rotation = nn.Parameter(matrices_to_quaternions(eigenvectors).requires_grad_(True))
+        self._scaling = eigenvalues
+        self._rotation = matrices_to_quaternions(eigenvectors)
 
     def construct_list_of_attributes(self):
         attribute_list = ['x', 'y', 'z', 'nx', 'ny', 'nz']
@@ -184,13 +178,13 @@ class GaussianModel:
 
     def clone_gaussian(self):
         new_model = GaussianModel(3)
-        new_model._covariance = self._covariance.clone().detach().requires_grad_(True)
-        new_model._xyz = self._xyz.clone().detach().requires_grad_(True)
-        new_model._rotation = self._rotation.clone().detach().requires_grad_(True)
-        new_model._scaling = self._scaling.clone().detach().requires_grad_(True)
-        new_model._features_dc = self._features_dc.clone().detach().requires_grad_(True)
-        new_model._features_rest = self._features_rest.clone().detach().requires_grad_(True)
-        new_model._opacity = self._opacity.clone().detach().requires_grad_(True)
+        new_model._covariance = self._covariance.clone().detach()
+        new_model._xyz = self._xyz.clone().detach()
+        new_model._rotation = self._rotation.clone().detach()
+        new_model._scaling = self._scaling.clone().detach()
+        new_model._features_dc = self._features_dc.clone().detach()
+        new_model._features_rest = self._features_rest.clone().detach()
+        new_model._opacity = self._opacity.clone().detach()
         return new_model
 
     def transform_gaussian_model(self, transformation_matrix):
@@ -211,6 +205,20 @@ class GaussianModel:
         self._rotation = matrices_to_quaternions(
             new_rotation)  # FIXME: Due to limited precision, we sometimes get back inf values.
 
+
+    def move_to_device(self, device_name):
+        if self.device_name == device_name:
+            return
+
+        self.device_name = device_name
+        self._xyz = self._xyz.to(device_name)
+        self._features_dc = self._features_dc.to(device_name)
+        self._features_rest = self._features_rest.to(device_name)
+        self._scaling = self._scaling.to(device_name)
+        self._rotation = self._rotation.to(device_name)
+        self._opacity = self._opacity.to(device_name)
+        self._covariance = self._covariance.to(device_name)
+
     """
     Executes eigendecomposition of the covariance matrix. The function is not used, but left in for completeness.
     Hopefully no one wants to save a downscaled gaussian model.
@@ -220,9 +228,9 @@ class GaussianModel:
         eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance_precomputed)
 
         # Standard basis vectors for x, y, z axes
-        x_axis = torch.tensor([1, 0, 0], dtype=torch.float32, device="cuda")
-        y_axis = torch.tensor([0, 1, 0], dtype=torch.float32, device="cuda")
-        z_axis = torch.tensor([0, 0, 1], dtype=torch.float32, device="cuda")
+        x_axis = torch.tensor([1, 0, 0], dtype=torch.float32, device=self.device_name)
+        y_axis = torch.tensor([0, 1, 0], dtype=torch.float32, device=self.device_name)
+        z_axis = torch.tensor([0, 0, 1], dtype=torch.float32, device=self.device_name)
 
         axes = torch.stack([x_axis, y_axis, z_axis])
 
@@ -246,7 +254,7 @@ class GaussianModel:
         merged_pc = GaussianModel(3)
 
         if transformation_matrix is not None:
-            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).cuda()
+            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(gaussian1.device_name)
             gaussian1.transform_gaussian_model(transformation_matrix_tensor)
 
         merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
