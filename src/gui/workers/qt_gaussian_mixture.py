@@ -26,15 +26,16 @@ class GaussianMixtureWorker(QObject):
         self.gaussian_pc_second = pc2
 
         self.current_progress = 0
-        self.max_progress = 5
+        self.max_progress = 6
         self.signal_cancel = False
 
     def execute(self):
-
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
+            self.signal_finished.emit()
             return
 
+        print("Creating Gaussian Mixture Model for the first point cloud.")
         mixture_level_first = mixture_bind.MixtureLevel.CreateMixtureLevel(
             self.gaussian_pc_first.get_xyz.detach().cpu().tolist(),
             self.gaussian_pc_first.get_colors.detach().cpu().tolist(),
@@ -42,10 +43,22 @@ class GaussianMixtureWorker(QObject):
             self.gaussian_pc_first.get_covariance(1).detach().cpu().tolist(),
             self.gaussian_pc_first.get_spherical_harmonics.detach().cpu().tolist())
 
+        self.update_progress()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
+            self.signal_finished.emit()
             return
 
+        mixture_models_first = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction,
+                                                                         self.distance_delta, self.color_delta,
+                                                                         mixture_level_first)
+        self.update_progress()
+        QtWidgets.QApplication.processEvents()
+        if self.signal_cancel:
+            self.signal_finished.emit()
+            return
+
+        print("Creating Gaussian Mixture Model for the second point cloud.")
         mixture_level_second = mixture_bind.MixtureLevel.CreateMixtureLevel(
             self.gaussian_pc_second.get_xyz.detach().cpu().tolist(),
             self.gaussian_pc_second.get_colors.detach().cpu().tolist(),
@@ -56,24 +69,16 @@ class GaussianMixtureWorker(QObject):
         self.update_progress()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
+            self.signal_finished.emit()
             return
 
-        print("Creating Gaussian Mixture Model for the first point cloud.")
-        mixture_models_first = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction,
-                                                                         self.distance_delta, self.color_delta,
-                                                                         mixture_level_first)
-        self.update_progress()
-        QtWidgets.QApplication.processEvents()
-        if self.signal_cancel:
-            return
-
-        print("Creating Gaussian Mixture Model for the second point cloud.")
         mixture_models_second = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction,
                                                                           self.distance_delta, self.color_delta,
                                                                           mixture_level_second)
         self.update_progress()
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
+            self.signal_finished.emit()
             return
 
         list_gaussian_first = []
@@ -106,6 +111,7 @@ class GaussianMixtureWorker(QObject):
 
         self.signal_mixture_created.emit(list_gaussian_first, list_gaussian_second,
                                          list_open3d_first, list_open3d_second)
+        self.signal_finished.emit()
 
     def update_progress(self):
         self.current_progress += 1

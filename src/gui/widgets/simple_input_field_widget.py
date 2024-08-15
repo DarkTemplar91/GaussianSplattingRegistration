@@ -10,12 +10,12 @@ class SimpleInputField(QWidget):
         layout = QHBoxLayout()
         self.setLayout(layout)
 
-        label = QLabel(label_text)
-        label.setFixedWidth(int(label_width * graphic_util.SIZE_SCALE_X))
+        self.label = QLabel(label_text)
+        self.label.setFixedWidth(int(label_width * graphic_util.SIZE_SCALE_X))
         self.lineedit = QLineEdit(value)
         self.lineedit.setFixedWidth(int(line_edit_width * graphic_util.SIZE_SCALE_X))
         self.lineedit.setValidator(validator)
 
-        layout.addWidget(label)
+        layout.addWidget(self.label)
         layout.addWidget(self.lineedit)
         layout.addStretch()

@@ -2,7 +2,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale, QRegularExpression
 from PyQt5.QtGui import QDoubleValidator, QRegularExpressionValidator, QPalette
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton, QHBoxLayout, \
-    QFrame, QScrollArea
+    QFrame, QScrollArea, QStackedWidget
 
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
@@ -12,8 +12,9 @@ import src.utils.graphics_utils as graphic_util
 
 
 class MultiScaleRegistrationTab(QWidget):
-    signal_do_registration = QtCore.pyqtSignal(bool, str, str, LocalRegistrationType, float, float, list, list,
-                                               KernelLossFunctionType, float)
+    signal_do_registration = QtCore.pyqtSignal(bool, str, str, LocalRegistrationType, float, float,
+                                               list, list,
+                                               KernelLossFunctionType, float, bool)
 
     def __init__(self, input_path):
         super().__init__()
@@ -79,22 +80,36 @@ class MultiScaleRegistrationTab(QWidget):
         self.fs_sparse2.setEnabled(False)
 
         # Local registration type
-        type_label = QLabel("Local registration type")
+        registration_type_label = QLabel("Local registration type")
         self.combo_box_icp = QComboBox()
         self.combo_box_icp.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         for enum_member in LocalRegistrationType:
             self.combo_box_icp.addItem(enum_member.instance_name)
 
-        # Relative fitness
-        self.fitness_widget = SimpleInputField("Relative fitness:", "0.000001", 90, 60,
+        # Basic input fields
+        self.fitness_widget = SimpleInputField("Relative fitness:", "0.000001", 100, 60,
                                                double_validator)
-
-        # Relative RMSE
-        self.rmse_widget = SimpleInputField("Relative RMSE:", "0.000001", 90, 60,
+        self.rmse_widget = SimpleInputField("Relative RMSE:", "0.000001", 100, 60,
                                             double_validator)
+        self.iter_values = SimpleInputField("Iteration values:", "50,30,20", 100, 150, int_list_validator)
 
-        self.voxel_values = SimpleInputField("Voxel values:", "5,2.5", 90, 150, double_list_validator)
-        self.iter_values = SimpleInputField("Iteration values:", "50,30", 90, 150, int_list_validator)
+        downscale_type_label = QLabel("Downscale type: ")
+        downscale_type_label.setFixedWidth(100)
+        self.combo_box_multiscale = QComboBox()
+        self.combo_box_multiscale.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_multiscale.addItem("Voxel downsampling")
+        self.combo_box_multiscale.addItem("HEM Gaussian mixture")
+        self.combo_box_multiscale.currentIndexChanged.connect(self.downscale_type_changed)
+
+        downscale_type_widget = QWidget()
+        downscale_type_layout = QHBoxLayout()
+        downscale_type_widget.setLayout(downscale_type_layout)
+        downscale_type_layout.addWidget(downscale_type_label)
+        downscale_type_layout.addWidget(self.combo_box_multiscale)
+        downscale_type_layout.addStretch()
+
+        # Only, when using voxel downsample
+        self.voxel_values = SimpleInputField("Voxel values:", "5,2.5,2", 100, 150, double_list_validator)
 
         # Outlier rejection
         outlier_layout = QVBoxLayout()
@@ -141,14 +156,16 @@ class MultiScaleRegistrationTab(QWidget):
         layout.addWidget(self.sparse_checkbox)
         layout.addWidget(self.fs_sparse1)
         layout.addWidget(self.fs_sparse2)
-        layout.addWidget(type_label)
+        layout.addWidget(registration_type_label)
         layout.addWidget(self.combo_box_icp)
 
         layout.addWidget(self.fitness_widget)
         layout.addWidget(self.rmse_widget)
-
-        layout.addWidget(self.voxel_values)
         layout.addWidget(self.iter_values)
+
+        layout.addWidget(downscale_type_widget)
+        layout.addWidget(self.voxel_values)
+
         layout.addWidget(rejection_label)
         layout.addWidget(outlier_widget)
         layout.addStretch()
@@ -182,9 +199,17 @@ class MultiScaleRegistrationTab(QWidget):
 
         rejection_type = KernelLossFunctionType(self.combo_box_outlier.currentIndex())
         k_value = float(self.k_value_widget.lineedit.text())
-        self.signal_do_registration.emit(use_corresponding, sparse_first, sparse_second, registration_type,
-                                         relative_fitness, relative_rmse, voxel_values, iter_values,
-                                         rejection_type, k_value)
+        use_mixture = self.combo_box_multiscale.currentIndex() == 1
+
+        self.signal_do_registration.emit(use_corresponding, sparse_first, sparse_second,
+                                         registration_type,
+                                         relative_fitness, relative_rmse,
+                                         voxel_values, iter_values,
+                                         rejection_type, k_value, use_mixture)
 
     def rejection_type_changed(self, index):
         self.k_value_widget.setEnabled(index != 0)
+
+    def downscale_type_changed(self, index):
+        self.voxel_values.label.setText("Voxel values:" if index == 0 else "Correspondences:")
+        self.voxel_values.update()

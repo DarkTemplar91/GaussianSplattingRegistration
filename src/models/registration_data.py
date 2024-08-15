@@ -46,13 +46,15 @@ class MultiScaleRegistrationData(BaseLocalRegistrationData):
     voxel_values: list
     iteration_values: list
     used_sparse_clouds: bool
+    used_gaussian_mixtures: bool
 
     def __init__(self, registration_type, initial_transformation, relative_fitness, relative_rmse,
                  result_fitness, result_inlier_rmse, result_transformation, voxel_values, iteration_values,
-                 used_sparse_clouds):
+                 used_sparse_clouds, used_gaussian_mixtures):
         super().__init__(registration_type, initial_transformation, relative_fitness, relative_rmse, True,
                          result_fitness, result_inlier_rmse, result_transformation)
 
         self.voxel_values = voxel_values
         self.iteration_values = iteration_values
         self.used_sparse_clouds = used_sparse_clouds
+        self.used_gaussian_mixtures = used_gaussian_mixtures

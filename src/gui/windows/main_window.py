@@ -24,7 +24,7 @@ from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_gaussian_saver import GaussianSaver
 from src.gui.workers.qt_gaussian_mixture import GaussianMixtureWorker
 from src.gui.workers.qt_local_registrator import LocalRegistrator
-from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistrator
+from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistratorVoxel, MultiScaleRegistratorMixture
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.gui.workers.qt_workers import PointCloudSaver
@@ -161,7 +161,8 @@ class RegistrationMainWindow(QMainWindow):
         global_registration_widget.signal_do_fgr.connect(self.do_fgr_registration)
 
         multi_scale_registration_widget = MultiScaleRegistrationTab(self.input_dir)
-        multi_scale_registration_widget.signal_do_registration.connect(self.do_multi_scale_registration)
+        multi_scale_registration_widget.signal_do_registration.connect(
+            self.do_multiscale_registration)
 
         evaluator_widget = EvaluationTab()
         evaluator_widget.signal_camera_change.connect(self.pane_open3d.apply_camera_transformation)
@@ -232,7 +233,7 @@ class RegistrationMainWindow(QMainWindow):
             error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
                              "correct path and the point clouds selected are Gaussian point clouds!")
             if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message)
-                    or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
+                or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
                 return
 
             pc_first = GaussianModel(3)
@@ -342,33 +343,45 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setLabelText("Registering point clouds...")
         self.progress_dialog.exec()
 
-    def do_multi_scale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
-                                    relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
-                                    k_value):
+    def do_multiscale_registration(self, use_corresponding, sparse_first, sparse_second, registration_type,
+                                   relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type,
+                                   k_value, use_mixture):
 
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
-
-        multi_scale_registrator = MultiScaleRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
-                                                        use_corresponding, sparse_first, sparse_second,
-                                                        registration_type, relative_fitness,
-                                                        relative_rmse, voxel_values, iter_values,
-                                                        rejection_type, k_value)
+        if use_mixture:
+            pc1_list = self.pc_open3d_list_first
+            pc2_list = self.pc_open3d_list_second
+            worker = MultiScaleRegistratorMixture(pc1_list, pc2_list, self.transformation_picker.transformation_matrix,
+                                                  use_corresponding, sparse_first, sparse_second,
+                                                  registration_type, relative_fitness,
+                                                  relative_rmse, voxel_values, iter_values,
+                                                  rejection_type, k_value)
+        else:
+            pc1 = self.pane_open3d.pc1
+            pc2 = self.pane_open3d.pc2
+            worker = MultiScaleRegistratorVoxel(pc1, pc2, self.transformation_picker.transformation_matrix,
+                                                use_corresponding, sparse_first, sparse_second,
+                                                registration_type, relative_fitness,
+                                                relative_rmse, voxel_values, iter_values,
+                                                rejection_type, k_value)
 
         # Create thread
         thread = QThread(self)
         # Move worker to thread
-        multi_scale_registrator.moveToThread(thread)
+        worker.moveToThread(thread)
         # connect signals to slots
-        thread.started.connect(multi_scale_registrator.do_registration)
-        multi_scale_registrator.signal_registration_done.connect(self.handle_registration_result_local)
-        multi_scale_registrator.signal_error_occurred.connect(self.create_error_list_dialog)
-        multi_scale_registrator.signal_finished.connect(thread.quit)
-        multi_scale_registrator.signal_finished.connect(multi_scale_registrator.deleteLater)
+        thread.started.connect(worker.do_registration)
+        worker.signal_registration_done.connect(self.handle_registration_result_local)
+        worker.signal_error_occurred.connect(self.create_error_list_dialog)
+        worker.signal_finished.connect(thread.quit)
+        worker.signal_finished.connect(worker.deleteLater)
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
         self.progress_dialog.setLabelText("Registering point clouds...")
+        self.progress_dialog.canceled.connect(worker.cancel)
+        worker.signal_update_progress.connect(self.progress_dialog.setValue)
+        self.progress_dialog.setRange(0, 100)
+        self.progress_dialog.setValue(0)
         self.progress_dialog.exec()
 
     def handle_registration_result_local(self, results, data):
@@ -470,6 +483,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.progress_dialog.setLabelText("Evaluating registration...")
         self.progress_dialog.setRange(0, 100)
+        self.progress_dialog.setValue(0)
         self.progress_dialog.canceled.connect(worker.cancel_evaluation)
         worker.signal_update_progress.connect(self.progress_dialog.setValue)
 
