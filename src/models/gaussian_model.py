@@ -252,17 +252,18 @@ class GaussianModel:
     @staticmethod
     def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix=None):
         merged_pc = GaussianModel(3)
+        gaussian1_copy = gaussian1.clone_gaussian()
 
         if transformation_matrix is not None:
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(gaussian1.device_name)
-            gaussian1.transform_gaussian_model(transformation_matrix_tensor)
+            gaussian1_copy.transform_gaussian_model(transformation_matrix_tensor)
 
-        merged_pc._xyz = torch.cat((gaussian1._xyz, gaussian2._xyz))
-        merged_pc._rotation = torch.cat((gaussian1._rotation, gaussian2._rotation))
-        merged_pc._scaling = torch.cat((gaussian1._scaling, gaussian2._scaling))
-        merged_pc._features_dc = torch.cat((gaussian1._features_dc, gaussian2._features_dc))
-        merged_pc._features_rest = torch.cat((gaussian1._features_rest, gaussian2._features_rest))
-        merged_pc._opacity = torch.cat((gaussian1._opacity, gaussian2._opacity))
-        merged_pc._covariance = torch.cat((gaussian1._covariance, gaussian2._covariance))
+        merged_pc._xyz = torch.cat((gaussian1_copy._xyz, gaussian2._xyz))
+        merged_pc._rotation = torch.cat((gaussian1_copy._rotation, gaussian2._rotation))
+        merged_pc._scaling = torch.cat((gaussian1_copy._scaling, gaussian2._scaling))
+        merged_pc._features_dc = torch.cat((gaussian1_copy._features_dc, gaussian2._features_dc))
+        merged_pc._features_rest = torch.cat((gaussian1_copy._features_rest, gaussian2._features_rest))
+        merged_pc._opacity = torch.cat((gaussian1_copy._opacity, gaussian2._opacity))
+        merged_pc._covariance = torch.cat((gaussian1_copy._covariance, gaussian2._covariance))
 
         return merged_pc
