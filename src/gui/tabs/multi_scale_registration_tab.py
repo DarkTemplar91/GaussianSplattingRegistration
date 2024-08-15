@@ -87,19 +87,20 @@ class MultiScaleRegistrationTab(QWidget):
             self.combo_box_icp.addItem(enum_member.instance_name)
 
         # Basic input fields
-        self.fitness_widget = SimpleInputField("Relative fitness:", "0.000001", 100, 60,
+        self.fitness_widget = SimpleInputField("Relative fitness:", "0.000001", 95, 60,
                                                double_validator)
-        self.rmse_widget = SimpleInputField("Relative RMSE:", "0.000001", 100, 60,
+        self.rmse_widget = SimpleInputField("Relative RMSE:", "0.000001", 95, 60,
                                             double_validator)
-        self.iter_values = SimpleInputField("Iteration values:", "50,30,20", 100, 150, int_list_validator)
+        self.iter_values = SimpleInputField("Iteration values:", "50,30,20", 95, 150, int_list_validator)
 
         downscale_type_label = QLabel("Downscale type: ")
-        downscale_type_label.setFixedWidth(100)
+        downscale_type_label.setFixedWidth(95)
         self.combo_box_multiscale = QComboBox()
         self.combo_box_multiscale.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.combo_box_multiscale.addItem("Voxel downsampling")
         self.combo_box_multiscale.addItem("HEM Gaussian mixture")
         self.combo_box_multiscale.currentIndexChanged.connect(self.downscale_type_changed)
+        self.combo_box_multiscale.setFixedWidth(150)
 
         downscale_type_widget = QWidget()
         downscale_type_layout = QHBoxLayout()
@@ -109,7 +110,7 @@ class MultiScaleRegistrationTab(QWidget):
         downscale_type_layout.addStretch()
 
         # Only, when using voxel downsample
-        self.voxel_values = SimpleInputField("Voxel values:", "5,2.5,2", 100, 150, double_list_validator)
+        self.voxel_values = SimpleInputField("Voxel values:", "5,2.5,2", 95, 150, double_list_validator)
 
         # Outlier rejection
         outlier_layout = QVBoxLayout()
