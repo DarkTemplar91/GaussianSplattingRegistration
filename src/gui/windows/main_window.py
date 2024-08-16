@@ -174,7 +174,7 @@ class RegistrationMainWindow(QMainWindow):
 
         registration_tab.addTab(global_registration_widget, "Global")
         registration_tab.addTab(local_registration_widget, "Local")
-        registration_tab.addTab(multi_scale_registration_widget, "Multi-scale")
+        registration_tab.addTab(multi_scale_registration_widget, "Multiscale")
         registration_tab.addTab(evaluator_widget, "Evaluation")
         registration_tab.addTab(self.hem_widget, "Mixture")
         layout.addWidget(registration_tab)

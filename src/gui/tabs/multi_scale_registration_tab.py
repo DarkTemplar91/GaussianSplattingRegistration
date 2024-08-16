@@ -51,7 +51,7 @@ class MultiScaleRegistrationTab(QWidget):
         regex_int = QRegularExpression("(?!0\\d)\\d+(,(-?(?!0\\d)\\d+))*")
         int_list_validator.setRegularExpression(regex_int)
 
-        label_title = QLabel("Multi-scale Local Registration")
+        label_title = QLabel("Multiscale Local Registration")
         label_title.setStyleSheet(
             "QLabel {"
             "    font-size: 11pt;"
@@ -146,7 +146,7 @@ class MultiScaleRegistrationTab(QWidget):
         outlier_layout.addWidget(rejection_widget)
         outlier_layout.addWidget(self.k_value_widget)
 
-        bt_apply = QPushButton("Start multi-scale registration")
+        bt_apply = QPushButton("Start multiscale registration")
         bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))

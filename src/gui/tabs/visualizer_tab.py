@@ -11,7 +11,8 @@ import src.utils.graphics_utils as graphic_util
 
 
 class VisualizerTab(QWidget):
-    signal_change_vis = QtCore.pyqtSignal(float, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    signal_change_vis = QtCore.pyqtSignal(float, np.ndarray, np.ndarray, np.ndarray,
+                                          object, object)
     signal_get_current_view = QtCore.pyqtSignal()
     signal_pop_visualizer = QtCore.pyqtSignal()
 
