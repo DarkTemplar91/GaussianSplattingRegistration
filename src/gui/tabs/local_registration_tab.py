@@ -1,18 +1,17 @@
-from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale
-from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, \
+from PySide6 import QtCore
+from PySide6.QtCore import QLocale
+from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, \
     QComboBox, QScrollArea, QFrame, QHBoxLayout
 
-from src.gui.widgets.simple_input_field_widget import SimpleInputField
-
-from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 import src.utils.graphics_utils as graphic_util
+from src.gui.widgets.simple_input_field_widget import SimpleInputField
+from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 
 
 class LocalRegistrationTab(QWidget):
-    signal_do_registration = QtCore.pyqtSignal(LocalRegistrationType, float, float, float, int,
-                                               KernelLossFunctionType, float)
+    signal_do_registration = QtCore.Signal(LocalRegistrationType, float, float, float, int,
+                                           KernelLossFunctionType, float)
 
     def __init__(self):
         super().__init__()
@@ -21,9 +20,8 @@ class LocalRegistrationTab(QWidget):
         self.setLayout(registration_layout)
 
         scroll_widget = QScrollArea()
-        scroll_widget.setBackgroundRole(QPalette.Background)
-        scroll_widget.setFrameShadow(QFrame.Plain)
-        scroll_widget.setFrameShape(QFrame.NoFrame)
+        scroll_widget.setFrameShadow(QFrame.Shadow.Plain)
+        scroll_widget.setFrameShape(QFrame.Shape.NoFrame)
         scroll_widget.setWidgetResizable(True)
 
         inner_widget = QWidget()
@@ -33,9 +31,9 @@ class LocalRegistrationTab(QWidget):
 
         type_label = QLabel("Local registration type")
         self.combo_box_icp = QComboBox()
-        self.combo_box_icp.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_icp.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-        locale = QLocale(QLocale.English)
+        locale = QLocale(QLocale.Language.English)
         double_validator = QDoubleValidator()
         double_validator.setLocale(locale)
         double_validator.setRange(0.0, 9999.0)
@@ -102,7 +100,7 @@ class LocalRegistrationTab(QWidget):
         outlier_type_label = QLabel("Loss type:")
         self.combo_box_outlier = QComboBox()
         self.combo_box_outlier.currentIndexChanged.connect(self.rejection_type_changed)
-        self.combo_box_outlier.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_outlier.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         for enum_member in KernelLossFunctionType:
             self.combo_box_outlier.addItem(enum_member.instance_name)
 
@@ -120,7 +118,7 @@ class LocalRegistrationTab(QWidget):
         bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout.addWidget(type_label)
         layout.addWidget(self.combo_box_icp)

@@ -1,19 +1,19 @@
-from PyQt5.QtCore import QLocale, pyqtSignal, Qt
-from PyQt5.QtGui import QDoubleValidator, QIntValidator, QPalette
-from PyQt5.QtWidgets import QLabel, QVBoxLayout, QComboBox, QWidget, QCheckBox, QSizePolicy, \
-    QScrollArea, QFrame, QPushButton, QStackedWidget, QHBoxLayout
+from PySide6.QtCore import QLocale, Signal, Qt
+from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QComboBox, QWidget, QCheckBox, QSizePolicy, \
+    QScrollArea, QPushButton, QStackedWidget, QHBoxLayout
 from open3d.cpu.pybind.pipelines.registration import CorrespondenceCheckerBasedOnEdgeLength, \
     CorrespondenceCheckerBasedOnDistance, CorrespondenceCheckerBasedOnNormal
 
+import src.utils.graphics_utils as graphic_util
 from src.gui.widgets.optional_value_widget import OptionalInputField
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.utils.global_registration_util import GlobalRegistrationType, RANSACEstimationMethod
-import src.utils.graphics_utils as graphic_util
 
 
 class GlobalRegistrationTab(QWidget):
-    signal_do_ransac = pyqtSignal(float, bool, float, RANSACEstimationMethod, int, list, int, float)
-    signal_do_fgr = pyqtSignal(float, float, bool, bool, float, int, float, int, bool)
+    signal_do_ransac = Signal(float, bool, float, RANSACEstimationMethod, int, list, int, float)
+    signal_do_fgr = Signal(float, float, bool, bool, float, int, float, int, bool)
 
     def __init__(self):
         super().__init__()
@@ -43,18 +43,15 @@ class GlobalRegistrationTab(QWidget):
         self.setLayout(registration_layout)
 
         scroll_widget = QScrollArea()
-        scroll_widget.setBackgroundRole(QPalette.Background)
-        scroll_widget.setFrameShadow(QFrame.Plain)
-        scroll_widget.setFrameShape(QFrame.NoFrame)
         scroll_widget.setWidgetResizable(True)
-        scroll_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         layout = QVBoxLayout()
         inner_widget = QWidget()
         inner_widget.setLayout(layout)
         scroll_widget.setWidget(inner_widget)
 
-        locale = QLocale(QLocale.English)
+        locale = QLocale(QLocale.Language.English)
         self.double_validator = QDoubleValidator()
         self.double_validator.setLocale(locale)
         self.double_validator.setRange(0.0, 9999.0)
@@ -66,11 +63,11 @@ class GlobalRegistrationTab(QWidget):
 
         # Stack for switching between RANSAC and FGR
         self.stack = QStackedWidget()
-        self.stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         type_label = QLabel("Global registration type")
         self.combo_box_global = QComboBox()
-        self.combo_box_global.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_global.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.combo_box_global.currentIndexChanged.connect(self.global_type_changed)
 
         for enum_member in GlobalRegistrationType:
@@ -82,10 +79,10 @@ class GlobalRegistrationTab(QWidget):
 
         # Stack for RANSAC
         self.ransac_widget = self.create_ransac_stack_widget()
-        self.ransac_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.ransac_widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         # Stack for FGR
         self.fgr_widget = self.create_fgr_stack_widget()
-        self.fgr_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.fgr_widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self.stack.addWidget(self.ransac_widget)
         self.stack.addWidget(self.fgr_widget)
@@ -94,7 +91,7 @@ class GlobalRegistrationTab(QWidget):
         bt_apply = QPushButton("Start global registration")
         bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         bt_apply.clicked.connect(self.registration_button_pressed)
 
@@ -112,7 +109,7 @@ class GlobalRegistrationTab(QWidget):
         layout = QVBoxLayout()
         widget.setLayout(layout)
 
-        widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self.checkbox_mutual = QCheckBox()
         self.checkbox_mutual.setText("Mutual filtering")
@@ -131,7 +128,7 @@ class GlobalRegistrationTab(QWidget):
 
         type_label = QLabel("Estimation type: ")
         self.combobox_estimation_method = QComboBox()
-        self.combobox_estimation_method.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combobox_estimation_method.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         for enum_member in RANSACEstimationMethod:
             self.combobox_estimation_method.addItem(enum_member.instance_name)
 
@@ -200,7 +197,7 @@ class GlobalRegistrationTab(QWidget):
         layout = QVBoxLayout()
         widget.setLayout(layout)
 
-        widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         # Checkers
         options_label = QLabel("Options")

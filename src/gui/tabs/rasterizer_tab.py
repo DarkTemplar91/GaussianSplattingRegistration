@@ -1,9 +1,9 @@
 import math
 
 import numpy as np
-from PyQt5.QtCore import Qt, pyqtSignal, QLocale
-from PyQt5.QtGui import QIntValidator, QDoubleValidator
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QRadioButton, QButtonGroup, \
+from PySide6.QtCore import Qt, Signal, QLocale
+from PySide6.QtGui import QIntValidator, QDoubleValidator
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QRadioButton, QButtonGroup, \
     QHBoxLayout, QGroupBox
 
 from src.gui.widgets.color_picker_widget import ColorPicker
@@ -14,12 +14,12 @@ import src.utils.graphics_utils as graphic_util
 
 
 class RasterizerTab(QWidget):
-    signal_rasterize = pyqtSignal(int, int, float, np.ndarray, object)
+    signal_rasterize = Signal(int, int, float, np.ndarray, object)
 
     def __init__(self):
         super().__init__()
 
-        locale = QLocale(QLocale.English)
+        locale = QLocale(QLocale.Language.English)
         int_validator = QIntValidator()
         int_validator.setLocale(locale)
         int_validator.setRange(0, 999999999)
@@ -55,7 +55,7 @@ class RasterizerTab(QWidget):
         bt_rasterize.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                    f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_rasterize.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_rasterize.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_rasterize.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         bt_rasterize.clicked.connect(self.button_clicked)
 
         options_layout.addWidget(self.image_width_widget)
@@ -96,7 +96,7 @@ class RasterizerTab(QWidget):
         layout.addWidget(option_widget)
         layout.addWidget(widget_fov_group_box)
 
-        layout.addWidget(bt_rasterize, alignment=Qt.AlignCenter)
+        layout.addWidget(bt_rasterize, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addStretch()
 
     def button_clicked(self):

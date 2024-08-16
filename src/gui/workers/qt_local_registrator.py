@@ -1,14 +1,14 @@
 import copy
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from src.models.registration_data import LocalRegistrationData
 from src.utils.local_registration_util import do_icp_registration
 
 
 class LocalRegistrator(QObject):
-    signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object, object)
+    signal_finished = Signal()
+    signal_registration_done = Signal(object, object)
 
     def __init__(self, pc1, pc2, init_trans, registration_type, max_correspondence,
                  relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):

@@ -1,14 +1,14 @@
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
+from PySide6 import QtCore
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
 import src.utils.graphics_utils as graphic_util
 
 
 class VectorWidget(QWidget):
     class VectorCell(QLineEdit):
 
-        value_changed = QtCore.pyqtSignal(int, float)
+        value_changed = QtCore.Signal(int, float)
 
         def __init__(self, value, cell_id, validator):
             super().__init__()
@@ -16,7 +16,7 @@ class VectorWidget(QWidget):
             self.id = cell_id
 
             self.setFixedWidth(int(60 * graphic_util.SIZE_SCALE_X))
-            self.setAlignment(Qt.AlignLeft)
+            self.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.value = value
             self.setText(str(self.value))
             self.setValidator(validator)

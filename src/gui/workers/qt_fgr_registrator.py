@@ -1,13 +1,13 @@
 import copy
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from src.utils.global_registration_util import do_fgr_registration
 
 
 class FGRRegistrator(QObject):
-    signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object, object)
+    signal_finished = Signal()
+    signal_registration_done = Signal(object, object)
 
     def __init__(self, pc1, pc2, init_transformation,
                  voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,

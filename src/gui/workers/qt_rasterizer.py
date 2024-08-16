@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 from PIL import Image
-from PyQt5 import QtGui
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6 import QtGui
+from PySide6.QtCore import QObject, Signal
 
 from src.models.cameras import Camera
 from src.models.gaussian_model import GaussianModel
@@ -11,8 +11,8 @@ from src.utils.rasterization_util import rasterize_image
 
 
 class RasterizerWorker(QObject):
-    signal_finished = pyqtSignal()
-    signal_rasterization_done = pyqtSignal(object)
+    signal_finished = Signal()
+    signal_rasterization_done = Signal(object)
 
     def __init__(self, pc1, pc2, transformation, extrinsic, intrinsic, scale, color, img_height, img_width):
         super().__init__()
@@ -62,6 +62,6 @@ class RasterizerWorker(QObject):
         img_save = img_save.convert("RGBA")
         data = img_save.tobytes("raw", "RGBA")
 
-        qim = QtGui.QImage(data, self.width, self.height, QtGui.QImage.Format_RGBA8888)
+        qim = QtGui.QImage(data, self.width, self.height, QtGui.QImage.Format.Format_RGBA8888)
         pix = QtGui.QPixmap.fromImage(qim)
         return pix

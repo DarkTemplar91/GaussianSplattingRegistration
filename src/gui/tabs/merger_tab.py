@@ -1,6 +1,6 @@
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage, \
+from PySide6 import QtCore
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage, \
     QFileDialog
 
 from src.gui.widgets.file_selector_widget import FileSelector
@@ -8,7 +8,7 @@ import src.utils.graphics_utils as graphic_util
 
 
 class MergeTab(QWidget):
-    signal_merge_point_clouds = QtCore.pyqtSignal(bool, str, str, str)
+    signal_merge_point_clouds = QtCore.Signal(bool, str, str, str)
 
     def __init__(self, merge_path="", input_path=""):
         super().__init__()
@@ -49,19 +49,19 @@ class MergeTab(QWidget):
         layout_input.addWidget(self.fs_input2)
 
         self.fs_merge = FileSelector(text="Save path:", base_path=merge_path, label_width=70,
-                                     file_type=QFileDialog.AnyFile)
+                                     file_type=QFileDialog.FileMode.AnyFile)
         bt_merge = QPushButton("Merge point clouds")
         bt_merge.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_merge.setFixedSize(int(280 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_merge.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_merge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         bt_merge.clicked.connect(self.merge_point_clouds)
 
         layout.addWidget(label_title)
         layout.addWidget(self.input_checkbox)
         layout.addWidget(widget_input)
         layout.addWidget(self.fs_merge)
-        layout.addWidget(bt_merge, alignment=Qt.AlignCenter)
+        layout.addWidget(bt_merge, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addStretch()
 
     def checkbox_changed(self, state):

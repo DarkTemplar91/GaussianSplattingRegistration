@@ -3,8 +3,8 @@ import os.path
 
 import torch
 from PIL import Image
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6 import QtWidgets
+from PySide6.QtCore import QObject, Signal
 import torchvision.transforms.functional as tf
 
 from src.models.gaussian_model import GaussianModel
@@ -14,10 +14,10 @@ from src.utils.evaluation_utils import ssim, psnr, mse
 
 
 class RegistrationEvaluator(QObject):
-    signal_finished = pyqtSignal()
-    signal_evaluation_done = pyqtSignal(object)
+    signal_finished = Signal()
+    signal_evaluation_done = Signal(object)
 
-    signal_update_progress = pyqtSignal(int)
+    signal_update_progress = Signal(int)
 
     def __init__(self, pc1, pc2, transformation, cameras_list, images_path, log_path, color, registration_result,
                  use_gpu):

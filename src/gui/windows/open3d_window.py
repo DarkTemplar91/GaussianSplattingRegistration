@@ -4,13 +4,13 @@ from subprocess import Popen, PIPE
 
 import numpy as np
 import open3d as o3d
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 
 if sys.platform.startswith('win'):
     import win32gui
 
-from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtWidgets import QMainWindow
+from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6.QtWidgets import QMainWindow
 
 
 class Open3DWindow(QMainWindow):
@@ -195,7 +195,7 @@ class Open3DWindow(QMainWindow):
         if self.is_embedded:
             self.layout.removeWidget(self.window_container)
             self.window.setParent(None)
-            self.window.setFlags(Qt.Window)
+            self.window.setFlags(Qt.WindowType.Window)
             self.is_embedded = False
             return
 

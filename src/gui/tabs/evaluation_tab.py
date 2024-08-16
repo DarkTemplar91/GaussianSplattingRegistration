@@ -2,8 +2,8 @@ import json
 import os.path
 
 import numpy as np
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFileDialog, QGroupBox, QHBoxLayout,
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFileDialog, QGroupBox, QHBoxLayout,
                              QLabel, QSpinBox, QLineEdit, QErrorMessage, QCheckBox)
 
 from src.gui.widgets.color_picker_widget import ColorPicker
@@ -14,8 +14,8 @@ import src.utils.graphics_utils as graphic_util
 
 
 class EvaluationTab(QWidget):
-    signal_camera_change = pyqtSignal(np.ndarray)
-    signal_evaluate_registration = pyqtSignal(list, str, str, np.ndarray, bool)
+    signal_camera_change = Signal(np.ndarray)
+    signal_evaluate_registration = Signal(list, str, str, np.ndarray, bool)
 
     def __init__(self):
         super().__init__()
@@ -38,7 +38,7 @@ class EvaluationTab(QWidget):
         self.button_load_cameras.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         self.button_load_cameras.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
-        self.button_load_cameras.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.button_load_cameras.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         # Spinbox row
         spinbox_layout = QHBoxLayout()
@@ -54,7 +54,7 @@ class EvaluationTab(QWidget):
         self.current_image_name.setEnabled(False)
         self.current_image_name.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
         self.current_image_name.setFixedWidth(int(100 * graphic_util.SIZE_SCALE_X))
-        self.current_image_name.setAlignment(Qt.AlignLeft)
+        self.current_image_name.setAlignment(Qt.AlignmentFlag.AlignLeft)
         spinbox_layout.addWidget(label)
         spinbox_layout.addWidget(self.spinbox)
         spinbox_layout.addWidget(self.current_image_name)
@@ -91,7 +91,7 @@ class EvaluationTab(QWidget):
         self.button_evaluate.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                            f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         self.button_evaluate.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
-        self.button_evaluate.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.button_evaluate.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         evaluation_layout.addWidget(self.fs_images)
         evaluation_layout.addWidget(self.fs_log)

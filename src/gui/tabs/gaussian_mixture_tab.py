@@ -1,20 +1,19 @@
-from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale, Qt
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy, QSlider, QLabel
+from PySide6.QtCore import QLocale, Qt, Signal
+from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy, QSlider, QLabel
 
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 import src.utils.graphics_utils as graphic_util
 
 
 class GaussianMixtureTab(QWidget):
-    signal_create_mixture = QtCore.pyqtSignal(float, float, float, int)
-    signal_slider_changed = QtCore.pyqtSignal(int)
+    signal_create_mixture = Signal(float, float, float, int)
+    signal_slider_changed = Signal(int)
 
     def __init__(self):
         super().__init__()
 
-        locale = QLocale(QLocale.English)
+        locale = QLocale(QLocale.Language.English)
         double_validator = QDoubleValidator()
         double_validator.setLocale(locale)
         double_validator.setRange(0.0, 9999.0)
@@ -41,7 +40,7 @@ class GaussianMixtureTab(QWidget):
             "}"
         )
 
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(0)
         self.slider.setTickInterval(1)
@@ -63,7 +62,7 @@ class GaussianMixtureTab(QWidget):
         bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout.addWidget(slider_label)
         layout.addWidget(self.slider)

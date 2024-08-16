@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QProgressDialog
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QProgressDialog
 
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.workers.qt_workers import PointCloudLoaderO3D
@@ -7,14 +7,14 @@ import src.utils.graphics_utils as graphic_util
 
 
 class CacheTab(QWidget):
-    result_signal = pyqtSignal(object, object, bool)
+    result_signal = Signal(object, object, bool)
 
     def __init__(self, cache_dir):
         super().__init__()
 
         # TODO: Set up loading bar
         self.progress_dialog = QProgressDialog()
-        self.progress_dialog.setModal(Qt.WindowModal)
+        self.progress_dialog.setModal(True)
         self.progress_dialog.setWindowTitle("Loading")
         self.progress_dialog.setLabel(QLabel("Loading point clouds..."))
         self.progress_dialog.close()
@@ -35,7 +35,7 @@ class CacheTab(QWidget):
         )
 
         bt_cached = QPushButton("Import cached point clouds")
-        bt_cached.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_cached.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         bt_cached.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                 f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_cached.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
@@ -43,9 +43,9 @@ class CacheTab(QWidget):
         layout.addWidget(label_cache)
         layout.addWidget(self.fs_cache1)
         layout.addWidget(self.fs_cache2)
-        layout.addWidget(bt_cached, alignment=Qt.AlignCenter)
+        layout.addWidget(bt_cached, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addStretch()
-        layout.setAlignment(Qt.AlignTop)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         bt_cached.clicked.connect(self.cached_button_pressed)
 

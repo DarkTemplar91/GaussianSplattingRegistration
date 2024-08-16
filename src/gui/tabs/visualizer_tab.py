@@ -1,8 +1,8 @@
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale, Qt
-from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy, QStyle, QHBoxLayout
+from PySide6 import QtCore
+from PySide6.QtCore import QLocale, Qt
+from PySide6.QtGui import QDoubleValidator
+from PySide6.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy, QStyle, QHBoxLayout
 
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
@@ -11,17 +11,17 @@ import src.utils.graphics_utils as graphic_util
 
 
 class VisualizerTab(QWidget):
-    signal_change_vis = QtCore.pyqtSignal(float, np.ndarray, np.ndarray, np.ndarray,
-                                          object, object)
-    signal_get_current_view = QtCore.pyqtSignal()
-    signal_pop_visualizer = QtCore.pyqtSignal()
+    signal_change_vis = QtCore.Signal(float, np.ndarray, np.ndarray, np.ndarray,
+                                      object, object)
+    signal_get_current_view = QtCore.Signal()
+    signal_pop_visualizer = QtCore.Signal()
 
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        locale = QLocale(QLocale.English)
+        locale = QLocale(QLocale.Language.English)
         double_validator = QDoubleValidator()
         double_validator.setLocale(locale)
         double_validator.setRange(-9999.0, 9999.0)
@@ -39,9 +39,9 @@ class VisualizerTab(QWidget):
         )
 
         self.pop_button = QPushButton(self)
-        self.pop_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.pop_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.pop_button.setFixedSize(int(graphic_util.SIZE_SCALE_X * 20), int(graphic_util.SIZE_SCALE_Y * 20))
-        icon = self.style().standardIcon(QStyle.SP_TitleBarNormalButton)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarNormalButton)
         self.pop_button.setIcon(icon)
 
         label_layout.addWidget(label_title)
@@ -71,13 +71,13 @@ class VisualizerTab(QWidget):
 
         button_apply = QPushButton()
         button_apply.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        button_apply.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        button_apply.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         button_apply.setText("Apply")
         button_apply.clicked.connect(self.apply_to_vis)
 
         button_copy = QPushButton()
         button_copy.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        button_copy.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        button_copy.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         button_copy.setText("Copy current view")
         button_copy.clicked.connect(self.get_current_view)
 
@@ -93,8 +93,8 @@ class VisualizerTab(QWidget):
         layout.addWidget(self.front_widget)
         layout.addWidget(self.lookat_widget)
         layout.addWidget(self.up_widget)
-        layout.addWidget(button_apply, alignment=Qt.AlignCenter)
-        layout.addWidget(button_copy, alignment=Qt.AlignCenter)
+        layout.addWidget(button_apply, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(button_copy, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addStretch()
 
     def checkbox_changed(self, state):

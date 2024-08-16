@@ -1,8 +1,8 @@
 import copy
 
 import open3d as o3d
-from PyQt5.QtCore import pyqtSignal, QObject
-from PyQt5 import QtWidgets
+from PySide6.QtCore import Signal, QObject
+from PySide6 import QtWidgets
 
 from src.models.registration_data import MultiScaleRegistrationData
 from src.utils.file_loader import load_sparse_pc
@@ -11,10 +11,10 @@ from src.utils.local_registration_util import do_icp_registration
 
 # TODO: Use common base class
 class MultiScaleRegistratorVoxel(QObject):
-    signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object, object)
-    signal_error_occurred = pyqtSignal(list)
-    signal_update_progress = pyqtSignal(int)
+    signal_finished = Signal()
+    signal_registration_done = Signal(object, object)
+    signal_error_occurred = Signal(list)
+    signal_update_progress = Signal(int)
 
     def __init__(self, pc1, pc2, init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
                  relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value):
@@ -141,10 +141,10 @@ class MultiScaleRegistratorVoxel(QObject):
 
 
 class MultiScaleRegistratorMixture(QObject):
-    signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object, object)
-    signal_error_occurred = pyqtSignal(list)
-    signal_update_progress = pyqtSignal(int)
+    signal_finished = Signal()
+    signal_registration_done = Signal(object, object)
+    signal_error_occurred = Signal(list)
+    signal_update_progress = Signal(int)
 
     def __init__(self, pc1_list, pc2_list, init_trans, use_corresponding, sparse_first, sparse_second,
                  registration_type,

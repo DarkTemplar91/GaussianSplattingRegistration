@@ -1,10 +1,10 @@
 import torch
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 
 class GaussianSaver(QObject):
-    signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object, object)
+    signal_finished = Signal()
+    signal_registration_done = Signal(object, object)
 
     def __init__(self, gaussian, path):
         super().__init__()

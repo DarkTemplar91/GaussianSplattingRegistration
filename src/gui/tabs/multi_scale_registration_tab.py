@@ -1,20 +1,19 @@
-from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale, QRegularExpression
-from PyQt5.QtGui import QDoubleValidator, QRegularExpressionValidator, QPalette
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton, QHBoxLayout, \
-    QFrame, QScrollArea, QStackedWidget
+from PySide6 import QtCore
+from PySide6.QtCore import QLocale, QRegularExpression
+from PySide6.QtGui import QDoubleValidator, QRegularExpressionValidator
+from PySide6.QtWidgets import (QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton,
+                               QHBoxLayout, QFrame, QScrollArea)
 
+import src.utils.graphics_utils as graphic_util
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
-
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
-import src.utils.graphics_utils as graphic_util
 
 
 class MultiScaleRegistrationTab(QWidget):
-    signal_do_registration = QtCore.pyqtSignal(bool, str, str, LocalRegistrationType, float, float,
-                                               list, list,
-                                               KernelLossFunctionType, float, bool)
+    signal_do_registration = QtCore.Signal(bool, str, str, LocalRegistrationType, float, float,
+                                           list, list,
+                                           KernelLossFunctionType, float, bool)
 
     def __init__(self, input_path):
         super().__init__()
@@ -23,9 +22,8 @@ class MultiScaleRegistrationTab(QWidget):
         self.setLayout(registration_layout)
 
         scroll_widget = QScrollArea()
-        scroll_widget.setBackgroundRole(QPalette.Background)
-        scroll_widget.setFrameShadow(QFrame.Plain)
-        scroll_widget.setFrameShape(QFrame.NoFrame)
+        scroll_widget.setFrameShadow(QFrame.Shadow.Plain)
+        scroll_widget.setFrameShape(QFrame.Shape.NoFrame)
         scroll_widget.setWidgetResizable(True)
 
         inner_widget = QWidget()
@@ -35,7 +33,7 @@ class MultiScaleRegistrationTab(QWidget):
         scroll_widget.setWidget(inner_widget)
 
         # validators
-        locale = QLocale(QLocale.English)
+        locale = QLocale(QLocale.Language.English)
         double_validator = QDoubleValidator()
         double_validator.setLocale(locale)
         double_validator.setRange(0.0, 9999.0)
@@ -82,7 +80,7 @@ class MultiScaleRegistrationTab(QWidget):
         # Local registration type
         registration_type_label = QLabel("Local registration type")
         self.combo_box_icp = QComboBox()
-        self.combo_box_icp.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_icp.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         for enum_member in LocalRegistrationType:
             self.combo_box_icp.addItem(enum_member.instance_name)
 
@@ -96,7 +94,7 @@ class MultiScaleRegistrationTab(QWidget):
         downscale_type_label = QLabel("Downscale type: ")
         downscale_type_label.setFixedWidth(95)
         self.combo_box_multiscale = QComboBox()
-        self.combo_box_multiscale.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_multiscale.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.combo_box_multiscale.addItem("Voxel downsampling")
         self.combo_box_multiscale.addItem("HEM Gaussian mixture")
         self.combo_box_multiscale.currentIndexChanged.connect(self.downscale_type_changed)
@@ -132,7 +130,7 @@ class MultiScaleRegistrationTab(QWidget):
         outlier_type_label = QLabel("Loss type:")
         self.combo_box_outlier = QComboBox()
         self.combo_box_outlier.currentIndexChanged.connect(self.rejection_type_changed)
-        self.combo_box_outlier.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.combo_box_outlier.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         for enum_member in KernelLossFunctionType:
             self.combo_box_outlier.addItem(enum_member.instance_name)
 
@@ -150,7 +148,7 @@ class MultiScaleRegistrationTab(QWidget):
         bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         bt_apply.clicked.connect(self.registration_button_pressed)
 
         layout.addWidget(label_title)

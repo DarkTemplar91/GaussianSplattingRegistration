@@ -1,7 +1,7 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette
-from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtWidgets import QLabel, QSizePolicy, QScrollArea, QMainWindow, QMenu, QAction, QApplication, QFileDialog
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction
+from PySide6.QtPrintSupport import QPrinter
+from PySide6.QtWidgets import QLabel, QSizePolicy, QScrollArea, QMainWindow, QMenu, QApplication, QFileDialog
 
 
 class RasterImageViewer(QMainWindow):
@@ -12,14 +12,12 @@ class RasterImageViewer(QMainWindow):
         self.scaleFactor = 0.0
 
         self.image_label = QLabel()
-        self.image_label.setBackgroundRole(QPalette.Base)
-        self.image_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.image_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.image_label.setScaledContents(True)
-        self.image_label.setAlignment(Qt.AlignCenter)
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.scroll_area = QScrollArea()
-        self.scroll_area.setBackgroundRole(QPalette.Dark)
-        self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.scroll_area.setWidget(self.image_label)
         self.scroll_area.setVisible(False)
 
@@ -74,7 +72,7 @@ class RasterImageViewer(QMainWindow):
 
     def scaleImage(self, factor):
         self.scaleFactor *= factor
-        self.image_label.resize(self.scaleFactor * self.image_label.pixmap().size())
+        self.image_label.resize(self.image_label.pixmap().size() * self.scaleFactor)
 
         self.adjustScrollBar(self.scroll_area.horizontalScrollBar(), factor)
         self.adjustScrollBar(self.scroll_area.verticalScrollBar(), factor)
@@ -119,9 +117,9 @@ class RasterImageViewer(QMainWindow):
 
     def save_image(self):
         dialog = QFileDialog(self)
-        dialog.setViewMode(QFileDialog.Detail)
-        dialog.setAcceptMode(QFileDialog.AcceptSave)
-        dialog.setFileMode(QFileDialog.AnyFile)
+        dialog.setViewMode(QFileDialog.ViewMode.Detail)
+        dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+        dialog.setFileMode(QFileDialog.FileMode.AnyFile)
         dialog.setNameFilter("All files (*.*);;BMP (*.bmp);;GIF (*.gif);;JPEG ("
                              "*.jpeg);;JPG (*.jpg);;PBM (*.pbm);;PGM (*.pgm);;PNG (*.png);;PPM (*.ppm);"
                              ";XBM (*.xbm);;XPM (*.xpm)")
@@ -132,5 +130,3 @@ class RasterImageViewer(QMainWindow):
             pix.save(file_path, quality=100)
         else:
             return
-
-

@@ -1,5 +1,5 @@
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6 import QtWidgets
+from PySide6.QtCore import QObject, Signal
 import mixture_bind
 
 from src.models.gaussian_model import GaussianModel
@@ -9,10 +9,10 @@ from src.utils.point_cloud_converter import convert_gs_to_open3d_pc
 
 
 class GaussianMixtureWorker(QObject):
-    signal_finished = pyqtSignal()
-    signal_mixture_created = pyqtSignal(list, list, list, list)
+    signal_finished = Signal()
+    signal_mixture_created = Signal(list, list, list, list)
 
-    signal_update_progress = pyqtSignal(int)
+    signal_update_progress = Signal(int)
 
     def __init__(self, pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level):
         super().__init__()

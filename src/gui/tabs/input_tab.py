@@ -1,6 +1,6 @@
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QCheckBox, QProgressDialog
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QCheckBox, QProgressDialog
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout
 
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.workers.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian
@@ -8,14 +8,14 @@ import src.utils.graphics_utils as graphic_util
 
 
 class InputTab(QWidget):
-    result_signal = pyqtSignal(object, object, bool, object, object)
+    result_signal = Signal(object, object, bool, object, object)
 
     def __init__(self, input_dir):
         super().__init__()
 
         # TODO: Set up loading bar
         self.progress_dialog = QProgressDialog()
-        self.progress_dialog.setModal(Qt.WindowModal)
+        self.progress_dialog.setModal(True)
         self.progress_dialog.setWindowTitle("Loading")
         self.progress_dialog.setLabel(QLabel("Loading point clouds..."))
         self.progress_dialog.close()
@@ -38,7 +38,7 @@ class InputTab(QWidget):
         bt_sparse.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                 f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_sparse.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_sparse.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_sparse.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         label_pc = QLabel("Point cloud inputs: ")
         label_pc.setStyleSheet(
@@ -51,7 +51,7 @@ class InputTab(QWidget):
         self.fs_pc1 = FileSelector(text="First point cloud:", base_path=input_dir)
         self.fs_pc2 = FileSelector(text="Second point cloud:", base_path=input_dir)
         bt_gaussian = QPushButton("Import gaussian point cloud")
-        bt_gaussian.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        bt_gaussian.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         bt_gaussian.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
                                   f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
         bt_gaussian.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
@@ -71,12 +71,12 @@ class InputTab(QWidget):
         layout.addWidget(label_sparse)
         layout.addWidget(self.fs_input1)
         layout.addWidget(self.fs_input2)
-        layout.addWidget(bt_sparse, alignment=Qt.AlignCenter)
+        layout.addWidget(bt_sparse, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addSpacing(40)
         layout.addWidget(label_pc)
         layout.addWidget(self.fs_pc1)
         layout.addWidget(self.fs_pc2)
-        layout.addWidget(bt_gaussian, alignment=Qt.AlignCenter)
+        layout.addWidget(bt_gaussian, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.checkbox_cache)
 
         layout.addStretch()

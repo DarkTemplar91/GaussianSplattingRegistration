@@ -1,7 +1,5 @@
-import time
-
 import torch
-from PyQt5.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import Signal, QThread
 
 from src.models.gaussian_model import GaussianModel
 from src.utils.file_loader import load_sparse_pc, load_o3d_pc, save_point_clouds_to_cache, \
@@ -10,8 +8,8 @@ from src.utils.point_cloud_converter import convert_gs_to_open3d_pc
 
 
 class PointCloudLoaderInput(QThread):
-    progress_signal = pyqtSignal(int)
-    result_signal = pyqtSignal(object, object)
+    progress_signal = Signal(int)
+    result_signal = Signal(object, object)
 
     def __init__(self, point_cloud1, point_cloud2):
         super().__init__()
@@ -26,8 +24,8 @@ class PointCloudLoaderInput(QThread):
 
 
 class PointCloudLoaderGaussian(QThread):
-    progress_signal = pyqtSignal(int)
-    result_signal = pyqtSignal(object, object, object, object)
+    progress_signal = Signal(int)
+    result_signal = Signal(object, object, object, object)
 
     def __init__(self, point_cloud1, point_cloud2):
         super().__init__()
@@ -60,8 +58,8 @@ class PointCloudLoaderGaussian(QThread):
 
 
 class PointCloudLoaderO3D(QThread):
-    progress_signal = pyqtSignal(int)
-    result_signal = pyqtSignal(object, object)
+    progress_signal = Signal(int)
+    result_signal = Signal(object, object)
 
     def __init__(self, point_cloud1, point_cloud2):
         super().__init__()
