@@ -4,8 +4,9 @@ import numpy as np
 from PySide6.QtCore import Qt, Signal, QLocale
 from PySide6.QtGui import QIntValidator, QDoubleValidator
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QRadioButton, QButtonGroup, \
-    QHBoxLayout, QGroupBox
+    QHBoxLayout, QGroupBox, QFormLayout, QLineEdit
 
+from src.gui.widgets.centered_push_button import CustomPushButton
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
@@ -41,27 +42,26 @@ class RasterizerTab(QWidget):
             "}"
         )
 
-        option_widget = QGroupBox()
+        self.image_width_widget = QLineEdit("512") # TODO: replace with custom widget for reusability
+        self.image_width_widget.setValidator(int_validator)
+        self.image_width_widget.setFixedWidth(60)
+        self.image_height_widget = QLineEdit("512")
+        self.image_height_widget.setValidator(int_validator)
+        self.image_width_widget.setFixedWidth(60)
+        self.scale = QLineEdit("1.0")
+        self.background_color_widget = ColorPicker(np.zeros(3))
+
+        formLayout = QFormLayout(self)
+        formLayout.addRow("Image width:", self.image_width_widget)
+        formLayout.addRow("Image height:", self.image_height_widget)
+        formLayout.addRow("Scale:", self.scale)
+        formLayout.addRow("Background color:", self.background_color_widget)
+        option_widget = QGroupBox(self)
         option_widget.setTitle("Dimensions")
-        options_layout = QVBoxLayout()
-        option_widget.setLayout(options_layout)
-        self.image_width_widget = SimpleInputField("Image width:", "512", 75, validator=int_validator)
-        self.image_height_widget = SimpleInputField("Image height:", "512", 75, validator=int_validator)
+        option_widget.setLayout(formLayout)
 
-        self.scale = SimpleInputField("Scale:", "1.0", 75, validator=double_validator)
-        self.background_color_widget = ColorPicker("Background color: ", np.zeros(3))
-
-        bt_rasterize = QPushButton("Rasterize")
-        bt_rasterize.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                                   f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        bt_rasterize.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_rasterize.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        bt_rasterize.clicked.connect(self.button_clicked)
-
-        options_layout.addWidget(self.image_width_widget)
-        options_layout.addWidget(self.image_height_widget)
-        options_layout.addWidget(self.scale)
-        options_layout.addWidget(self.background_color_widget)
+        bt_rasterize = CustomPushButton("Rasterize", 90)
+        bt_rasterize.connect_to_clicked(self.button_clicked)
 
         widget_fov_group_box = QGroupBox()
         widget_fov_group_box.setTitle("FOV")
@@ -94,10 +94,9 @@ class RasterizerTab(QWidget):
 
         layout.addWidget(label_res)
         layout.addWidget(option_widget)
-        layout.addWidget(widget_fov_group_box)
-
-        layout.addWidget(bt_rasterize, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addStretch()
+        layout.addWidget(widget_fov_group_box)
+        layout.addWidget(bt_rasterize)
 
     def button_clicked(self):
         width = int(self.image_width_widget.lineedit.text())

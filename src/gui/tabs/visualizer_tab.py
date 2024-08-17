@@ -62,10 +62,10 @@ class VisualizerTab(QWidget):
         )
         self.debug_color_checkbox.stateChanged.connect(self.checkbox_changed)
 
-        self.debug_color_dialog_first = ColorPicker("Primary debug color: ")
-        self.debug_color_dialog_first.setEnabled(False)
-        self.debug_color_dialog_second = ColorPicker("Secondary debug color: ")
-        self.debug_color_dialog_second.setEnabled(False)
+        #self.debug_color_dialog_first = ColorPicker("Primary debug color: ")
+        #self.debug_color_dialog_first.setEnabled(False)
+        #self.debug_color_dialog_second = ColorPicker("Secondary debug color: ")
+        #self.debug_color_dialog_second.setEnabled(False)
 
         self.zoom_widget = SimpleInputField("Zoom: ", "1.0", 50, 60, validator=double_validator)
 
@@ -87,8 +87,8 @@ class VisualizerTab(QWidget):
 
         layout.addWidget(label_widget)
         layout.addWidget(self.debug_color_checkbox)
-        layout.addWidget(self.debug_color_dialog_first)
-        layout.addWidget(self.debug_color_dialog_second)
+        #layout.addWidget(self.debug_color_dialog_first)
+        #layout.addWidget(self.debug_color_dialog_second)
         layout.addWidget(self.zoom_widget)
         layout.addWidget(self.front_widget)
         layout.addWidget(self.lookat_widget)

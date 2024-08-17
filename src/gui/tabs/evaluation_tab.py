@@ -73,7 +73,7 @@ class EvaluationTab(QWidget):
         self.fs_images = FileSelector(text="Images folder: ", file_type=QFileDialog.Directory, label_width=80)
         self.fs_log = FileSelector(text="Log file: ", name_filter="Log files (*.txt *.log);;*.txt;;*.log",
                                    label_width=80, file_type=QFileDialog.AnyFile)
-        self.render_color = ColorPicker("Background color: ", np.zeros(3))
+        #self.render_color = ColorPicker("Background color: ", np.zeros(3))
 
         self.checkbox_gpu = QCheckBox()
         self.checkbox_gpu.setText("Use GPU for evaluation")
@@ -95,7 +95,7 @@ class EvaluationTab(QWidget):
 
         evaluation_layout.addWidget(self.fs_images)
         evaluation_layout.addWidget(self.fs_log)
-        evaluation_layout.addWidget(self.render_color)
+        #evaluation_layout.addWidget(self.render_color)
         evaluation_layout.addWidget(self.checkbox_gpu)
         evaluation_layout.addWidget(self.button_evaluate)
 
