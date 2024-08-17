@@ -1,33 +1,47 @@
-import torch
-from PySide6.QtCore import Signal, QThread
+from PySide6.QtCore import Signal, QThread, QObject
 
 from src.gui.workers.qt_base_worker import BaseWorker
-from src.models.gaussian_model import GaussianModel
 from src.utils.file_loader import load_sparse_pc, load_o3d_pc, save_point_clouds_to_cache, \
-    load_plyfile_pc, is_point_cloud_gaussian, load_gaussian_pc
-from src.utils.point_cloud_converter import convert_gs_to_open3d_pc
+    load_gaussian_pc
 
 
 class PointCloudLoaderInput(BaseWorker):
-    def __init__(self, point_cloud):
+    class ResultData:
+        def __init__(self, point_cloud_first, point_cloud_second):
+            self.point_cloud_first = point_cloud_first
+            self.point_cloud_second = point_cloud_second
+
+    def __init__(self, point_cloud_path_first, point_cloud_path_second):
         super().__init__()
-        self.point_cloud = point_cloud
+        self.point_cloud_path_first = point_cloud_path_first
+        self.point_cloud_path_second = point_cloud_path_second
 
     def run(self):
-        result = load_sparse_pc(self.point_cloud)
-        self.signals.result.emit(self.worker_id, result)
-        self.signals.finished.emit()
+        result_first = load_sparse_pc(self.point_cloud_path_first)
+        result_second = load_sparse_pc(self.point_cloud_path_second)
+        self.signal_result.emit(PointCloudLoaderInput.ResultData(result_first, result_second))
+        self.signal_finished.emit()
 
 
 class PointCloudLoaderGaussian(BaseWorker):
-    def __init__(self, point_cloud):
+    class ResultData:
+        def __init__(self, o3d_point_cloud_first, o3d_point_cloud_second,
+                     gaussian_point_cloud_first, gaussian_point_cloud_second):
+            self.o3d_point_cloud_first = o3d_point_cloud_first
+            self.o3d_point_cloud_second = o3d_point_cloud_second
+            self.gaussian_point_cloud_first = gaussian_point_cloud_first
+            self.gaussian_point_cloud_second = gaussian_point_cloud_second
+
+    def __init__(self, point_cloud_path_first, point_cloud_path_second):
         super().__init__()
-        self.point_cloud = point_cloud
+        self.point_cloud_path_first = point_cloud_path_first
+        self.point_cloud_path_second = point_cloud_path_second
 
     def run(self):
-        result = load_gaussian_pc(self.point_cloud)
-        self.signals.result.emit(self.worker_id, result)
-        self.signals.finished.emit()
+        o3d_pc1, gs_pc1 = load_gaussian_pc(self.point_cloud_path_first)
+        o3d_pc2, gs_pc2 = load_gaussian_pc(self.point_cloud_path_second)
+        self.signal_result.emit(PointCloudLoaderGaussian.ResultData(o3d_pc1, o3d_pc2, gs_pc1, gs_pc2))
+        self.signal_finished.emit()
 
 
 class PointCloudLoaderO3D(QThread):

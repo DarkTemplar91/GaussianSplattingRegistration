@@ -1,11 +1,11 @@
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QThread
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QCheckBox, QProgressDialog, QGroupBox
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
 
 from src.gui.widgets.centered_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.gui.workers.qt_parallel_workers import ParrallelWorker
+from src.gui.workers.qt_base_worker import move_worker_to_thread
 from src.gui.workers.qt_pc_loaders import PointCloudLoaderInput, PointCloudLoaderGaussian
 
 
@@ -77,31 +77,28 @@ class InputTab(QWidget):
         path_first = self.fs_input1.file_path
         path_second = self.fs_input2.file_path
 
-        worker1 = PointCloudLoaderInput(path_first)
-        worker2 = PointCloudLoaderInput(path_second)
-
-        worker = ParrallelWorker(worker1, worker2)
-        worker.finished.connect(self.handle_result_sparse)
-        worker.run()
+        worker = PointCloudLoaderInput(path_first, path_second)
+        thread = move_worker_to_thread(worker, self.handle_result_sparse)
+        thread.start()
+        self.progress_dialog.setLabelText("Loading point clouds...")
         self.progress_dialog.exec()
 
     def gaussian_button_pressed(self):
         path_first = self.fs_pc1.file_path
         path_second = self.fs_pc2.file_path
 
-        worker1 = PointCloudLoaderGaussian(path_first)
-        worker2 = PointCloudLoaderGaussian(path_second)
-
-        worker = ParrallelWorker(worker1, worker2)
-        worker.finished.connect(self.handle_result_gaussian)
-        worker.run()
+        worker = PointCloudLoaderGaussian(path_first, path_second)
+        thread = move_worker_to_thread(worker, self.handle_result_gaussian)
+        thread.start()
+        self.progress_dialog.setLabelText("Loading point clouds...")
         self.progress_dialog.exec()
 
-    def handle_result_sparse(self, result_first, result_second):
-        self.result_signal.emit(result_first, result_second, False, None, None)
+    def handle_result_sparse(self, input_result: PointCloudLoaderInput.ResultData):
+        self.result_signal.emit(input_result.point_cloud_first, input_result.point_cloud_second, False, None, None)
         self.progress_dialog.close()
 
-    def handle_result_gaussian(self, result_first, result_second):
-        self.result_signal.emit(result_first[0], result_second[0],
-                                self.checkbox_cache.isChecked(), result_first[1], result_second[1])
+    def handle_result_gaussian(self, gaussian_result: PointCloudLoaderGaussian.ResultData):
+        self.result_signal.emit(gaussian_result.o3d_point_cloud_first, gaussian_result.o3d_point_cloud_second,
+                                self.checkbox_cache.isChecked(),
+                                gaussian_result.gaussian_point_cloud_first, gaussian_result.gaussian_point_cloud_second)
         self.progress_dialog.close()
