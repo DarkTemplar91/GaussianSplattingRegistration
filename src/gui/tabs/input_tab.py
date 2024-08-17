@@ -1,3 +1,5 @@
+import time
+
 from PySide6.QtCore import Signal
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QCheckBox, QProgressDialog, QGroupBox
@@ -5,7 +7,7 @@ from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
 
 from src.gui.widgets.centered_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.gui.workers.qt_parallel_workers import ParrallelWorker
+from src.gui.workers.qt_parallel_workers import ParallelWorker
 from src.gui.workers.qt_pc_loaders import PointCloudLoaderInput, PointCloudLoaderGaussian
 
 
@@ -80,7 +82,7 @@ class InputTab(QWidget):
         worker1 = PointCloudLoaderInput(path_first)
         worker2 = PointCloudLoaderInput(path_second)
 
-        worker = ParrallelWorker(worker1, worker2)
+        worker = ParallelWorker(worker1, worker2)
         worker.finished.connect(self.handle_result_sparse)
         worker.run()
         self.progress_dialog.exec()
@@ -92,7 +94,7 @@ class InputTab(QWidget):
         worker1 = PointCloudLoaderGaussian(path_first)
         worker2 = PointCloudLoaderGaussian(path_second)
 
-        worker = ParrallelWorker(worker1, worker2)
+        worker = ParallelWorker(worker1, worker2)
         worker.finished.connect(self.handle_result_gaussian)
         worker.run()
         self.progress_dialog.exec()

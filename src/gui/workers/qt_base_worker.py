@@ -8,7 +8,7 @@ class WorkerSignals(QObject):
     progress = Signal(int)
 
 
-class BaseWorker(QRunnable):
+class BaseWorker(QObject):
     worker_id: int
 
     def __init__(self):

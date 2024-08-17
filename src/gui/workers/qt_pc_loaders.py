@@ -16,7 +16,6 @@ class PointCloudLoaderInput(BaseWorker):
     def run(self):
         result = load_sparse_pc(self.point_cloud)
         self.signals.result.emit(self.worker_id, result)
-        self.signals.finished.emit()
 
 
 class PointCloudLoaderGaussian(BaseWorker):
@@ -27,7 +26,6 @@ class PointCloudLoaderGaussian(BaseWorker):
     def run(self):
         result = load_gaussian_pc(self.point_cloud)
         self.signals.result.emit(self.worker_id, result)
-        self.signals.finished.emit()
 
 
 class PointCloudLoaderO3D(QThread):
