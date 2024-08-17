@@ -55,7 +55,7 @@ def load_gaussian_pc(pc_path):
     plyfile_point_cloud = load_plyfile_pc(pc_path)
 
     if not is_point_cloud_gaussian(plyfile_point_cloud):
-        return None
+        return None, None
 
     gaussian_point_cloud = GaussianModel(device_name="cuda:0")
     gaussian_point_cloud.from_ply(plyfile_point_cloud)

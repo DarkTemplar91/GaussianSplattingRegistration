@@ -18,7 +18,9 @@ class PointCloudLoaderInput(BaseWorker):
 
     def run(self):
         result_first = load_sparse_pc(self.point_cloud_path_first)
+        self.signal_progress.emit(50)
         result_second = load_sparse_pc(self.point_cloud_path_second)
+        self.signal_progress.emit(100)
         self.signal_result.emit(PointCloudLoaderInput.ResultData(result_first, result_second))
         self.signal_finished.emit()
 
@@ -39,13 +41,18 @@ class PointCloudLoaderGaussian(BaseWorker):
 
     def run(self):
         o3d_pc1, gs_pc1 = load_gaussian_pc(self.point_cloud_path_first)
+        self.signal_progress.emit(50)
         o3d_pc2, gs_pc2 = load_gaussian_pc(self.point_cloud_path_second)
+        self.signal_progress.emit(100)
         self.signal_result.emit(PointCloudLoaderGaussian.ResultData(o3d_pc1, o3d_pc2, gs_pc1, gs_pc2))
         self.signal_finished.emit()
 
 
-class PointCloudLoaderO3D(QThread):
-    result_signal = Signal(object, object)
+class PointCloudLoaderO3D(BaseWorker):
+    class ResultData:
+        def __init__(self, point_cloud_first, point_cloud_second):
+            self.point_cloud_first = point_cloud_first
+            self.point_cloud_second = point_cloud_second
 
     def __init__(self, point_cloud1, point_cloud2):
         super().__init__()
@@ -54,9 +61,11 @@ class PointCloudLoaderO3D(QThread):
 
     def run(self):
         result1 = load_o3d_pc(self.point_cloud1)
+        self.signal_progress.emit(50)
         result2 = load_o3d_pc(self.point_cloud2)
-
-        self.result_signal.emit(result1, result2)
+        self.signal_progress.emit(100)
+        self.signal_result.emit(PointCloudLoaderO3D.ResultData(result1, result2))
+        self.signal_finished.emit()
 
 
 class PointCloudSaver(QThread):

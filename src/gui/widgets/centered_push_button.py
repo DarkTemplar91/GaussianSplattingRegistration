@@ -15,7 +15,7 @@ class CustomPushButton(QWidget):
         self.stretch_percent = stretch_percent
 
         self.button = QPushButton(value)
-        self.button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.button.setStyleSheet("padding-top: 0.5em; padding-bottom: 0.5em;")
         layout.addStretch()
         layout.addWidget(self.button)

@@ -16,9 +16,11 @@ from src.gui.tabs.merger_tab import MergeTab
 from src.gui.tabs.multi_scale_registration_tab import MultiScaleRegistrationTab
 from src.gui.tabs.rasterizer_tab import RasterizerTab
 from src.gui.tabs.visualizer_tab import VisualizerTab
+from src.gui.widgets.progress_dialog_factory import ProgressDialogFactory
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
+from src.gui.workers.qt_base_worker import move_worker_to_thread
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_gaussian_saver import GaussianSaver
@@ -27,7 +29,8 @@ from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistratorVoxel, MultiScaleRegistratorMixture
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
-from src.gui.workers.qt_pc_loaders import PointCloudSaver
+from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGaussian, PointCloudLoaderInput, \
+    PointCloudLoaderO3D
 from src.models.gaussian_model import GaussianModel
 from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 
@@ -68,13 +71,6 @@ class RegistrationMainWindow(QMainWindow):
         self.cache_dir = os.path.join(working_dir, "cache")
         self.input_dir = os.path.join(working_dir, "inputs")
         self.output_dir = os.path.join(working_dir, "output")
-
-        # Loading bar for registration
-        self.progress_dialog = QProgressDialog()
-        self.progress_dialog.setModal(True)
-        self.progress_dialog.setWindowTitle("Loading")
-        self.progress_dialog.setStyleSheet("text-align: center;")
-        self.progress_dialog.close()
 
         # Set window size to screen size
         self.showMaximized()
@@ -122,15 +118,16 @@ class RegistrationMainWindow(QMainWindow):
         layout.addWidget(tab_widget)
 
         self.input_tab = InputTab(self.input_dir)
-        #self.cache_tab = CacheTab(self.cache_dir)
+        self.cache_tab = CacheTab(self.cache_dir)
         #self.transformation_picker = Transformation3DPicker()
         #self.visualizer_widget = VisualizerTab()
         self.rasterizer_tab = RasterizerTab()
         #self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
         #self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
-        self.input_tab.result_signal.connect(self.handle_point_cloud_loading)
-        #self.cache_tab.result_signal.connect(self.handle_point_cloud_loading)
+        self.input_tab.signal_load_gaussian.connect(self.handle_gaussian_load)
+        self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
+        self.cache_tab.signal_load_cached.connect(self.handle_cached_load)
         #self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         #self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         #self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
@@ -138,7 +135,7 @@ class RegistrationMainWindow(QMainWindow):
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
         tab_widget.addTab(self.input_tab, "I/O files")
-        #tab_widget.addTab(self.cache_tab, "Cache")
+        tab_widget.addTab(self.cache_tab, "Cache")
         #tab_widget.addTab(self.transformation_picker, "Transformation")
         #tab_widget.addTab(self.visualizer_widget, "Visualizer")
         tab_widget.addTab(self.rasterizer_tab, "Rasterizer")
@@ -187,6 +184,42 @@ class RegistrationMainWindow(QMainWindow):
 
         self.pane_open3d.update_transform(transformation_matrix, dc1, dc2)
 
+    def handle_sparse_load(self, sparse_path_first, sparse_path_second):
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
+        worker = PointCloudLoaderInput(sparse_path_first, sparse_path_second)
+        thread = move_worker_to_thread(worker, self.handle_result_sparse, progress_handler=progress_dialog.setValue)
+        thread.start()
+        progress_dialog.exec()
+
+    def handle_gaussian_load(self, gaussian_path_first, gaussian_path_second):
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
+        worker = PointCloudLoaderGaussian(gaussian_path_first, gaussian_path_second)
+        thread = move_worker_to_thread(worker, self.handle_result_gaussian, progress_handler=progress_dialog.setValue)
+        thread.start()
+        progress_dialog.exec()
+
+    def handle_cached_load(self, cached_path_first, cached_path_second):
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
+        worker = PointCloudLoaderO3D(cached_path_first, cached_path_second)
+        thread = move_worker_to_thread(worker, self.handle_result_cached, progress_handler=progress_dialog.setValue)
+        thread.start()
+        progress_dialog.exec()
+
+    def handle_result_sparse(self, sparse_result):
+        self.handle_point_cloud_loading(sparse_result.point_cloud_first, sparse_result.point_cloud_second,
+                                        False)
+
+    def handle_result_gaussian(self, gaussian_result):
+        # TODO: Convert if needed
+        self.handle_point_cloud_loading(gaussian_result.o3d_point_cloud_first, gaussian_result.o3d_point_cloud_second,
+                                        False,
+                                        gaussian_result.gaussian_point_cloud_first,
+                                        gaussian_result.gaussian_point_cloud_second)
+
+    def handle_result_cached(self, cached_result):
+        self.handle_point_cloud_loading(cached_result.point_cloud_first, cached_result.point_cloud_first,
+                                        False)
+
     def handle_point_cloud_loading(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
         error_message = ('Importing one or both of the point clouds failed.\nPlease check that you entered the correct '
                          'path and the point clouds are of the appropriate type!')
@@ -215,7 +248,7 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
-    def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
+    """def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
         self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
 
@@ -383,7 +416,8 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.setRange(0, 100)
         self.progress_dialog.setValue(0)
         self.progress_dialog.exec()
-
+        
+    
     def handle_registration_result_local(self, results, data):
         self.local_registration_data = data
         self.handle_registration_result_base(results.transformation, results.fitness, results.inlier_rmse)
@@ -402,7 +436,7 @@ class RegistrationMainWindow(QMainWindow):
                                f"The transformation will be applied.\n\n"
                                f"Fitness: {fitness}\n"
                                f"RMSE: {inlier_rmse}\n")
-        message_dialog.exec()
+        message_dialog.exec()"""
 
     def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
         pc1 = self.pc_gaussian_list_first[self.current_index] if self.pc_gaussian_list_first else None
@@ -443,10 +477,10 @@ class RegistrationMainWindow(QMainWindow):
         thread.finished.connect(thread.deleteLater)
 
         thread.start()
-        self.progress_dialog.setLabelText("Creating rasterized image...")
-        self.progress_dialog.exec()
+        #self.progress_dialog.setLabelText("Creating rasterized image...")
+        #self.progress_dialog.exec()
 
-    def create_raster_window(self, pix):
+    """def create_raster_window(self, pix):
         self.progress_dialog.close()
         self.raster_window = RasterImageViewer()
         self.raster_window.set_image(pix)
@@ -591,10 +625,9 @@ class RegistrationMainWindow(QMainWindow):
             dc1, dc2 = self.visualizer_widget.get_debug_colors()
 
         self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True,
-                                           self.transformation_picker.transformation_matrix, dc1, dc2)
+                                           self.transformation_picker.transformation_matrix, dc1, dc2)"""
 
     def create_error_list_dialog(self, error_list):
-        self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setModal(True)
         message_dialog.setWindowTitle("Error occurred")
