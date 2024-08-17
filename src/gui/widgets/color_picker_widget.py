@@ -1,7 +1,6 @@
 import numpy as np
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton, QColorDialog, QLineEdit, QSizePolicy
-import src.utils.graphics_utils as graphic_util
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QColorDialog, QLineEdit, QSizePolicy
 
 
 class ColorPicker(QWidget):
@@ -26,8 +25,8 @@ class ColorPicker(QWidget):
 
         button = QPushButton()
         button.setText("Pick color")
-        button.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                             f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        button.setStyleSheet(f"padding-left: 0.5em; padding-right: 0.5em;"
+                             f"padding-top: 0.1em; padding-bottom: 0.1em;")
 
         layout.addWidget(self.color_box)
         layout.addWidget(button)

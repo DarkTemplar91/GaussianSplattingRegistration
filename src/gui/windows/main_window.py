@@ -119,25 +119,25 @@ class RegistrationMainWindow(QMainWindow):
 
         self.input_tab = InputTab(self.input_dir)
         self.cache_tab = CacheTab(self.cache_dir)
-        #self.transformation_picker = Transformation3DPicker()
-        #self.visualizer_widget = VisualizerTab()
+        self.transformation_picker = Transformation3DPicker()
+        self.visualizer_widget = VisualizerTab()
         self.rasterizer_tab = RasterizerTab()
         #self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
-        #self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.input_tab.signal_load_gaussian.connect(self.handle_gaussian_load)
         self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
         self.cache_tab.signal_load_cached.connect(self.handle_cached_load)
-        #self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
-        #self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
-        #self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
+        self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
+        self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
+        self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
+        self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
         #self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
         tab_widget.addTab(self.input_tab, "I/O files")
         tab_widget.addTab(self.cache_tab, "Cache")
-        #tab_widget.addTab(self.transformation_picker, "Transformation")
-        #tab_widget.addTab(self.visualizer_widget, "Visualizer")
+        tab_widget.addTab(self.transformation_picker, "Transformation")
+        tab_widget.addTab(self.visualizer_widget, "Visualizer")
         tab_widget.addTab(self.rasterizer_tab, "Rasterizer")
         #tab_widget.addTab(self.merger_widget, "Merging")
 
@@ -248,7 +248,7 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
 
-    """def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
+    def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
         self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
 
@@ -256,7 +256,7 @@ class RegistrationMainWindow(QMainWindow):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
         self.visualizer_widget.set_visualizer_attributes(zoom, front, lookat, up)
 
-    def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
+    """def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
         pc_first = None
         pc_second = None
 

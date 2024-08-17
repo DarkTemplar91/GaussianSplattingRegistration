@@ -5,6 +5,7 @@ from PySide6.QtGui import QDoubleValidator, QGuiApplication
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, \
     QTableWidget, QGridLayout, QLineEdit, QPushButton, QSizePolicy
 import src.utils.graphics_utils as graphic_util
+from src.gui.widgets.centered_push_button import CustomPushButton
 
 
 class Transformation3DPicker(QWidget):
@@ -17,7 +18,7 @@ class Transformation3DPicker(QWidget):
         def __init__(self, value=0.0):
             super().__init__()
 
-            locale = QLocale(QLocale.Language.English)
+            locale = QLocale(QLocale.Language.C)
             double_validator = QDoubleValidator()
             double_validator.setLocale(locale)
             double_validator.setRange(-9999.0, 9999.0)
@@ -27,7 +28,7 @@ class Transformation3DPicker(QWidget):
             self.col = self.cell_number % 4
             Transformation3DPicker.MatrixCell.cell_number += 1
 
-            self.setFixedSize(int(50 * graphic_util.SIZE_SCALE_X), int(50 * graphic_util.SIZE_SCALE_Y))
+            self.setFixedSize(50, 50)
             self.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.value = value
             self.setText(str(self.value))
@@ -56,29 +57,25 @@ class Transformation3DPicker(QWidget):
 
     transformation_matrix_changed = QtCore.Signal(object)
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
 
-        layout = QVBoxLayout()
+        layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.setLayout(layout)
 
         label = QLabel("Transformation matrix")
         label.setStyleSheet(
-            "QLabel {"
-            "    font-size: 11pt;"
-            "    font-weight: bold;"  # Bold font
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"  # Padding
-            "}"
+            """QLabel {
+                font-size: 12pt;
+                font-weight: bold;
+                padding-bottom: 0.5em;
+            }"""
         )
 
-        self.matrix_table = QTableWidget()
-        self.matrix_table.setRowCount(4)
-        self.matrix_table.setColumnCount(4)
+        self.matrix_table = QTableWidget(4, 4)
 
         self.matrix_widget = QWidget()
-        grid_layout = QGridLayout()
-        self.matrix_widget.setLayout(grid_layout)
+        grid_layout = QGridLayout(self.matrix_widget)
 
         self.cells = []
         self.transformation_matrix = np.array([[1, 0, 0, 0],
@@ -89,34 +86,24 @@ class Transformation3DPicker(QWidget):
         for iRow in range(4):
             for iCol in range(4):
                 cell = self.MatrixCell(self.transformation_matrix[iRow, iCol])
+                cell.value_changed.connect(self.cell_value_changed)
+                cell.matrix_copied.connect(self.set_transformation)
                 grid_layout.addWidget(cell, iRow, iCol)
                 self.cells.append(cell)
 
-        for cell in self.cells:
-            cell.value_changed.connect(self.transformation_changed)
-            cell.matrix_copied.connect(self.set_transformation)
+        button_reset = CustomPushButton("Reset transformation matrix", 90)
+        button_reset.connect_to_clicked(lambda: self.set_transformation(np.eye(4)))
 
-        button_reset = QPushButton("Reset transformation matrix")
-        button_reset.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                                   f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        button_reset.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        button_reset.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        button_reset.clicked.connect(self.reset_transformation)
-
-        button_copy = QPushButton("Copy to clipboard")
-        button_copy.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                                  f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        button_copy.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        button_copy.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        button_copy.clicked.connect(self.copy_to_clipboard)
+        button_copy = CustomPushButton("Copy to clipboard", 90)
+        button_copy.connect_to_clicked(self.copy_to_clipboard)
 
         layout.addWidget(label)
         layout.addWidget(self.matrix_widget)
-        layout.addWidget(button_reset, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addSpacing(20)
-        layout.addWidget(button_copy, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(button_reset)
+        layout.addWidget(button_copy)
+        layout.addStretch()
 
-    def transformation_changed(self, row, col, value):
+    def cell_value_changed(self, row, col, value):
         self.transformation_matrix[row, col] = value
         self.transformation_matrix_changed.emit(self.transformation_matrix)
 
@@ -128,9 +115,6 @@ class Transformation3DPicker(QWidget):
             cell.setCursorPosition(0)
 
         self.transformation_matrix_changed.emit(self.transformation_matrix)
-
-    def reset_transformation(self):
-        self.set_transformation(np.eye(4))
 
     def copy_to_clipboard(self):
         clipboard = QGuiApplication.clipboard()
