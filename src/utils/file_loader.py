@@ -4,7 +4,10 @@ from enum import IntEnum, auto
 import plyfile
 import os.path
 
-from src.utils.point_cloud_converter import convert_input_pc_to_open3d_pc
+import torch
+
+from src.models.gaussian_model import GaussianModel
+from src.utils.point_cloud_converter import convert_input_pc_to_open3d_pc, convert_gs_to_open3d_pc
 import open3d as o3d
 
 
@@ -45,6 +48,22 @@ def load_plyfile_pc(pc_path):
         return None
 
     return point_cloud_plyfile
+
+
+def load_gaussian_pc(pc_path):
+    torch.cuda.empty_cache()
+    plyfile_point_cloud = load_plyfile_pc(pc_path)
+
+    if not is_point_cloud_gaussian(plyfile_point_cloud):
+        return None
+
+    gaussian_point_cloud = GaussianModel(device_name="cuda:0")
+    gaussian_point_cloud.from_ply(plyfile_point_cloud)
+    gaussian_point_cloud.move_to_device("cpu")
+
+    o3d_point_cloud = convert_gs_to_open3d_pc(gaussian_point_cloud)
+    torch.cuda.empty_cache()
+    return o3d_point_cloud, gaussian_point_cloud
 
 
 def check_point_cloud_type(point_cloud):

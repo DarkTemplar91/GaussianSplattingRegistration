@@ -41,7 +41,7 @@ class RasterizerTab(QWidget):
         self.scale_widget = SimpleInputField("1.0", 60, double_validator)
         self.background_color_widget = ColorPicker(np.zeros(3))
 
-        option_widget = QGroupBox(self)
+        option_widget = QGroupBox()
         option_widget.setTitle("Dimensions")
         layout_options = QFormLayout(option_widget)
         layout_options.addRow("Image width:", self.image_width_widget)

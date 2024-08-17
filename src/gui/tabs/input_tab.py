@@ -1,10 +1,12 @@
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QCheckBox, QProgressDialog
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout
+from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QCheckBox, QProgressDialog, QGroupBox
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
 
+from src.gui.widgets.centered_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.gui.workers.qt_workers import PointCloudLoaderInput, PointCloudLoaderGaussian
-import src.utils.graphics_utils as graphic_util
+from src.gui.workers.qt_parallel_workers import ParrallelWorker
+from src.gui.workers.qt_pc_loaders import PointCloudLoaderInput, PointCloudLoaderGaussian
 
 
 class InputTab(QWidget):
@@ -13,6 +15,7 @@ class InputTab(QWidget):
     def __init__(self, input_dir):
         super().__init__()
 
+        # TODO: Create custom spinner instead
         # TODO: Set up loading bar
         self.progress_dialog = QProgressDialog()
         self.progress_dialog.setModal(True)
@@ -20,90 +23,85 @@ class InputTab(QWidget):
         self.progress_dialog.setLabel(QLabel("Loading point clouds..."))
         self.progress_dialog.close()
 
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout_main = QVBoxLayout(self)
 
-        label_sparse = QLabel("Sparse inputs: ")
-        label_sparse.setStyleSheet(
-            "QLabel {"
-            "    font-size: 11pt;"
-            "    font-weight: bold;"
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
-            "}"
+        label_io = QLabel("Input and output")
+        label_io.setStyleSheet(
+            """QLabel {
+                font-size: 12pt;
+                font-weight: bold;
+                padding-bottom: 0.5em;
+            }"""
         )
 
+        sparse_group_widget = QGroupBox("Sparse inputs")
+        layout_sparse_group = QVBoxLayout(sparse_group_widget)
         self.fs_input1 = FileSelector(text="First sparse input:", base_path=input_dir)
         self.fs_input2 = FileSelector(text="Second sparse input:", base_path=input_dir)
-        bt_sparse = QPushButton("Import sparse point cloud")
-        bt_sparse.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                                f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        bt_sparse.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_sparse.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        bt_sparse = CustomPushButton("Import sparse point cloud", 90)
+        layout_sparse_group.addWidget(self.fs_input1)
+        layout_sparse_group.addWidget(self.fs_input2)
+        layout_sparse_group.addWidget(bt_sparse)
 
-        label_pc = QLabel("Point cloud inputs: ")
-        label_pc.setStyleSheet(
-            "QLabel {"
-            "    font-size: 11pt;"
-            "    font-weight: bold;"
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
-            "}"
-        )
+        input_group_widget = QGroupBox("Point cloud inputs")
+        layout_input_group = QVBoxLayout(input_group_widget)
         self.fs_pc1 = FileSelector(text="First point cloud:", base_path=input_dir)
         self.fs_pc2 = FileSelector(text="Second point cloud:", base_path=input_dir)
-        bt_gaussian = QPushButton("Import gaussian point cloud")
-        bt_gaussian.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        bt_gaussian.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                                  f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        bt_gaussian.setFixedSize(int(285 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-
+        bt_gaussian = CustomPushButton("Import gaussian point cloud", 90)
         self.checkbox_cache = QCheckBox()
         self.checkbox_cache.setText("Save converted point clouds")
         self.checkbox_cache.setStyleSheet(
             "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            f"    width: 20px;"
+            f"    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            f"    padding-left: 0.7em;"
             "}"
         )
 
-        layout.addWidget(label_sparse)
-        layout.addWidget(self.fs_input1)
-        layout.addWidget(self.fs_input2)
-        layout.addWidget(bt_sparse, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addSpacing(40)
-        layout.addWidget(label_pc)
-        layout.addWidget(self.fs_pc1)
-        layout.addWidget(self.fs_pc2)
-        layout.addWidget(bt_gaussian, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.checkbox_cache)
+        layout_input_group.addWidget(self.fs_pc1)
+        layout_input_group.addWidget(self.fs_pc2)
+        layout_input_group.addWidget(self.checkbox_cache)
+        layout_input_group.addWidget(bt_gaussian)
 
-        layout.addStretch()
+        layout_main.addWidget(label_io)
+        layout_main.addWidget(sparse_group_widget)
+        layout_main.addStretch()
+        layout_main.addWidget(input_group_widget)
 
-        bt_sparse.clicked.connect(self.sparse_button_pressed)
-        bt_gaussian.clicked.connect(self.gaussian_button_pressed)
+        bt_sparse.connect_to_clicked(self.sparse_button_pressed)
+        bt_gaussian.connect_to_clicked(self.gaussian_button_pressed)
 
     def sparse_button_pressed(self):
         path_first = self.fs_input1.file_path
         path_second = self.fs_input2.file_path
 
-        worker = PointCloudLoaderInput(path_first, path_second)
-        worker.result_signal.connect(self.handle_result)
+        worker1 = PointCloudLoaderInput(path_first)
+        worker2 = PointCloudLoaderInput(path_second)
 
-        worker.start()
+        worker = ParrallelWorker(worker1, worker2)
+        worker.finished.connect(self.handle_result_sparse)
+        worker.run()
         self.progress_dialog.exec()
 
     def gaussian_button_pressed(self):
         path_first = self.fs_pc1.file_path
         path_second = self.fs_pc2.file_path
 
-        worker = PointCloudLoaderGaussian(path_first, path_second)
-        worker.result_signal.connect(self.handle_result)
+        worker1 = PointCloudLoaderGaussian(path_first)
+        worker2 = PointCloudLoaderGaussian(path_second)
 
-        worker.start()
+        worker = ParrallelWorker(worker1, worker2)
+        worker.finished.connect(self.handle_result_gaussian)
+        worker.run()
         self.progress_dialog.exec()
 
-    def handle_result(self, pc_first, pc_second, original1=None, original2=None):
+    def handle_result_sparse(self, result_first, result_second):
+        self.result_signal.emit(result_first, result_second, False, None, None)
         self.progress_dialog.close()
-        self.result_signal.emit(pc_first, pc_second, self.checkbox_cache.isChecked(), original1, original2)
+
+    def handle_result_gaussian(self, result_first, result_second):
+        self.result_signal.emit(result_first[0], result_second[0],
+                                self.checkbox_cache.isChecked(), result_first[1], result_second[1])
+        self.progress_dialog.close()

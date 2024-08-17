@@ -27,7 +27,7 @@ from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistratorVoxel, MultiScaleRegistratorMixture
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
-from src.gui.workers.qt_workers import PointCloudSaver
+from src.gui.workers.qt_pc_loaders import PointCloudSaver
 from src.models.gaussian_model import GaussianModel
 from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 
@@ -121,7 +121,7 @@ class RegistrationMainWindow(QMainWindow):
         tab_widget = QTabWidget()
         layout.addWidget(tab_widget)
 
-        #self.input_tab = InputTab(self.input_dir)
+        self.input_tab = InputTab(self.input_dir)
         #self.cache_tab = CacheTab(self.cache_dir)
         #self.transformation_picker = Transformation3DPicker()
         #self.visualizer_widget = VisualizerTab()
@@ -129,7 +129,7 @@ class RegistrationMainWindow(QMainWindow):
         #self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
         #self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
-        #self.input_tab.result_signal.connect(self.handle_point_cloud_loading)
+        self.input_tab.result_signal.connect(self.handle_point_cloud_loading)
         #self.cache_tab.result_signal.connect(self.handle_point_cloud_loading)
         #self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         #self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
@@ -137,7 +137,7 @@ class RegistrationMainWindow(QMainWindow):
         #self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
-        #tab_widget.addTab(self.input_tab, "I/O files")
+        tab_widget.addTab(self.input_tab, "I/O files")
         #tab_widget.addTab(self.cache_tab, "Cache")
         #tab_widget.addTab(self.transformation_picker, "Transformation")
         #tab_widget.addTab(self.visualizer_widget, "Visualizer")
@@ -195,8 +195,8 @@ class RegistrationMainWindow(QMainWindow):
 
         self.current_index = 0
 
-        self.hem_widget.set_slider_range(0)
-        self.hem_widget.set_slider_enabled(False)
+        #self.hem_widget.set_slider_range(0)
+        #self.hem_widget.set_slider_enabled(False)
 
         self.pc_gaussian_list_first.clear()
         self.pc_gaussian_list_second.clear()

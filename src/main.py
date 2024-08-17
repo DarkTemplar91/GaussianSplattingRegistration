@@ -1,6 +1,5 @@
 import sys
 import qdarkstyle
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from src.gui.windows.main_window import RegistrationMainWindow

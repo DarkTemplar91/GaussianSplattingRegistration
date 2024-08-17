@@ -2,7 +2,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QProgressDialog
 
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.gui.workers.qt_workers import PointCloudLoaderO3D
+from src.gui.workers.qt_pc_loaders import PointCloudLoaderO3D
 import src.utils.graphics_utils as graphic_util
 
 
