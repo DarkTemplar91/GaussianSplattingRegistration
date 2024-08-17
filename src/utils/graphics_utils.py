@@ -80,3 +80,32 @@ def fov_x2fov_y(fov_x, aspect_ratio):
 
 def sh2rgb(sh):
     return sh * 0.28209479177387814 + 0.5
+
+
+def get_camera_intrinsics(width, height, value, fov_type):
+    fx = 0.0
+    fy = 0.0
+    match fov_type:
+        case 0:
+            return None
+        case 1:
+            # if value is greate than pi, the user entered the fov in degrees
+            if value > math.pi:
+                value = value * math.pi / 180
+            fx = fov2focal(value, width)
+            fy = fov2focal(value, height)
+        case 2:
+            # Approximate solution only.
+            fx = value
+            fov_x = focal2fov(fx, width)
+            fov_y = fov_x2fov_y(fov_x, width / height)
+            fy = fov2focal(fov_y, height)
+
+    cx = width / 2
+    cy = height / 2
+    intrinsics = np.array([
+        [fx, 0, cx],
+        [0, fy, cy],
+        [0, 0, 1]
+    ])
+    return intrinsics
