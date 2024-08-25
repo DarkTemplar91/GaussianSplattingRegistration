@@ -1,9 +1,9 @@
 from PySide6 import QtCore
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage, \
-    QFileDialog, QGroupBox
+    QFileDialog, QGroupBox, QFormLayout, QHBoxLayout
 
-from src.gui.widgets.centered_push_button import CustomPushButton
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
 import src.utils.graphics_utils as graphic_util
 
@@ -28,6 +28,9 @@ class MergeTab(QWidget):
         group_box_widget = QGroupBox()
         layout_group_box = QVBoxLayout(group_box_widget)
 
+        form_widget = QWidget()
+        layout_form = QFormLayout(form_widget)
+
         self.input_checkbox = QCheckBox()
         self.input_checkbox.setText("Use corresponding inputs")
         self.input_checkbox.setStyleSheet(
@@ -41,23 +44,29 @@ class MergeTab(QWidget):
         )
         self.input_checkbox.stateChanged.connect(self.checkbox_changed)
 
-        self.fs_input1 = FileSelector(text="First point cloud:", base_path=input_path)
-        self.fs_input2 = FileSelector(text="Second point cloud:", base_path=input_path)
+        self.fs_input1 = FileSelector(input_path)
+        self.fs_input2 = FileSelector(input_path)
         self.fs_input1.setEnabled(False)
         self.fs_input2.setEnabled(False)
+        layout_form.addRow("First point cloud:", self.fs_input1)
+        layout_form.addRow("Second point cloud:", self.fs_input2)
 
         layout_group_box.addWidget(self.input_checkbox)
-        layout_group_box.addWidget(self.fs_input1)
-        layout_group_box.addWidget(self.fs_input2)
+        layout_group_box.addWidget(form_widget)
 
-        self.fs_merge = FileSelector(text="Save path:", base_path=merge_path, label_width=70,
+        widget_save = QWidget()
+        layout_save = QHBoxLayout(widget_save)
+        label_save = QLabel("Save path:")
+        self.fs_merge = FileSelector(base_path=merge_path,
                                      file_type=QFileDialog.FileMode.AnyFile)
+        layout_save.addWidget(label_save)
+        layout_save.addWidget(self.fs_merge)
         bt_merge = CustomPushButton("Merge point clouds", 90)
         bt_merge.connect_to_clicked(self.merge_point_clouds)
 
         layout.addWidget(label_title)
         layout.addWidget(group_box_widget)
-        layout.addWidget(self.fs_merge)
+        layout.addWidget(widget_save)
         layout.addWidget(bt_merge)
         layout.addStretch()
 

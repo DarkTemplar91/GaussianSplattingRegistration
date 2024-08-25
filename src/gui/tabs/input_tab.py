@@ -1,8 +1,8 @@
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QCheckBox, QGroupBox
+from PySide6.QtWidgets import QCheckBox, QGroupBox, QFormLayout
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout
 
-from src.gui.widgets.centered_push_button import CustomPushButton
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
 
 
@@ -28,17 +28,22 @@ class InputTab(QWidget):
 
         sparse_group_widget = QGroupBox("Sparse inputs")
         layout_sparse_group = QVBoxLayout(sparse_group_widget)
-        self.fs_input1 = FileSelector(text="First sparse input:", base_path=input_dir)
-        self.fs_input2 = FileSelector(text="Second sparse input:", base_path=input_dir)
+        widget_sparse = QWidget()
+        layout_sparse_form = QFormLayout(widget_sparse)
+        self.fs_input1 = FileSelector(input_dir)
+        self.fs_input2 = FileSelector(input_dir)
         bt_sparse = CustomPushButton("Import sparse point cloud", 90)
-        layout_sparse_group.addWidget(self.fs_input1)
-        layout_sparse_group.addWidget(self.fs_input2)
+        layout_sparse_form.addRow("First sparse input:", self.fs_input1)
+        layout_sparse_form.addRow("Second sparse input:", self.fs_input2)
+        layout_sparse_group.addWidget(widget_sparse)
         layout_sparse_group.addWidget(bt_sparse)
 
         input_group_widget = QGroupBox("Point cloud inputs")
         layout_input_group = QVBoxLayout(input_group_widget)
-        self.fs_pc1 = FileSelector(text="First point cloud:", base_path=input_dir)
-        self.fs_pc2 = FileSelector(text="Second point cloud:", base_path=input_dir)
+        widget_inputs = QWidget()
+        layout_input_form = QFormLayout(widget_inputs)
+        self.fs_pc1 = FileSelector(input_dir)
+        self.fs_pc2 = FileSelector(input_dir)
         bt_gaussian = CustomPushButton("Import gaussian point cloud", 90)
         self.checkbox_cache = QCheckBox()
         self.checkbox_cache.setText("Save converted point clouds")
@@ -52,9 +57,10 @@ class InputTab(QWidget):
             "}"
         )
 
-        layout_input_group.addWidget(self.fs_pc1)
-        layout_input_group.addWidget(self.fs_pc2)
+        layout_input_form.addRow("First point cloud:", self.fs_pc1)
+        layout_input_form.addRow("Second point cloud:", self.fs_pc2)
         layout_input_group.addWidget(self.checkbox_cache)
+        layout_input_group.addWidget(widget_inputs)
         layout_input_group.addWidget(bt_gaussian)
 
         layout_main.addWidget(label_io)

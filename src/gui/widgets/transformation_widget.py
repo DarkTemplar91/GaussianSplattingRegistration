@@ -5,7 +5,7 @@ from PySide6.QtGui import QDoubleValidator, QGuiApplication
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, \
     QTableWidget, QGridLayout, QLineEdit, QPushButton, QSizePolicy
 import src.utils.graphics_utils as graphic_util
-from src.gui.widgets.centered_push_button import CustomPushButton
+from src.gui.widgets.custom_push_button import CustomPushButton
 
 
 class Transformation3DPicker(QWidget):

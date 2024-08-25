@@ -5,7 +5,7 @@ from PySide6.QtGui import QDoubleValidator
 from PySide6.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy, QStyle, QHBoxLayout, \
     QFormLayout, QGroupBox
 
-from src.gui.widgets.centered_push_button import CustomPushButton
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget

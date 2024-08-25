@@ -16,9 +16,7 @@ class ColorPicker(QWidget):
         self.color_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.color_box.setEnabled(False)
 
-        # generate an array with strings
         x_arrstr = np.char.mod('%d', self.color_debug)
-        # combine to a string
         color_str = ",".join(x_arrstr)
 
         self.color_box.setStyleSheet(f"background:rgb({color_str});")

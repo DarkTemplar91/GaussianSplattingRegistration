@@ -1,14 +1,13 @@
 import os
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QLabel, QPushButton, QSizePolicy, QStyle, QFileDialog
-import src.utils.graphics_utils as graphic_util
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QPushButton, QSizePolicy, QStyle, QFileDialog
 
 
 class FileSelector(QWidget):
-    def __init__(self, parent=None, text="", base_path=None, label_width=120,
+    def __init__(self, base_path=None,
                  file_type=QFileDialog.FileMode.ExistingFile,
                  name_filter="All files (*.*);;*.ply;;*.stl;;*.obj;;*.off"):
-        super().__init__(parent)
+        super().__init__()
 
         layout = QHBoxLayout()
         self.setLayout(layout)
@@ -16,27 +15,19 @@ class FileSelector(QWidget):
         self.name_filter = name_filter
 
         self.inputField = QLineEdit()
-        label = QLabel(text)
-        label.setFixedWidth(label_width)
         button = QPushButton()
-        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton)
-        button.setIcon(icon)
+        button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        button.clicked.connect(self.button_clicked)
+        button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
 
         self.base_path = base_path
         if not base_path or not os.path.isdir(base_path):
             self.base_path = None
 
-        layout.addWidget(label)
         layout.addWidget(self.inputField)
         layout.addWidget(button)
-
-        button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        button.clicked.connect(self.button_clicked)
         self.inputField.textChanged.connect(self.text_changed)
-        self.file_path = str()
-        layout.addStretch()
+        self.file_path = ""
 
     def button_clicked(self):
         dialog = QFileDialog(self)
