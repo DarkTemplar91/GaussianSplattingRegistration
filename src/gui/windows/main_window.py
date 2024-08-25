@@ -122,7 +122,7 @@ class RegistrationMainWindow(QMainWindow):
         self.transformation_picker = Transformation3DPicker()
         self.visualizer_widget = VisualizerTab()
         self.rasterizer_tab = RasterizerTab()
-        #self.merger_widget = MergeTab(self.output_dir, self.input_dir)
+        self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
         self.input_tab.signal_load_gaussian.connect(self.handle_gaussian_load)
         self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
@@ -131,15 +131,15 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
-        #self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
+        self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
-        tab_widget.addTab(self.input_tab, "I/O files")
+        tab_widget.addTab(self.input_tab, "I/O")
         tab_widget.addTab(self.cache_tab, "Cache")
         tab_widget.addTab(self.transformation_picker, "Transformation")
         tab_widget.addTab(self.visualizer_widget, "Visualizer")
         tab_widget.addTab(self.rasterizer_tab, "Rasterizer")
-        #tab_widget.addTab(self.merger_widget, "Merging")
+        tab_widget.addTab(self.merger_widget, "Merging")
 
     def setup_registration_group(self, group_registration):
         group_registration.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -256,7 +256,7 @@ class RegistrationMainWindow(QMainWindow):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
         self.visualizer_widget.set_visualizer_attributes(zoom, front, lookat, up)
 
-    """def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
+    def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
         pc_first = None
         pc_second = None
 
@@ -301,7 +301,7 @@ class RegistrationMainWindow(QMainWindow):
         self.progress_dialog.exec()
 
     # Registration
-    def do_local_registration(self, registration_type, max_correspondence,
+    """def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
         pc1 = self.pane_open3d.pc1
         pc2 = self.pane_open3d.pc2

@@ -1,8 +1,9 @@
 from PySide6 import QtCore
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QSizePolicy, QCheckBox, QErrorMessage, \
-    QFileDialog
+    QFileDialog, QGroupBox
 
+from src.gui.widgets.centered_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
 import src.utils.graphics_utils as graphic_util
 
@@ -17,22 +18,25 @@ class MergeTab(QWidget):
 
         label_title = QLabel("Point cloud merging")
         label_title.setStyleSheet(
-            "QLabel {"
-            "   font-size: 11pt;"
-            "    font-weight: bold;"
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
-            "}"
+            """QLabel {
+                font-size: 12pt;
+                font-weight: bold;
+                padding-bottom: 0.5em;
+            }"""
         )
+
+        group_box_widget = QGroupBox()
+        layout_group_box = QVBoxLayout(group_box_widget)
 
         self.input_checkbox = QCheckBox()
         self.input_checkbox.setText("Use corresponding inputs")
         self.input_checkbox.setStyleSheet(
             "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            "    width: 20px;"
+            "    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            "    padding-left: 0.5em;"
             "}"
         )
         self.input_checkbox.stateChanged.connect(self.checkbox_changed)
@@ -42,26 +46,19 @@ class MergeTab(QWidget):
         self.fs_input1.setEnabled(False)
         self.fs_input2.setEnabled(False)
 
-        layout_input = QVBoxLayout()
-        widget_input = QWidget()
-        widget_input.setLayout(layout_input)
-        layout_input.addWidget(self.fs_input1)
-        layout_input.addWidget(self.fs_input2)
+        layout_group_box.addWidget(self.input_checkbox)
+        layout_group_box.addWidget(self.fs_input1)
+        layout_group_box.addWidget(self.fs_input2)
 
         self.fs_merge = FileSelector(text="Save path:", base_path=merge_path, label_width=70,
                                      file_type=QFileDialog.FileMode.AnyFile)
-        bt_merge = QPushButton("Merge point clouds")
-        bt_merge.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        bt_merge.setFixedSize(int(280 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_merge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        bt_merge.clicked.connect(self.merge_point_clouds)
+        bt_merge = CustomPushButton("Merge point clouds", 90)
+        bt_merge.connect_to_clicked(self.merge_point_clouds)
 
         layout.addWidget(label_title)
-        layout.addWidget(self.input_checkbox)
-        layout.addWidget(widget_input)
+        layout.addWidget(group_box_widget)
         layout.addWidget(self.fs_merge)
-        layout.addWidget(bt_merge, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(bt_merge)
         layout.addStretch()
 
     def checkbox_changed(self, state):

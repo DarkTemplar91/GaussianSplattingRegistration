@@ -61,7 +61,7 @@ class VisualizerTab(QWidget):
             "    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: 0.5em;"
+            "    padding-left: 0.5em;"
             "}"
         )
         self.debug_color_checkbox.stateChanged.connect(self.checkbox_changed)

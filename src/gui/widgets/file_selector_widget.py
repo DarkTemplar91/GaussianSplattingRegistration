@@ -17,7 +17,7 @@ class FileSelector(QWidget):
 
         self.inputField = QLineEdit()
         label = QLabel(text)
-        label.setFixedWidth(int(label_width * graphic_util.SIZE_SCALE_X))
+        label.setFixedWidth(label_width)
         button = QPushButton()
         icon = self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton)
         button.setIcon(icon)
