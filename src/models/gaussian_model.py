@@ -174,7 +174,8 @@ class GaussianModel:
         attributes = np.concatenate((xyz, normals, f_dc, f_rest, opacities, scale, rotation), axis=1)
         elements[:] = list(map(tuple, attributes))
         el = PlyElement.describe(elements, 'vertex')
-        PlyData([el]).write(path)
+        plydata = PlyData([el])
+        plydata.write(path)
 
     def clone_gaussian(self):
         new_model = GaussianModel(3)
@@ -250,11 +251,13 @@ class GaussianModel:
         return sorted_eigenvalues, sorted_eigenvectors
 
     @staticmethod
-    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix=None):
+    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix):
         merged_pc = GaussianModel(3)
-        gaussian1_copy = gaussian1.clone_gaussian()
+        gaussian1_copy = gaussian1
 
-        if transformation_matrix is not None:
+        # If the transformation matrix is not an identity matrix
+        if not np.array_equal(transformation_matrix, np.eye(transformation_matrix.shape[0])):
+            gaussian1_copy = gaussian1.clone_gaussian()
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(gaussian1.device_name)
             gaussian1_copy.transform_gaussian_model(transformation_matrix_tensor)
 

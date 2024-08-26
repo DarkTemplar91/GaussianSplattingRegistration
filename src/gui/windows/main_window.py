@@ -282,23 +282,14 @@ class RegistrationMainWindow(QMainWindow):
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
             return
 
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Saving merged point cloud...")
         merged = GaussianModel.get_merged_gaussian_point_clouds(pc_first, pc_second,
                                                                 self.transformation_picker.transformation_matrix)
 
-        gaussian_saver = GaussianSaver(merged, merge_path)
-        thread = QThread(self)
-        # Move worker to thread
-        gaussian_saver.moveToThread(thread)
-        # connect signals to slots
-        thread.started.connect(gaussian_saver.save_gaussian)
-        gaussian_saver.signal_finished.connect(self.progress_dialog.close)
-        gaussian_saver.signal_finished.connect(gaussian_saver.deleteLater)
-
-        thread.finished.connect(thread.deleteLater)
-
+        worker = GaussianSaver(merged, merge_path)
+        thread = move_worker_to_thread(worker, lambda *args: None, progress_handler=progress_dialog.setValue)
         thread.start()
-        self.progress_dialog.setLabelText("Saving merged point cloud...")
-        self.progress_dialog.exec()
+        progress_dialog.exec()
 
     # Registration
     """def do_local_registration(self, registration_type, max_correspondence,
@@ -480,15 +471,14 @@ class RegistrationMainWindow(QMainWindow):
         #self.progress_dialog.setLabelText("Creating rasterized image...")
         #self.progress_dialog.exec()
 
-    """def create_raster_window(self, pix):
-        self.progress_dialog.close()
+    def create_raster_window(self, pix):
         self.raster_window = RasterImageViewer()
         self.raster_window.set_image(pix)
         self.raster_window.setWindowTitle("Rasterized point clouds")
         self.raster_window.setWindowModality(Qt.WindowModality.WindowModal)
         self.raster_window.show()
 
-    def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
+    """def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
         pc1 = self.pc_gaussian_list_first[self.current_index]
         pc2 = self.pc_gaussian_list_second[self.current_index]
 
