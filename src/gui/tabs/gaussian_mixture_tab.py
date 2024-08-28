@@ -63,6 +63,7 @@ class GaussianMixtureTab(QWidget):
         layout.addSpacing(20)
         layout.addWidget(widget_options)
         layout.addWidget(bt_apply)
+        layout.addStretch()
 
         bt_apply.connect_to_clicked(self.hem_execute_button_pressed)
 

@@ -1,8 +1,8 @@
-from PySide6 import QtCore
+from PySide6 import QtCore, QtGui
 from PySide6.QtCore import QLocale
 from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QSizePolicy, \
-    QComboBox, QScrollArea, QFrame, QFormLayout, QGroupBox, QStackedWidget
+    QComboBox, QScrollArea, QFrame, QFormLayout, QGroupBox, QStackedWidget, QLabel
 
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
@@ -34,8 +34,6 @@ class LocalRegistrationTab(QWidget):
         scroll_widget.setWidgetResizable(True)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
         inner_widget = QWidget()
         inner_widget.setLayout(layout)
         scroll_widget.setWidget(inner_widget)
@@ -82,7 +80,17 @@ class LocalRegistrationTab(QWidget):
         bt_apply = CustomPushButton("Start local registration", 100)
         bt_apply.connect_to_clicked(self.registration_button_pressed)
 
+        label_title = QLabel("Local Registration")
+        label_title.setStyleSheet(
+            "QLabel {"
+            "    font-size: 12pt;"
+            "    font-weight: bold;"
+            f"    padding-bottom: 0.5em;"
+            "}"
+        )
+
         # Ugly hack, so local and global registration tabs have the same margins...
+        layout.addWidget(label_title)
         layout.addWidget(widget_local)
         stack = QStackedWidget()
         widget_options = QWidget()

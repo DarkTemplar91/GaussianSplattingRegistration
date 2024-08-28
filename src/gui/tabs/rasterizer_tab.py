@@ -52,9 +52,8 @@ class RasterizerTab(QWidget):
         bt_rasterize = CustomPushButton("Rasterize", 90)
         bt_rasterize.connect_to_clicked(self.button_clicked)
 
-        widget_fov_group_box = QGroupBox()
-        widget_fov_group_box.setTitle("FOV")
-        layout_group_box = QVBoxLayout(widget_fov_group_box)
+        widget_fov_group_box = QGroupBox("FOV")
+        layout_group_box = QFormLayout(widget_fov_group_box)
 
         # Create radio button group
         widget_radio_group = QWidget()
@@ -68,14 +67,11 @@ class RasterizerTab(QWidget):
         for button in self.button_group.buttons():
             layout_radio.addWidget(button)
 
-        fov_widget = QWidget()
-        layout_fov = QFormLayout(fov_widget)
         self.fov_widget = SimpleInputField("0.0", 40, validator=double_validator)
         self.fov_widget.setEnabled(False)
-        layout_fov.addRow("FOV/FX:", self.fov_widget)
 
-        layout_group_box.addWidget(widget_radio_group)
-        layout_group_box.addWidget(fov_widget)
+        layout_group_box.addRow(widget_radio_group)
+        layout_group_box.addRow("FOV/FX:", self.fov_widget)
 
         layout_main.addWidget(label_res)
         layout_main.addWidget(option_widget)

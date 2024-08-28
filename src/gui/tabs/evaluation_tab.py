@@ -22,11 +22,9 @@ class EvaluationTab(QWidget):
         super().__init__()
 
         self.error_message = None
-
-        self.raster_window = None
-        layout = QVBoxLayout()
-        self.setLayout(layout)
         self.cameras_list = []
+
+        layout = QVBoxLayout(self)
 
         input_group = QGroupBox("Cameras")
         input_layout = QFormLayout(input_group)
@@ -35,26 +33,28 @@ class EvaluationTab(QWidget):
         self.button_load_cameras = CustomPushButton("Load cameras", 100)
 
         # Spinbox row
-        spinbox_layout = QHBoxLayout()
         spinbox_widget = QWidget()
-        spinbox_widget.setLayout(spinbox_layout)
+        spinbox_layout = QHBoxLayout(spinbox_widget)
         label = QLabel("Snap to:")
+
         self.spinbox = QSpinBox()
         self.spinbox.setFixedWidth(50)
         self.spinbox.setFixedHeight(30)
         self.spinbox.setRange(0, 0)
         self.spinbox.setKeyboardTracking(False)
+        self.spinbox.setEnabled(False)
+        self.spinbox.valueChanged.connect(self.current_camera_changed)
+
         self.current_image_name = QLineEdit()
         self.current_image_name.setEnabled(False)
         self.current_image_name.setFixedHeight(30)
         self.current_image_name.setFixedWidth(100)
         self.current_image_name.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
         spinbox_layout.addWidget(label)
         spinbox_layout.addWidget(self.spinbox)
         spinbox_layout.addWidget(self.current_image_name)
         spinbox_layout.addStretch()
-        self.spinbox.setEnabled(False)
-        self.spinbox.valueChanged.connect(self.current_camera_changed)
 
         input_layout.addRow("Cameras:", self.fs_cameras)
         input_layout.addRow(spinbox_widget)
@@ -68,7 +68,6 @@ class EvaluationTab(QWidget):
         self.render_color = ColorPicker(np.zeros(3))
 
         self.checkbox_gpu = QCheckBox()
-        self.checkbox_gpu.setText("Use GPU for evaluation")
         self.checkbox_gpu.setStyleSheet(
             "QCheckBox::indicator {"
             f"    width: 20px;"
@@ -84,7 +83,7 @@ class EvaluationTab(QWidget):
         evaluation_layout.addRow("Images folder:", self.fs_images)
         evaluation_layout.addRow("Log file:", self.fs_log)
         evaluation_layout.addRow("Background color:", self.render_color)
-        evaluation_layout.addRow(self.checkbox_gpu)
+        evaluation_layout.addRow("Use GPU for evaluation:", self.checkbox_gpu)
         evaluation_layout.addRow(self.button_evaluate)
 
         layout.addWidget(input_group)

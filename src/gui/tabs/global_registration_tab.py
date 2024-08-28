@@ -58,8 +58,6 @@ class GlobalRegistrationTab(QWidget):
         scroll_widget.setWidgetResizable(True)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
         inner_widget = QWidget()
         inner_widget.setLayout(layout)
         scroll_widget.setWidget(inner_widget)
@@ -98,6 +96,16 @@ class GlobalRegistrationTab(QWidget):
         bt_apply = CustomPushButton("Start global registration", 100)
         bt_apply.connect_to_clicked(self.registration_button_pressed)
 
+        label_title = QLabel("Global registration")
+        label_title.setStyleSheet(
+            "QLabel {"
+            "    font-size: 12pt;"
+            "    font-weight: bold;"
+            f"    padding-bottom: 0.5em;"
+            "}"
+        )
+
+        layout.addWidget(label_title)
         layout.addWidget(widget_global)
         layout.addWidget(self.stack, stretch=1)
         layout.addStretch()

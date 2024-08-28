@@ -1,15 +1,13 @@
 import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import QLocale, Qt
+from PySide6.QtCore import QLocale
 from PySide6.QtGui import QDoubleValidator
-from PySide6.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy, QStyle, QHBoxLayout, \
-    QFormLayout, QGroupBox
+from PySide6.QtWidgets import QWidget, QLabel, QCheckBox, QVBoxLayout, QFormLayout, QGroupBox
 
-from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.color_picker_widget import ColorPicker
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget
-import src.utils.graphics_utils as graphic_util
 
 
 class VisualizerTab(QWidget):
@@ -54,7 +52,7 @@ class VisualizerTab(QWidget):
         layout_group_box_color = QVBoxLayout(color_group_widget)
 
         self.debug_color_checkbox = QCheckBox()
-        self.debug_color_checkbox.setText("Use debug colors")
+        #self.debug_color_checkbox.setText("Use debug colors")
         self.debug_color_checkbox.setStyleSheet(
             "QCheckBox::indicator {"
             "    width: 20px;"
@@ -72,6 +70,7 @@ class VisualizerTab(QWidget):
         self.debug_color_dialog_first.setEnabled(False)
         self.debug_color_dialog_second = ColorPicker()
         self.debug_color_dialog_second.setEnabled(False)
+        layout_form_color.addRow("Use debug colors:", self.debug_color_checkbox)
         layout_form_color.addRow("Primary debug color:", self.debug_color_dialog_first)
         layout_form_color.addRow("Secondary debug color:", self.debug_color_dialog_second)
         layout_group_box_color.addWidget(self.debug_color_checkbox)

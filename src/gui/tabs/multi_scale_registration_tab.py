@@ -50,9 +50,9 @@ class MultiScaleRegistrationTab(QWidget):
         label_title = QLabel("Multiscale Local Registration")
         label_title.setStyleSheet(
             "QLabel {"
-            "    font-size: 11pt;"
+            "    font-size: 12pt;"
             "    font-weight: bold;"
-            f"    padding: 8px;"
+            f"    padding-bottom: 0.5em;"
             "}"
         )
 

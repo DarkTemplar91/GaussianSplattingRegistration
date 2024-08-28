@@ -20,6 +20,7 @@ class Open3DWindow(QMainWindow):
         self.pc2_copy = None
         self.pc1 = None
         self.pc2 = None
+        self.setWindowFlags(Qt.WindowType.ForeignWindow)
 
         self.parent_widget = QtWidgets.QWidget()
         self.layout = QtWidgets.QGridLayout(self.parent_widget)

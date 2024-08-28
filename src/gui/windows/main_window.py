@@ -2,7 +2,8 @@ import math
 import os
 
 import numpy as np
-from PySide6.QtCore import Qt, QThread
+from PySide6 import QtCore
+from PySide6.QtCore import Qt, QRect, QPoint
 from PySide6.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QWidget, QSplitter, QGroupBox, \
     QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
 
@@ -15,6 +16,7 @@ from src.gui.tabs.local_registration_tab import LocalRegistrationTab
 from src.gui.tabs.merger_tab import MergeTab
 from src.gui.tabs.multi_scale_registration_tab import MultiScaleRegistrationTab
 from src.gui.tabs.rasterizer_tab import RasterizerTab
+from src.gui.tabs.visualizer_tab import VisualizerTab
 from src.gui.widgets.progress_dialog_factory import ProgressDialogFactory
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.windows.image_viewer_window import RasterImageViewer
@@ -40,6 +42,8 @@ class RegistrationMainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(RegistrationMainWindow, self).__init__(parent)
         self.setWindowTitle("Gaussian Splatting Registration")
+        # Set window size to screen size
+        self.showMaximized()
 
         # Point cloud output of the 3D Gaussian Splatting
         self.pc_gaussian_list_first = []
@@ -71,14 +75,6 @@ class RegistrationMainWindow(QMainWindow):
         self.input_dir = os.path.join(working_dir, "inputs")
         self.output_dir = os.path.join(working_dir, "output")
 
-        # Set window size to screen size
-        self.showMaximized()
-
-        # Assign size scale to global variable to handle different screen sizes
-        import src.utils.graphics_utils
-        src.utils.graphics_utils.SIZE_SCALE_X = QApplication.primaryScreen().size().width() / 1920
-        src.utils.graphics_utils.SIZE_SCALE_Y = QApplication.primaryScreen().size().height() / 1080
-
         # Create splitter and two planes
         splitter = QSplitter(self)
         self.pane_open3d = Open3DWindow()
@@ -95,12 +91,14 @@ class RegistrationMainWindow(QMainWindow):
 
         layout_pane.addWidget(group_input_data)
         layout_pane.addWidget(group_registration)
+        layout_pane.setStretch(0, 1)
+        layout_pane.setStretch(1, 1)
 
         splitter.addWidget(self.pane_open3d)
         splitter.addWidget(pane_data)
 
         splitter.setOrientation(Qt.Orientation.Horizontal)
-        splitter.setStretchFactor(0, 2)
+        splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 0)
 
         self.setCentralWidget(splitter)
@@ -119,7 +117,7 @@ class RegistrationMainWindow(QMainWindow):
         self.input_tab = InputTab(self.input_dir)
         self.cache_tab = CacheTab(self.cache_dir)
         self.transformation_picker = Transformation3DPicker()
-        #self.visualizer_widget = VisualizerTab()
+        self.visualizer_widget = VisualizerTab()
         self.rasterizer_tab = RasterizerTab()
         self.merger_widget = MergeTab(self.output_dir, self.input_dir)
 
@@ -127,16 +125,16 @@ class RegistrationMainWindow(QMainWindow):
         self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
         self.cache_tab.signal_load_cached.connect(self.handle_cached_load)
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
-        #self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
-        #self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
-        #self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
+        self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
+        self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
+        self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
         self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
         tab_widget.addTab(self.input_tab, "I/O")
         tab_widget.addTab(self.cache_tab, "Cache")
         tab_widget.addTab(self.transformation_picker, "Transformation")
-        #tab_widget.addTab(self.visualizer_widget, "Visualizer")
+        tab_widget.addTab(self.visualizer_widget, "Visualizer")
         tab_widget.addTab(self.rasterizer_tab, "Rasterizer")
         tab_widget.addTab(self.merger_widget, "Merging")
 
