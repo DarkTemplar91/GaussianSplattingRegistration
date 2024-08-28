@@ -14,9 +14,6 @@ import math
 import numpy as np
 import torch
 
-SIZE_SCALE_X = 1.0
-SIZE_SCALE_Y = 1.0
-
 
 def get_normals_from_covariance(covariance_mat):
     eigen_values, eigen_vectors = torch.linalg.eigh(covariance_mat)

@@ -4,17 +4,18 @@ import open3d as o3d
 from PySide6.QtCore import Signal, QObject
 from PySide6 import QtWidgets
 
+from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.registration_data import MultiScaleRegistrationData
 from src.utils.file_loader import load_sparse_pc
 from src.utils.local_registration_util import do_icp_registration
 
 
 # TODO: Use common base class
-class MultiScaleRegistratorVoxel(QObject):
-    signal_finished = Signal()
-    signal_registration_done = Signal(object, object)
-    signal_error_occurred = Signal(list)
-    signal_update_progress = Signal(int)
+class MultiScaleRegistratorVoxel(BaseWorker):
+    class ResultData:
+        def __init__(self, result, registration_data: MultiScaleRegistrationData):
+            self.result = result
+            self.registration_data = registration_data
 
     def __init__(self, pc1, pc2, init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
                  relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value):
@@ -38,7 +39,7 @@ class MultiScaleRegistratorVoxel(QObject):
         self.max_progress += 1 if self.use_corresponding else 0
         self.signal_cancel = False
 
-    def do_registration(self):
+    def run(self):
         current_trans = self.init_trans
 
         if self.__check_valid_data() is False:
@@ -59,7 +60,7 @@ class MultiScaleRegistratorVoxel(QObject):
             return
 
         registration_data = self.__create_dataclass_object(results)
-        self.signal_registration_done.emit(results, registration_data)
+        self.signal_result.emit(MultiScaleRegistratorVoxel.ResultData(results, registration_data))
         self.signal_finished.emit()
 
     def __register_sparse_point_clouds(self):
@@ -67,7 +68,7 @@ class MultiScaleRegistratorVoxel(QObject):
         sparse_pc2 = load_sparse_pc(self.sparse_second_path)
 
         if not sparse_pc1 or not sparse_pc2:
-            self.signal_error_occurred.emit(["Point clouds provided as sparse were of a different type"])
+            self.signal_error.emit(["Point clouds provided as sparse were of a different type"])
             self.signal_finished.emit()
             return None
 
@@ -82,7 +83,7 @@ class MultiScaleRegistratorVoxel(QObject):
 
     def __check_valid_data(self):
         if len(self.iter_values) != len(self.voxel_values):
-            self.signal_error_occurred.emit(["The number of iteration and voxel values provided do not match."])
+            self.signal_error.emit(["The number of iteration and voxel values provided do not match."])
             self.signal_finished.emit()
             return False
 
@@ -111,7 +112,7 @@ class MultiScaleRegistratorVoxel(QObject):
             except RuntimeError as e:
                 error_str = str(e)
                 error_str += f"\nSource: \"{str(source_down)}\"\nTarget: \"{str(target_down)}\""
-                self.signal_error_occurred.emit([error_str])
+                self.signal_error.emit([error_str])
                 self.signal_finished.emit()
                 return None
 
@@ -134,7 +135,7 @@ class MultiScaleRegistratorVoxel(QObject):
     def update_progress(self):
         self.current_progress += 1
         new_percent = int(self.current_progress / self.max_progress * 100)
-        self.signal_update_progress.emit(new_percent)
+        self.signal_progress.emit(new_percent)
 
     def cancel(self):
         self.signal_cancel = True

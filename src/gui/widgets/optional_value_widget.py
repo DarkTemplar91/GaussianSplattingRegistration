@@ -13,18 +13,18 @@ class OptionalInputField(QWidget):
         self.checkbox_optional = QCheckBox()
         self.checkbox_optional.setStyleSheet(
             "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            f"    width: 20px;"
+            f"    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            f"    padding-left: 10px;"
             "}"
         )
 
         label = QLabel(label_text)
-        label.setFixedWidth(int(label_width * graphic_util.SIZE_SCALE_X))
+        label.setFixedWidth(label_width)
         self.voxel_size_lineedit = QLineEdit(value)
-        self.voxel_size_lineedit.setFixedWidth(int(line_edit_width * graphic_util.SIZE_SCALE_X))
+        self.voxel_size_lineedit.setFixedWidth(line_edit_width)
         self.voxel_size_lineedit.setValidator(validator)
         self.voxel_size_lineedit.setEnabled(False)
 

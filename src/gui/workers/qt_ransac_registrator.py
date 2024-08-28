@@ -2,12 +2,11 @@ import copy
 
 from PySide6.QtCore import QObject, Signal
 
+from src.gui.workers.qt_base_worker import BaseWorker
 from src.utils.global_registration_util import do_ransac_registration
 
 
-class RANSACRegistrator(QObject):
-    signal_finished = Signal()
-    signal_registration_done = Signal(object, object)
+class RANSACRegistrator(BaseWorker):
 
     def __init__(self, pc1, pc2, init_transformation,
                  voxel_size, mutual_filter, max_correspondence, estimation_method,
@@ -27,7 +26,7 @@ class RANSACRegistrator(QObject):
         self.max_iteration = max_iteration
         self.confidence = confidence
 
-    def do_registration(self):
+    def run(self):
         results = do_ransac_registration(self.pc1, self.pc2, self.voxel_size,
                                          self.mutual_filter,
                                          self.max_correspondence,
@@ -37,5 +36,6 @@ class RANSACRegistrator(QObject):
                                          self.max_iteration,
                                          self.confidence)
 
-        self.signal_registration_done.emit(results, None)
+        self.signal_result.emit(results)
+        self.signal_progress.emit(100)
         self.signal_finished.emit()

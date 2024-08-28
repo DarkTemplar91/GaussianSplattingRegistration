@@ -1,7 +1,7 @@
 from PySide6.QtCore import QLocale, Signal, Qt
 from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QComboBox, QWidget, QCheckBox, QSizePolicy, \
-    QScrollArea, QPushButton, QStackedWidget, QHBoxLayout
+    QScrollArea, QPushButton, QStackedWidget, QHBoxLayout, QFormLayout, QGroupBox, QFrame
 from open3d.cpu.pybind.pipelines.registration import CorrespondenceCheckerBasedOnEdgeLength, \
     CorrespondenceCheckerBasedOnDistance, CorrespondenceCheckerBasedOnNormal
 
@@ -39,19 +39,7 @@ class GlobalRegistrationTab(QWidget):
         self.max_correspondence_ransac_widget = None
         self.checkbox_mutual = None
 
-        registration_layout = QVBoxLayout()
-        self.setLayout(registration_layout)
-
-        scroll_widget = QScrollArea()
-        scroll_widget.setWidgetResizable(True)
-        scroll_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-        layout = QVBoxLayout()
-        inner_widget = QWidget()
-        inner_widget.setLayout(layout)
-        scroll_widget.setWidget(inner_widget)
-
-        locale = QLocale(QLocale.Language.English)
+        locale = QLocale(QLocale.Language.C)
         self.double_validator = QDoubleValidator()
         self.double_validator.setLocale(locale)
         self.double_validator.setRange(0.0, 9999.0)
@@ -61,11 +49,27 @@ class GlobalRegistrationTab(QWidget):
         self.int_validator.setLocale(locale)
         self.int_validator.setRange(0, 999999999)
 
+        registration_layout = QVBoxLayout(self)
+
+        scroll_widget = QScrollArea()
+        scroll_widget.setFrameShadow(QFrame.Shadow.Plain)
+        scroll_widget.setFrameShape(QFrame.Shape.NoFrame)
+        scroll_widget.setWidgetResizable(True)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        inner_widget = QWidget()
+        inner_widget.setLayout(layout)
+        scroll_widget.setWidget(inner_widget)
+
         # Stack for switching between RANSAC and FGR
         self.stack = QStackedWidget()
         self.stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        type_label = QLabel("Global registration type")
+        widget_global = QWidget()
+        layout_global = QFormLayout(widget_global)
+
         self.combo_box_global = QComboBox()
         self.combo_box_global.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.combo_box_global.currentIndexChanged.connect(self.global_type_changed)
@@ -74,8 +78,10 @@ class GlobalRegistrationTab(QWidget):
             self.combo_box_global.addItem(enum_member.instance_name)
 
         # Voxel size for downsampling
-        self.voxel_size_widget = SimpleInputField("Voxel size for downsampling:", "0.05",
-                                                  validator=self.double_validator)
+        self.voxel_size_widget = SimpleInputField("0.05", validator=self.double_validator)
+
+        layout_global.addRow("Global registration type:", self.combo_box_global)
+        layout_global.addRow("Voxel size for downsampling:", self.voxel_size_widget)
 
         # Stack for RANSAC
         self.ransac_widget = self.create_ransac_stack_widget()
@@ -89,15 +95,13 @@ class GlobalRegistrationTab(QWidget):
         self.stack.setCurrentIndex(0)
 
         bt_apply = QPushButton("Start global registration")
-        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
+        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: 10px;"
+                               f"padding-top: 2px; padding-bottom: 2px;")
         bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
+        bt_apply.setFixedHeight(30)
         bt_apply.clicked.connect(self.registration_button_pressed)
 
-        layout.addWidget(type_label)
-        layout.addWidget(self.combo_box_global)
-        layout.addWidget(self.voxel_size_widget)
+        layout.addWidget(widget_global)
         layout.addWidget(self.stack, stretch=1)
         layout.addStretch()
 
@@ -106,180 +110,123 @@ class GlobalRegistrationTab(QWidget):
 
     def create_ransac_stack_widget(self):
         widget = QWidget()
-        layout = QVBoxLayout()
-        widget.setLayout(layout)
-
         widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
+        options_widget = QGroupBox("Options")
+        layout_options = QFormLayout(options_widget)
         self.checkbox_mutual = QCheckBox()
-        self.checkbox_mutual.setText("Mutual filtering")
         self.checkbox_mutual.setStyleSheet(
             "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            f"    width: 20px;"
+            f"    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            f"    padding-left: 10px;"
             "}"
         )
 
-        self.max_correspondence_ransac_widget = SimpleInputField("Maximum correspondence:", "5.0",
-                                                                 validator=self.double_validator)
+        self.max_correspondence_ransac_widget = SimpleInputField("5.0", validator=self.double_validator)
 
-        type_label = QLabel("Estimation type: ")
         self.combobox_estimation_method = QComboBox()
         self.combobox_estimation_method.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         for enum_member in RANSACEstimationMethod:
             self.combobox_estimation_method.addItem(enum_member.instance_name)
 
-        estimation_widget = QWidget()
-        estimation_layout = QHBoxLayout()
-        estimation_widget.setLayout(estimation_layout)
-        estimation_layout.addWidget(type_label)
-        estimation_layout.addWidget(self.combobox_estimation_method)
-        estimation_layout.addStretch()
+        self.ransac_iteration_widget = SimpleInputField("3", validator=self.int_validator)
 
-        self.ransac_iteration_widget = SimpleInputField("RANSAC iterations:", "3",
-                                                        validator=self.int_validator)
+        layout_options.addRow("Estimation type:", self.combobox_estimation_method)
+        layout_options.addRow("Maximum correspondence:", self.max_correspondence_ransac_widget)
+        layout_options.addRow("RANSAC iterations:", self.ransac_iteration_widget)
+        layout_options.addRow("Mutual filtering", self.checkbox_mutual)
 
         # Checkers
-        checker_label = QLabel("Alignment checker")
-        checker_label.setStyleSheet(
-            "QLabel {"
-            "    font-size: 11pt;"
-            "    font-weight: bold;"
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
-            "}"
-        )
         self.edge_length_checker = OptionalInputField("Edge Length:", "0.0", 75, validator=self.double_validator)
         self.distance_checker = OptionalInputField("Distance:", "0.0", 75, validator=self.double_validator)
         self.normal_checker = OptionalInputField("Normal:", "0.0", 75, validator=self.double_validator)
 
-        checker_widget = QWidget()
-        checker_layout = QVBoxLayout()
-        checker_widget.setLayout(checker_layout)
+        checker_widget = QGroupBox("Alignment checker")
+        checker_layout = QVBoxLayout(checker_widget)
         checker_layout.addWidget(self.edge_length_checker)
         checker_layout.addWidget(self.distance_checker)
         checker_layout.addWidget(self.normal_checker)
 
         # Convergence criteria
-        convergence_label = QLabel("Convergence criteria")
-        convergence_label.setStyleSheet(
-            "QLabel {"
-            "    font-size: 11pt;"
-            "    font-weight: bold;"
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
-            "}"
-        )
+        convergence_widget = QGroupBox("Convergence criteria")
+        layout_convergence = QFormLayout(convergence_widget)
+        self.confidence_widget = SimpleInputField("0.999", validator=self.double_validator)
+        self.max_iterations_ransac_widget = SimpleInputField("100000", validator=self.int_validator)
+        layout_convergence.addRow("Confidence:", self.confidence_widget)
+        layout_convergence.addRow("Max iterations:", self.max_iterations_ransac_widget)
 
-        convergence_widget = QWidget()
-        convergence_layout = QVBoxLayout()
-        convergence_widget.setLayout(convergence_layout)
-        self.confidence_widget = SimpleInputField("Confidence:", "0.999", 100, validator=self.double_validator)
-        self.max_iterations_ransac_widget = SimpleInputField("Max iterations:", "100000", 100,
-                                                             validator=self.int_validator)
-        convergence_layout.addWidget(self.confidence_widget)
-        convergence_layout.addWidget(self.max_iterations_ransac_widget)
-
-        layout.addWidget(self.checkbox_mutual)
-        layout.addWidget(self.max_correspondence_ransac_widget)
-        layout.addWidget(estimation_widget)
-        layout.addWidget(self.ransac_iteration_widget)
-        layout.addWidget(checker_label)
+        layout.addWidget(options_widget)
         layout.addWidget(checker_widget)
-        layout.addWidget(convergence_label)
         layout.addWidget(convergence_widget)
 
         return widget
 
     def create_fgr_stack_widget(self):
-        widget = QWidget()
-        layout = QVBoxLayout()
-        widget.setLayout(layout)
+        widget_options = QGroupBox("Options")
+        widget_options.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        layout_options = QFormLayout(widget_options)
 
-        widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-
-        # Checkers
-        options_label = QLabel("Options")
-        options_label.setStyleSheet(
-            "QLabel {"
-            "    font-size: 11pt;"
-            "    font-weight: bold;"
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
-            "}"
-        )
-
-        layout.addWidget(options_label)
-        widget_options = QWidget()
-        layout_options = QVBoxLayout()
-        widget_options.setLayout(layout_options)
-
-        self.division_factor_widget = SimpleInputField("Division factor:", "1.4", validator=self.double_validator)
+        self.division_factor_widget = SimpleInputField("1.4", validator=self.double_validator)
         self.checkbox_use_absolute_scale = QCheckBox()
-        self.checkbox_use_absolute_scale.setText("Use absolute scale")
         self.checkbox_use_absolute_scale.setStyleSheet(
             "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            f"    width: 20px;"
+            f"    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            f"    padding-left: 10px;"
             "}"
         )
         self.checkbox_decrease_mu = QCheckBox()
-        self.checkbox_decrease_mu.setText("Decrease mu")
         self.checkbox_decrease_mu.setStyleSheet(
             "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            f"    width: 20px;"
+            f"    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            f"    padding-left: 10px;"
             "}"
         )
-        self.maximum_correspondence_fgr_widget = SimpleInputField("Maximum correspondence:",
-                                                                  "0.025", validator=self.double_validator)
-        self.max_iterations_fgr_widget = SimpleInputField("Iteration number: ",
-                                                          "64", validator=self.int_validator)
-        self.tuple_scale_widget = SimpleInputField("Tuple scale: ",
-                                                   "0.95", validator=self.double_validator)
-        self.max_tuple_count_widget = SimpleInputField("Max tuple count: ",
-                                                       "1000", validator=self.int_validator)
+        self.maximum_correspondence_fgr_widget = SimpleInputField("0.025", validator=self.double_validator)
+        self.max_iterations_fgr_widget = SimpleInputField("64", validator=self.int_validator)
+        self.tuple_scale_widget = SimpleInputField("0.95", validator=self.double_validator)
+        self.max_tuple_count_widget = SimpleInputField("1000", validator=self.int_validator)
 
         self.checkbox_tuple_test = QCheckBox()
         self.checkbox_tuple_test.setChecked(True)
-        self.checkbox_tuple_test.setText("Tuple test")
         self.checkbox_tuple_test.setStyleSheet(
             "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
+            f"    width: 20px;"
+            f"    height: 20px;"
             "}"
             "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
+            f"    padding-left: 10px;"
             "}"
         )
 
-        layout_options.addWidget(self.division_factor_widget)
-        layout_options.addWidget(self.checkbox_use_absolute_scale)
-        layout_options.addWidget(self.checkbox_decrease_mu)
-        layout_options.addWidget(self.maximum_correspondence_fgr_widget)
-        layout_options.addWidget(self.max_iterations_fgr_widget)
-        layout_options.addWidget(self.tuple_scale_widget)
-        layout_options.addWidget(self.max_tuple_count_widget)
-        layout_options.addWidget(self.checkbox_tuple_test)
-        layout_options.addStretch()
+        layout_options.addRow("Division factor:", self.division_factor_widget)
+        layout_options.addRow("Use absolute scale:", self.checkbox_use_absolute_scale)
+        layout_options.addRow("Decrease mu:", self.checkbox_decrease_mu)
+        layout_options.addRow("Maximum correspondence:", self.maximum_correspondence_fgr_widget)
+        layout_options.addRow("Iteration number:", self.max_iterations_fgr_widget)
+        layout_options.addRow("Tuple scale:", self.tuple_scale_widget)
+        layout_options.addRow("Max tuple count:", self.max_tuple_count_widget)
+        layout_options.addRow("Tuple test:", self.checkbox_tuple_test)
 
-        layout.addWidget(widget_options)
-        layout.addStretch()
-
-        return widget
+        return widget_options
 
     def global_type_changed(self, index):
         self.stack.setCurrentIndex(index)
         current_widget = self.stack.currentWidget()
         if current_widget is not None:
             height = current_widget.sizeHint().height()
-            self.stack.setFixedHeight(int(height * graphic_util.SIZE_SCALE_Y))
+            self.stack.setFixedHeight(height)
 
     def registration_button_pressed(self):
         if self.combo_box_global.currentIndex() == 0:
