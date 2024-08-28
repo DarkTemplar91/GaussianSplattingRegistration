@@ -2,7 +2,8 @@ import numpy as np
 from PySide6 import QtCore
 from PySide6.QtCore import QLocale
 from PySide6.QtGui import QDoubleValidator
-from PySide6.QtWidgets import QWidget, QLabel, QCheckBox, QVBoxLayout, QFormLayout, QGroupBox
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QGroupBox, QPushButton, QSizePolicy, \
+    QStyle, QHBoxLayout
 
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.custom_push_button import CustomPushButton
@@ -37,16 +38,23 @@ class VisualizerTab(QWidget):
             }"""
         )
 
-        #self.pop_button = QPushButton(self)
-        #self.pop_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        #self.pop_button.setFixedSize(20, 20)
-        #icon = self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarNormalButton)
-        #self.pop_button.setIcon(icon)
+        titled_label_widget = QWidget()
+        label_layout = QHBoxLayout(titled_label_widget)
+        label_layout.setContentsMargins(0, 0, 0, 0)
+        label_layout.setSpacing(0)
 
-        #label_layout.addWidget(label_title)
-        #label_layout.addWidget(self.pop_button)
+        self.pop_button = QPushButton(self)
+        self.pop_button.setCheckable(True)
+        self.pop_button.setChecked(False)
+        self.pop_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.pop_button.setFixedSize(20, 20)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarNormalButton)
+        self.pop_button.setIcon(icon)
 
-        #self.pop_button.clicked.connect(self.pop_visualizer)
+        label_layout.addWidget(label_title)
+        label_layout.addWidget(self.pop_button)
+
+        self.pop_button.clicked.connect(self.pop_visualizer)
 
         self.form_widget_color = QGroupBox("Debug color")
         self.form_widget_color.setCheckable(True)
@@ -77,7 +85,7 @@ class VisualizerTab(QWidget):
         button_copy = CustomPushButton("Copy current view", 90)
         button_copy.connect_to_clicked(self.get_current_view)
 
-        layout.addWidget(label_title)
+        layout.addWidget(titled_label_widget)
         layout.addWidget(self.form_widget_color)
         layout.addWidget(view_group_widget)
         layout.addWidget(button_apply)

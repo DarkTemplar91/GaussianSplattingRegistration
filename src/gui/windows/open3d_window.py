@@ -10,7 +10,7 @@ if sys.platform.startswith('win'):
     import win32gui
 
 from PySide6 import QtGui, QtWidgets, QtCore
-from PySide6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow, QWidget
 
 
 class Open3DWindow(QMainWindow):
@@ -20,7 +20,6 @@ class Open3DWindow(QMainWindow):
         self.pc2_copy = None
         self.pc1 = None
         self.pc2 = None
-        self.setWindowFlags(Qt.WindowType.ForeignWindow)
 
         self.parent_widget = QtWidgets.QWidget()
         self.layout = QtWidgets.QGridLayout(self.parent_widget)
