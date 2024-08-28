@@ -1,6 +1,6 @@
 from PySide6.QtCore import QLocale, Qt, Signal
 from PySide6.QtGui import QDoubleValidator, QIntValidator
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy, QSlider, QLabel
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy, QSlider, QLabel, QFormLayout
 
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 import src.utils.graphics_utils as graphic_util
@@ -13,7 +13,7 @@ class GaussianMixtureTab(QWidget):
     def __init__(self):
         super().__init__()
 
-        locale = QLocale(QLocale.Language.English)
+        locale = QLocale(QLocale.Language.C)
         double_validator = QDoubleValidator()
         double_validator.setLocale(locale)
         double_validator.setRange(0.0, 9999.0)
@@ -26,17 +26,17 @@ class GaussianMixtureTab(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        self.hem_reduction_field = SimpleInputField("HEM reduction factor:", "3.0", validator=double_validator)
-        self.distance_field = SimpleInputField("Geometric distance delta:", "3.0", validator=double_validator)
-        self.color_field = SimpleInputField("Color distance delta:", "2.5", validator=double_validator)
-        self.cluster_level_field = SimpleInputField("Cluster level:", "3", validator=int_validator)
+        self.hem_reduction_field = SimpleInputField("3.0", validator=double_validator)
+        self.distance_field = SimpleInputField("3.0", validator=double_validator)
+        self.color_field = SimpleInputField("2.5", validator=double_validator)
+        self.cluster_level_field = SimpleInputField("3", validator=int_validator)
 
         slider_label = QLabel("Current mixture level")
         slider_label.setStyleSheet(
             "QLabel {"
             "    font-size: 11pt;"
             "    font-weight: bold;"
-            f"   padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
+            f"   padding: 8px;"
             "}"
         )
 
@@ -47,27 +47,24 @@ class GaussianMixtureTab(QWidget):
         self.slider.setEnabled(False)
         self.slider.valueChanged.connect(self.value_changed)
 
-        option_widget = QGroupBox()
-        option_widget.setTitle("Inputs")
-        options_layout = QVBoxLayout()
-        option_widget.setLayout(options_layout)
+        widget_options = QGroupBox("Inputs")
+        layout_options = QFormLayout(widget_options)
 
-        options_layout.addWidget(self.hem_reduction_field)
-        options_layout.addWidget(self.distance_field)
-        options_layout.addWidget(self.color_field)
-        options_layout.addWidget(self.cluster_level_field)
-        options_layout.addStretch()
+        layout_options.addRow("HEM reduction factor:", self.hem_reduction_field)
+        layout_options.addRow("Geometric distance delta:", self.distance_field)
+        layout_options.addRow("Color distance delta:", self.color_field)
+        layout_options.addRow("Cluster level:", self.cluster_level_field)
 
         bt_apply = QPushButton("Execute")
-        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
+        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: 10px;"
+                               f"padding-top: 2px; padding-bottom: 2px;")
+        bt_apply.setFixedHeight(30)
         bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         layout.addWidget(slider_label)
         layout.addWidget(self.slider)
-        layout.addSpacing(int(graphic_util.SIZE_SCALE_Y * 20))
-        layout.addWidget(option_widget)
+        layout.addSpacing(20)
+        layout.addWidget(widget_options)
         layout.addWidget(bt_apply)
 
         bt_apply.clicked.connect(self.hem_execute_button_pressed)

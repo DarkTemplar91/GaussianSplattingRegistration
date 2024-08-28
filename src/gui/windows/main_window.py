@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QWidget, Q
     QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
 
 from src.gui.tabs.cache_tab import CacheTab
+from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
 from src.gui.tabs.input_tab import InputTab
 from src.gui.tabs.local_registration_tab import LocalRegistrationTab
@@ -18,6 +19,7 @@ from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_base_worker import move_worker_to_thread
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
+from src.gui.workers.qt_gaussian_mixture import GaussianMixtureWorker
 from src.gui.workers.qt_gaussian_saver import GaussianSaver
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistratorVoxel, MultiScaleRegistratorMixture
@@ -155,19 +157,19 @@ class RegistrationMainWindow(QMainWindow):
         multi_scale_registration_widget.signal_do_registration.connect(
             self.do_multiscale_registration)
 
+        self.hem_widget = GaussianMixtureTab()
+        self.hem_widget.signal_create_mixture.connect(self.create_mixture)
+        self.hem_widget.signal_slider_changed.connect(self.active_pc_changed)
+
         #evaluator_widget = EvaluationTab()
         #evaluator_widget.signal_camera_change.connect(self.pane_open3d.apply_camera_transformation)
         #evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
-        #self.hem_widget = GaussianMixtureTab()
-        #self.hem_widget.signal_create_mixture.connect(self.create_mixture)
-        #self.hem_widget.signal_slider_changed.connect(self.active_pc_changed)
-
         registration_tab.addTab(global_registration_widget, "Global")
         registration_tab.addTab(local_registration_widget, "Local")
         registration_tab.addTab(multi_scale_registration_widget, "Multiscale")
+        registration_tab.addTab(self.hem_widget, "Mixture")
         #registration_tab.addTab(evaluator_widget, "Evaluation")
-        #registration_tab.addTab(self.hem_widget, "Mixture")
         layout.addWidget(registration_tab)
 
     # Event Handlers
@@ -222,8 +224,8 @@ class RegistrationMainWindow(QMainWindow):
 
         self.current_index = 0
 
-        #self.hem_widget.set_slider_range(0)
-        #self.hem_widget.set_slider_enabled(False)
+        self.hem_widget.set_slider_range(0)
+        self.hem_widget.set_slider_enabled(False)
 
         self.pc_gaussian_list_first.clear()
         self.pc_gaussian_list_second.clear()
@@ -479,7 +481,7 @@ class RegistrationMainWindow(QMainWindow):
             message_dialog.setDetailedText("\n".join(log_object.error_list))
 
         message_dialog.setText(message)
-        message_dialog.exec()
+        message_dialog.exec()"""
 
     def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
         pc1 = pc2 = None
@@ -497,32 +499,17 @@ class RegistrationMainWindow(QMainWindow):
                                "Please load two point clouds to create Gaussian mixtures.")
             return
 
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Creating Gaussian mixtures...")
         worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level)
-
-        # Create thread
-        thread = QThread(self)
-        # Move worker to thread
-        worker.moveToThread(thread)
-        # connect signals to slots
-        thread.started.connect(worker.execute)
-        worker.signal_mixture_created.connect(self.handle_mixture_results)
-        worker.signal_finished.connect(thread.quit)
-        worker.signal_finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
-
-        self.progress_dialog.setLabelText("Creating Gaussian mixtures...")
-        self.progress_dialog.setRange(0, 100)
-        self.progress_dialog.setValue(0)
-        self.progress_dialog.setAutoClose(False)
-        self.progress_dialog.canceled.connect(worker.cancel)
-        worker.signal_update_progress.connect(self.progress_dialog.setValue)
+        thread = move_worker_to_thread(worker, self.handle_mixture_results, progress_handler=progress_dialog.setValue)
+        progress_dialog.canceled.connect(worker.cancel)
 
         thread.start()
-        self.progress_dialog.exec()
+        progress_dialog.exec()
 
-    def handle_mixture_results(self, gaussian_list_first, gaussian_list_second, open3d_list_first, open3d_list_second):
+    def handle_mixture_results(self, result_data: GaussianMixtureWorker.ResultData):
 
-        if len(gaussian_list_first) > 1:
+        if len(result_data.list_gaussian_first) > 1:
             base_pc_first = self.pc_gaussian_list_first[0]
             base_pc_second = self.pc_gaussian_list_second[0]
             base_open3d_first = self.pc_open3d_list_first[0]
@@ -537,16 +524,14 @@ class RegistrationMainWindow(QMainWindow):
             self.pc_gaussian_list_first.append(base_pc_first)
             self.pc_gaussian_list_second.append(base_pc_second)
 
-        self.pc_open3d_list_first.extend(open3d_list_first)
-        self.pc_open3d_list_second.extend(open3d_list_second)
-        self.pc_gaussian_list_first.extend(gaussian_list_first)
-        self.pc_gaussian_list_second.extend(gaussian_list_second)
+        self.pc_open3d_list_first.extend(result_data.list_gaussian_first)
+        self.pc_open3d_list_second.extend(result_data.list_gaussian_second)
+        self.pc_gaussian_list_first.extend(result_data.list_gaussian_first)
+        self.pc_gaussian_list_second.extend(result_data.list_gaussian_second)
 
         self.hem_widget.set_slider_range(len(self.pc_gaussian_list_first) - 1)
         self.hem_widget.set_slider_enabled(True)
         self.hem_widget.set_slider_to(0)
-
-        self.progress_dialog.close()
 
     def active_pc_changed(self, index):
         if self.current_index == index:
@@ -559,7 +544,7 @@ class RegistrationMainWindow(QMainWindow):
             dc1, dc2 = self.visualizer_widget.get_debug_colors()
 
         self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True,
-                                           self.transformation_picker.transformation_matrix, dc1, dc2)"""
+                                           self.transformation_picker.transformation_matrix, dc1, dc2)
 
     def create_error_list_dialog(self, error_list):
         message_dialog = QMessageBox()
