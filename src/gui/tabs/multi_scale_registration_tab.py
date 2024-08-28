@@ -4,6 +4,7 @@ from PySide6.QtGui import QDoubleValidator, QRegularExpressionValidator
 from PySide6.QtWidgets import (QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton,
                                QFrame, QScrollArea, QFormLayout, QGroupBox)
 
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
@@ -126,12 +127,8 @@ class MultiScaleRegistrationTab(QWidget):
         outlier_layout.addRow("Loss type:", self.combo_box_outlier)
         outlier_layout.addRow("Standard deviation:", self.k_value_widget)
 
-        bt_apply = QPushButton("Start multiscale registration")
-        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: 10px;"
-                               f"padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setFixedHeight(30)
-        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        bt_apply.clicked.connect(self.registration_button_pressed)
+        bt_apply = CustomPushButton("Start multiscale registration", 100)
+        bt_apply.connect_to_clicked(self.registration_button_pressed)
 
         layout.addWidget(label_title)
         layout.addWidget(widget_group_sparse)

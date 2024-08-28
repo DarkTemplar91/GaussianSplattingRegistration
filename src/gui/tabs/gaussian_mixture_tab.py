@@ -2,6 +2,7 @@ from PySide6.QtCore import QLocale, Qt, Signal
 from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy, QSlider, QLabel, QFormLayout
 
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 import src.utils.graphics_utils as graphic_util
 
@@ -55,11 +56,7 @@ class GaussianMixtureTab(QWidget):
         layout_options.addRow("Color distance delta:", self.color_field)
         layout_options.addRow("Cluster level:", self.cluster_level_field)
 
-        bt_apply = QPushButton("Execute")
-        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: 10px;"
-                               f"padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setFixedHeight(30)
-        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        bt_apply = CustomPushButton("Execute", 100)
 
         layout.addWidget(slider_label)
         layout.addWidget(self.slider)
@@ -67,7 +64,7 @@ class GaussianMixtureTab(QWidget):
         layout.addWidget(widget_options)
         layout.addWidget(bt_apply)
 
-        bt_apply.clicked.connect(self.hem_execute_button_pressed)
+        bt_apply.connect_to_clicked(self.hem_execute_button_pressed)
 
     def hem_execute_button_pressed(self):
         hem_reduction = float(self.hem_reduction_field.lineedit.text())

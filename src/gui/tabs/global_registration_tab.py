@@ -6,6 +6,7 @@ from open3d.cpu.pybind.pipelines.registration import CorrespondenceCheckerBasedO
     CorrespondenceCheckerBasedOnDistance, CorrespondenceCheckerBasedOnNormal
 
 import src.utils.graphics_utils as graphic_util
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.optional_value_widget import OptionalInputField
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.utils.global_registration_util import GlobalRegistrationType, RANSACEstimationMethod
@@ -94,12 +95,8 @@ class GlobalRegistrationTab(QWidget):
         self.stack.addWidget(self.fgr_widget)
         self.stack.setCurrentIndex(0)
 
-        bt_apply = QPushButton("Start global registration")
-        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: 10px;"
-                               f"padding-top: 2px; padding-bottom: 2px;")
-        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        bt_apply.setFixedHeight(30)
-        bt_apply.clicked.connect(self.registration_button_pressed)
+        bt_apply = CustomPushButton("Start global registration", 100)
+        bt_apply.connect_to_clicked(self.registration_button_pressed)
 
         layout.addWidget(widget_global)
         layout.addWidget(self.stack, stretch=1)

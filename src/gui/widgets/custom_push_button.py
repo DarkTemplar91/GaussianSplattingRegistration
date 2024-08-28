@@ -11,6 +11,8 @@ class CustomPushButton(QWidget):
         super().__init__()
 
         layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
         self.setLayout(layout)
         self.stretch_percent = stretch_percent
 

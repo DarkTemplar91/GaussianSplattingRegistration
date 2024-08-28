@@ -1,3 +1,4 @@
+import math
 import os
 
 import numpy as np
@@ -6,6 +7,7 @@ from PySide6.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QWidget, Q
     QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
 
 from src.gui.tabs.cache_tab import CacheTab
+from src.gui.tabs.evaluation_tab import EvaluationTab
 from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
 from src.gui.tabs.input_tab import InputTab
@@ -18,6 +20,7 @@ from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.windows.image_viewer_window import RasterImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_base_worker import move_worker_to_thread
+from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_gaussian_mixture import GaussianMixtureWorker
 from src.gui.workers.qt_gaussian_saver import GaussianSaver
@@ -161,15 +164,15 @@ class RegistrationMainWindow(QMainWindow):
         self.hem_widget.signal_create_mixture.connect(self.create_mixture)
         self.hem_widget.signal_slider_changed.connect(self.active_pc_changed)
 
-        #evaluator_widget = EvaluationTab()
-        #evaluator_widget.signal_camera_change.connect(self.pane_open3d.apply_camera_transformation)
-        #evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
+        evaluator_widget = EvaluationTab()
+        evaluator_widget.signal_camera_change.connect(self.pane_open3d.apply_camera_transformation)
+        evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
         registration_tab.addTab(global_registration_widget, "Global")
         registration_tab.addTab(local_registration_widget, "Local")
         registration_tab.addTab(multi_scale_registration_widget, "Multiscale")
         registration_tab.addTab(self.hem_widget, "Mixture")
-        #registration_tab.addTab(evaluator_widget, "Evaluation")
+        registration_tab.addTab(evaluator_widget, "Evaluation")
         layout.addWidget(registration_tab)
 
     # Event Handlers
@@ -424,7 +427,7 @@ class RegistrationMainWindow(QMainWindow):
         self.raster_window.setWindowModality(Qt.WindowModality.WindowModal)
         self.raster_window.show()
 
-    """def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
+    def evaluate_registration(self, camera_list, image_path, log_path, color, use_gpu):
         pc1 = self.pc_gaussian_list_first[self.current_index]
         pc2 = self.pc_gaussian_list_second[self.current_index]
 
@@ -436,32 +439,16 @@ class RegistrationMainWindow(QMainWindow):
                                "\nPlease load two point clouds for registration and evaluation")
             return
 
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Evaluating registration...")
         worker = RegistrationEvaluator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                        camera_list, image_path, log_path, color, self.local_registration_data,
                                        use_gpu)
-
-        # Create thread
-        thread = QThread(self)
-        # Move worker to thread
-        worker.moveToThread(thread)
-        # connect signals to slots
-        thread.started.connect(worker.do_evaluation)
-        worker.signal_evaluation_done.connect(self.handle_evaluation_result)
-        worker.signal_finished.connect(thread.quit)
-        worker.signal_finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
-
-        self.progress_dialog.setLabelText("Evaluating registration...")
-        self.progress_dialog.setRange(0, 100)
-        self.progress_dialog.setValue(0)
-        self.progress_dialog.canceled.connect(worker.cancel_evaluation)
-        worker.signal_update_progress.connect(self.progress_dialog.setValue)
-
+        progress_dialog.canceled.connect(worker.cancel_evaluation)
+        thread = move_worker_to_thread(worker, self.handle_evaluation_result, progress_handler=progress_dialog.setValue)
         thread.start()
-        self.progress_dialog.exec()
+        progress_dialog.exec()
 
     def handle_evaluation_result(self, log_object):
-        self.progress_dialog.close()
         message_dialog = QMessageBox()
         message_dialog.setModal(True)
         message_dialog.setWindowTitle("Evaluation finished")
@@ -481,7 +468,7 @@ class RegistrationMainWindow(QMainWindow):
             message_dialog.setDetailedText("\n".join(log_object.error_list))
 
         message_dialog.setText(message)
-        message_dialog.exec()"""
+        message_dialog.exec()
 
     def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
         pc1 = pc2 = None

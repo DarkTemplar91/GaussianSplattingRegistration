@@ -3,8 +3,8 @@ from PySide6 import QtCore
 from PySide6.QtCore import Qt, QLocale
 from PySide6.QtGui import QDoubleValidator, QGuiApplication
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, \
-    QTableWidget, QGridLayout, QLineEdit, QPushButton, QSizePolicy
-import src.utils.graphics_utils as graphic_util
+    QTableWidget, QGridLayout, QLineEdit
+
 from src.gui.widgets.custom_push_button import CustomPushButton
 
 

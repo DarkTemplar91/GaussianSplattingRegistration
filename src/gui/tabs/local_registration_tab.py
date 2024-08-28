@@ -4,6 +4,7 @@ from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QSizePolicy, \
     QComboBox, QScrollArea, QFrame, QFormLayout, QGroupBox, QStackedWidget
 
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.utils.local_registration_util import LocalRegistrationType, KernelLossFunctionType
 
@@ -78,13 +79,8 @@ class LocalRegistrationTab(QWidget):
         outlier_layout.addRow("Loss type:", self.combo_box_outlier)
         outlier_layout.addRow("Standard deviation:", self.k_value_widget)
 
-        #bt_apply = CustomPushButton("Start local registration", 100)
-        #bt_apply.connect_to_clicked(self.registration_button_pressed)
-        bt_apply = QPushButton("Start local registration")
-        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: 10px;"
-                               f"padding-top: 2px; padding-bottom:  2px;")
-        bt_apply.setFixedHeight(30)
-        bt_apply.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        bt_apply = CustomPushButton("Start local registration", 100)
+        bt_apply.connect_to_clicked(self.registration_button_pressed)
 
         # Ugly hack, so local and global registration tabs have the same margins...
         layout.addWidget(widget_local)
@@ -101,8 +97,6 @@ class LocalRegistrationTab(QWidget):
 
         registration_layout.addWidget(scroll_widget)
         registration_layout.addWidget(bt_apply)
-
-        bt_apply.clicked.connect(self.registration_button_pressed)
 
     def registration_button_pressed(self):
         registration_type = LocalRegistrationType(self.combo_box_icp.currentIndex())
