@@ -23,21 +23,17 @@ class CacheTab(QWidget):
         )
 
         box_widget = QGroupBox(self)
-        layout_box = QVBoxLayout(box_widget)
-
-        form_widget = QWidget()
-        layout_form = QFormLayout(form_widget)
+        layout_box = QFormLayout(box_widget)
         self.fs_cache1 = FileSelector(cache_dir)
         self.fs_cache2 = FileSelector(cache_dir)
-        layout_form.addRow("First point cloud:", self.fs_cache1)
-        layout_form.addRow("Second point cloud:", self.fs_cache2)
+        layout_box.addRow("First point cloud:", self.fs_cache1)
+        layout_box.addRow("Second point cloud:", self.fs_cache2)
 
         bt_cached = CustomPushButton("Import cached point clouds", 90)
-        layout_box.addWidget(form_widget)
-        layout_box.addWidget(bt_cached)
 
         layout.addWidget(label_cache)
         layout.addWidget(box_widget)
+        layout.addWidget(bt_cached)
         layout.addStretch()
 
         bt_cached.connect_to_clicked(lambda: self.signal_load_cached.emit(self.fs_cache1.file_path,

@@ -73,12 +73,9 @@ class EvaluationTab(QWidget):
             f"    width: 20px;"
             f"    height: 20px;"
             "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: 10px;"
-            "}"
         )
 
-        self.button_evaluate = CustomPushButton("Load cameras", 100)
+        self.button_evaluate = CustomPushButton("Evaluate", 100)
 
         evaluation_layout.addRow("Images folder:", self.fs_images)
         evaluation_layout.addRow("Log file:", self.fs_log)

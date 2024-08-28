@@ -1,7 +1,6 @@
 import copy
 
 import open3d as o3d
-from PySide6.QtCore import Signal, QObject
 from PySide6 import QtWidgets
 
 from src.gui.workers.qt_base_worker import BaseWorker
@@ -43,7 +42,7 @@ class MultiScaleRegistratorVoxel(BaseWorker):
         current_trans = self.init_trans
 
         if self.__check_valid_data() is False:
-            self.signal_finished.emit()
+            self.emit_finished()
             return
 
         if self.use_corresponding:
@@ -51,12 +50,12 @@ class MultiScaleRegistratorVoxel(BaseWorker):
 
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
-            self.signal_finished.emit()
+            self.emit_finished()
             return
 
         results = self.__register_main_point_clouds(current_trans)
         if results is None:
-            self.signal_finished.emit()
+            self.emit_finished()
             return
 
         registration_data = self.__create_dataclass_object(results)
@@ -69,7 +68,7 @@ class MultiScaleRegistratorVoxel(BaseWorker):
 
         if not sparse_pc1 or not sparse_pc2:
             self.signal_error.emit(["Point clouds provided as sparse were of a different type"])
-            self.signal_finished.emit()
+            self.emit_finished()
             return None
 
         # Use first correspondence and iterations from list
@@ -84,7 +83,7 @@ class MultiScaleRegistratorVoxel(BaseWorker):
     def __check_valid_data(self):
         if len(self.iter_values) != len(self.voxel_values):
             self.signal_error.emit(["The number of iteration and voxel values provided do not match."])
-            self.signal_finished.emit()
+            self.emit_finished()
             return False
 
         return True
@@ -113,7 +112,7 @@ class MultiScaleRegistratorVoxel(BaseWorker):
                 error_str = str(e)
                 error_str += f"\nSource: \"{str(source_down)}\"\nTarget: \"{str(target_down)}\""
                 self.signal_error.emit([error_str])
-                self.signal_finished.emit()
+                self.emit_finished()
                 return None
 
             self.update_progress()
@@ -140,12 +139,16 @@ class MultiScaleRegistratorVoxel(BaseWorker):
     def cancel(self):
         self.signal_cancel = True
 
+    def emit_finished(self):
+        self.signal_finished.emit()
+        self.signal_progress.emit(100)
 
-class MultiScaleRegistratorMixture(QObject):
-    signal_finished = Signal()
-    signal_registration_done = Signal(object, object)
-    signal_error_occurred = Signal(list)
-    signal_update_progress = Signal(int)
+
+class MultiScaleRegistratorMixture(BaseWorker):
+    class ResultData:
+        def __init__(self, result, registration_data: MultiScaleRegistrationData):
+            self.result = result
+            self.registration_data = registration_data
 
     def __init__(self, pc1_list, pc2_list, init_trans, use_corresponding, sparse_first, sparse_second,
                  registration_type,
@@ -174,7 +177,7 @@ class MultiScaleRegistratorMixture(QObject):
         current_trans = self.init_trans
 
         if self.__check_valid_data() is False:
-            self.signal_finished.emit()
+            self.emit_finished()
             return
 
         if self.use_corresponding:
@@ -182,16 +185,16 @@ class MultiScaleRegistratorMixture(QObject):
 
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
-            self.signal_finished.emit()
+            self.emit_finished()
             return
 
         results = self.__register_main_point_clouds(current_trans)
         if results is None:
-            self.signal_finished.emit()
+            self.emit_finished()
             return
 
         registration_data = self.__create_dataclass_object(results)
-        self.signal_registration_done.emit(results, registration_data)
+        self.signal_result.emit(results, registration_data)
         self.signal_finished.emit()
 
     def __register_sparse_point_clouds(self):
@@ -199,8 +202,8 @@ class MultiScaleRegistratorMixture(QObject):
         sparse_pc2 = load_sparse_pc(self.sparse_second_path)
 
         if not sparse_pc1 or not sparse_pc2:
-            self.signal_error_occurred.emit(["Point clouds provided as sparse were of a different type"])
-            self.signal_finished.emit()
+            self.signal_error.emit(["Point clouds provided as sparse were of a different type"])
+            self.emit_finished()
             return None
 
         # Use first correspondence and iterations from list
@@ -214,24 +217,24 @@ class MultiScaleRegistratorMixture(QObject):
 
     def __check_valid_data(self):
         if len(self.pc1_list) != len(self.pc2_list):
-            self.signal_error_occurred.emit(["The two point cloud lists differ in size."])
-            self.signal_finished.emit()
+            self.signal_error.emit(["The two point cloud lists differ in size."])
+            self.emit_finished()
             return False
 
         if len(self.pc1_list) <= 1:
-            self.signal_error_occurred.emit(["There are no downscaled mixtures. First create Gaussian Mixtures by "
-                                             "running the HEM algorithm in the \"Mixture\" tab!"])
-            self.signal_finished.emit()
+            self.signal_error.emit(["There are no downscaled mixtures. First create Gaussian Mixtures by "
+                                    "running the HEM algorithm in the \"Mixture\" tab!"])
+            self.emit_finished()
             return False
 
         if len(self.iter_values) != len(self.voxel_values):
-            self.signal_error_occurred.emit(["The number of iteration and voxel values provided do not match."])
-            self.signal_finished.emit()
+            self.signal_error.emit(["The number of iteration and voxel values provided do not match."])
+            self.emit_finished()
             return False
 
         if len(self.iter_values) != len(self.pc1_list):
-            self.signal_error_occurred.emit(["The number of iterations and the mixture levels do not match."])
-            self.signal_finished.emit()
+            self.signal_error.emit(["The number of iterations and the mixture levels do not match."])
+            self.emit_finished()
             return False
 
         return True
@@ -263,8 +266,8 @@ class MultiScaleRegistratorMixture(QObject):
             except RuntimeError as e:
                 error_str = str(e)
                 error_str += f"\nSource: \"{str(pc1)}\"\nTarget: \"{str(pc2)}\""
-                self.signal_error_occurred.emit([error_str])
-                self.signal_finished.emit()
+                self.signal_error.emit([error_str])
+                self.emit_finished()
                 return None
 
             self.update_progress()
@@ -290,7 +293,11 @@ class MultiScaleRegistratorMixture(QObject):
     def update_progress(self):
         self.current_progress += 1
         new_percent = int(self.current_progress / self.max_progress * 100)
-        self.signal_update_progress.emit(new_percent)
+        self.signal_progress.emit(new_percent)
 
     def cancel(self):
         self.signal_cancel = True
+
+    def emit_finished(self):
+        self.signal_finished.emit()
+        self.signal_progress.emit(100)

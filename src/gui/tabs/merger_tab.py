@@ -23,26 +23,14 @@ class MergeTab(QWidget):
             }"""
         )
 
-        group_box_widget = QGroupBox("Corresponding Gaussian point clouds")
-        layout_group_box = QFormLayout(group_box_widget)
-
-        self.input_checkbox = QCheckBox()
-        self.input_checkbox.setStyleSheet(
-            "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
-            "}"
-            "QCheckBox::indicator::text {"
-            "    padding-left: 0.5em;"
-            "}"
-        )
-        self.input_checkbox.stateChanged.connect(self.checkbox_changed)
+        self.group_box_widget = QGroupBox("Use corresponding Gaussians")
+        self.group_box_widget.setCheckable(True)
+        self.group_box_widget.setChecked(False)
+        self.group_box_widget.toggled.connect(self.checkbox_changed)
+        layout_group_box = QFormLayout(self.group_box_widget)
 
         self.fs_input1 = FileSelector(input_path)
         self.fs_input2 = FileSelector(input_path)
-        self.fs_input1.setEnabled(False)
-        self.fs_input2.setEnabled(False)
-        layout_group_box.addRow("Use corresponding inputs:", self.input_checkbox)
         layout_group_box.addRow("First point cloud:", self.fs_input1)
         layout_group_box.addRow("Second point cloud:", self.fs_input2)
 
@@ -57,14 +45,12 @@ class MergeTab(QWidget):
         bt_merge.connect_to_clicked(self.merge_point_clouds)
 
         layout.addWidget(label_title)
-        layout.addWidget(group_box_widget)
+        layout.addWidget(self.group_box_widget)
         layout.addWidget(widget_save)
         layout.addWidget(bt_merge)
         layout.addStretch()
 
     def checkbox_changed(self, state):
-        self.fs_input1.setEnabled(state)
-        self.fs_input2.setEnabled(state)
         if state:
             return
 
@@ -82,7 +68,7 @@ class MergeTab(QWidget):
             dialog.showMessage("Please select location to save the merged point cloud!")
             return
 
-        is_checked = self.input_checkbox.isChecked()
+        is_checked = self.group_box_widget.isChecked()
         pc_path1 = self.fs_input1.file_path
         pc_path2 = self.fs_input2.file_path
         merge_path = self.fs_merge.file_path

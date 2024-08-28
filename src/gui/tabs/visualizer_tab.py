@@ -48,33 +48,15 @@ class VisualizerTab(QWidget):
 
         #self.pop_button.clicked.connect(self.pop_visualizer)
 
-        color_group_widget = QGroupBox("Color")
-        layout_group_box_color = QVBoxLayout(color_group_widget)
+        self.form_widget_color = QGroupBox("Debug color")
+        self.form_widget_color.setCheckable(True)
+        self.form_widget_color.setChecked(False)
+        layout_form_color = QFormLayout(self.form_widget_color)
 
-        self.debug_color_checkbox = QCheckBox()
-        #self.debug_color_checkbox.setText("Use debug colors")
-        self.debug_color_checkbox.setStyleSheet(
-            "QCheckBox::indicator {"
-            "    width: 20px;"
-            "    height: 20px;"
-            "}"
-            "QCheckBox::indicator::text {"
-            "    padding-left: 0.5em;"
-            "}"
-        )
-        self.debug_color_checkbox.stateChanged.connect(self.checkbox_changed)
-
-        form_widget_color = QWidget()
-        layout_form_color = QFormLayout(form_widget_color)
         self.debug_color_dialog_first = ColorPicker()
-        self.debug_color_dialog_first.setEnabled(False)
         self.debug_color_dialog_second = ColorPicker()
-        self.debug_color_dialog_second.setEnabled(False)
-        layout_form_color.addRow("Use debug colors:", self.debug_color_checkbox)
         layout_form_color.addRow("Primary debug color:", self.debug_color_dialog_first)
         layout_form_color.addRow("Secondary debug color:", self.debug_color_dialog_second)
-        layout_group_box_color.addWidget(self.debug_color_checkbox)
-        layout_group_box_color.addWidget(form_widget_color)
 
         view_group_widget = QGroupBox("View")
         layout_group_box_view = QVBoxLayout(view_group_widget)
@@ -96,14 +78,10 @@ class VisualizerTab(QWidget):
         button_copy.connect_to_clicked(self.get_current_view)
 
         layout.addWidget(label_title)
-        layout.addWidget(color_group_widget)
+        layout.addWidget(self.form_widget_color)
         layout.addWidget(view_group_widget)
         layout.addWidget(button_apply)
         layout.addWidget(button_copy)
-
-    def checkbox_changed(self, state):
-        self.debug_color_dialog_first.setEnabled(state)
-        self.debug_color_dialog_second.setEnabled(state)
 
     def apply_to_vis(self):
         use_debug_color = self.get_use_debug_color()
@@ -127,7 +105,7 @@ class VisualizerTab(QWidget):
         self.up_widget.set_values(up)
 
     def get_use_debug_color(self):
-        return self.debug_color_checkbox.isChecked()
+        return self.form_widget_color.isChecked()
 
     def get_debug_colors(self):
         return np.asarray(self.debug_color_dialog_first.color_debug), np.asarray(

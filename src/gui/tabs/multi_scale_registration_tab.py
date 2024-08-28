@@ -56,28 +56,16 @@ class MultiScaleRegistrationTab(QWidget):
             "}"
         )
 
-        widget_group_sparse = QGroupBox("Sparse input")
-        layout_group_sparse = QFormLayout(widget_group_sparse)
-
-        self.sparse_checkbox = QCheckBox()
-        self.sparse_checkbox.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: 10px;"
-            "}"
-        )
-        self.sparse_checkbox.stateChanged.connect(self.checkbox_changed)
+        self.widget_group_sparse = QGroupBox("Sparse input")
+        self.widget_group_sparse.setCheckable(True)
+        self.widget_group_sparse.setChecked(False)
+        self.widget_group_sparse.toggled.connect(self.checkbox_changed)
+        layout_group_sparse = QFormLayout(self.widget_group_sparse)
 
         # File selectors for sparse input
         self.fs_sparse1 = FileSelector(base_path=input_path)
         self.fs_sparse2 = FileSelector(base_path=input_path)
-        self.fs_sparse1.setEnabled(False)
-        self.fs_sparse2.setEnabled(False)
 
-        layout_group_sparse.addRow("Use sparse point clouds:", self.sparse_checkbox)
         layout_group_sparse.addRow("First sparse input:", self.fs_sparse1)
         layout_group_sparse.addRow("Second sparse input:", self.fs_sparse2)
 
@@ -131,7 +119,7 @@ class MultiScaleRegistrationTab(QWidget):
         bt_apply.connect_to_clicked(self.registration_button_pressed)
 
         layout.addWidget(label_title)
-        layout.addWidget(widget_group_sparse)
+        layout.addWidget(self.widget_group_sparse)
         layout.addWidget(widget_convergence_criteria)
         layout.addWidget(outlier_widget)
         layout.addStretch()
@@ -140,9 +128,6 @@ class MultiScaleRegistrationTab(QWidget):
         registration_layout.addWidget(bt_apply)
 
     def checkbox_changed(self, state):
-        self.fs_sparse1.setEnabled(state)
-        self.fs_sparse2.setEnabled(state)
-
         if state:
             return
 
@@ -153,7 +138,7 @@ class MultiScaleRegistrationTab(QWidget):
         self.fs_sparse2.file_path = ""
 
     def registration_button_pressed(self):
-        use_corresponding = self.sparse_checkbox.isChecked()
+        use_corresponding = self.widget_group_sparse.isChecked()
         sparse_first = self.fs_sparse1.file_path
         sparse_second = self.fs_sparse2.file_path
         registration_type = LocalRegistrationType(self.combo_box_icp.currentIndex())

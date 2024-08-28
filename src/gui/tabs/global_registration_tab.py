@@ -128,9 +128,6 @@ class GlobalRegistrationTab(QWidget):
             f"    width: 20px;"
             f"    height: 20px;"
             "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: 10px;"
-            "}"
         )
 
         self.max_correspondence_ransac_widget = SimpleInputField("5.0", validator=self.double_validator)
@@ -184,18 +181,12 @@ class GlobalRegistrationTab(QWidget):
             f"    width: 20px;"
             f"    height: 20px;"
             "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: 10px;"
-            "}"
         )
         self.checkbox_decrease_mu = QCheckBox()
         self.checkbox_decrease_mu.setStyleSheet(
             "QCheckBox::indicator {"
             f"    width: 20px;"
             f"    height: 20px;"
-            "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: 10px;"
             "}"
         )
         self.maximum_correspondence_fgr_widget = SimpleInputField("0.025", validator=self.double_validator)
@@ -209,9 +200,6 @@ class GlobalRegistrationTab(QWidget):
             "QCheckBox::indicator {"
             f"    width: 20px;"
             f"    height: 20px;"
-            "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: 10px;"
             "}"
         )
 

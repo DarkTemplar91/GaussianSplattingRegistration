@@ -324,8 +324,8 @@ class RegistrationMainWindow(QMainWindow):
 
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
-        pc1 = self.pc_open3d_list_first[self.current_index]
-        pc2 = self.pc_open3d_list_second[self.current_index]
+        pc1 = self.pane_open3d.pc1
+        pc2 = self.pane_open3d.pc2
 
         worker = FGRRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                 voxel_size, division_factor, use_absolute_scale, decrease_mu,

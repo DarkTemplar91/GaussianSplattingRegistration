@@ -16,9 +16,6 @@ class OptionalInputField(QWidget):
             f"    width: 20px;"
             f"    height: 20px;"
             "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: 10px;"
-            "}"
         )
 
         label = QLabel(label_text)
