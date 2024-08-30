@@ -74,9 +74,9 @@ class RasterizerTab(QWidget):
 
         layout_main.addWidget(label_res)
         layout_main.addWidget(option_widget)
-        layout_main.addStretch()
         layout_main.addWidget(widget_fov_group_box)
         layout_main.addWidget(bt_rasterize)
+        layout_main.addStretch()
 
     def button_clicked(self):
         width = int(self.image_width_widget.text())
