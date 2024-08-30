@@ -116,6 +116,10 @@ class Transformation3DPicker(QWidget):
 
         self.transformation_matrix_changed.emit(self.transformation_matrix)
 
+    def reset_transformation(self):
+        tranformation_matrix = np.eye(4)
+        self.set_transformation(tranformation_matrix)
+
     def copy_to_clipboard(self):
         clipboard = QGuiApplication.clipboard()
         clipboard.setText(str(self.transformation_matrix.tolist()))

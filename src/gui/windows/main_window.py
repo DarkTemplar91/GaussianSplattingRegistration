@@ -203,17 +203,19 @@ class RegistrationMainWindow(QMainWindow):
         progress_dialog.exec()
 
     def handle_result_sparse(self, sparse_result):
+        self.transformation_picker.reset_transformation()
         self.handle_point_cloud_loading(sparse_result.point_cloud_first, sparse_result.point_cloud_second,
                                         False)
 
     def handle_result_gaussian(self, gaussian_result):
-        # TODO: Convert if needed
+        self.transformation_picker.reset_transformation()
         self.handle_point_cloud_loading(gaussian_result.o3d_point_cloud_first, gaussian_result.o3d_point_cloud_second,
                                         False,
                                         gaussian_result.gaussian_point_cloud_first,
                                         gaussian_result.gaussian_point_cloud_second)
 
     def handle_result_cached(self, cached_result):
+        self.transformation_picker.reset_transformation()
         self.handle_point_cloud_loading(cached_result.point_cloud_first, cached_result.point_cloud_first,
                                         False)
 
@@ -494,7 +496,7 @@ class RegistrationMainWindow(QMainWindow):
 
     def handle_mixture_results(self, result_data: GaussianMixtureWorker.ResultData):
 
-        if len(result_data.list_gaussian_first) > 1:
+        if len(self.pc_gaussian_list_first) > 1:
             base_pc_first = self.pc_gaussian_list_first[0]
             base_pc_second = self.pc_gaussian_list_second[0]
             base_open3d_first = self.pc_open3d_list_first[0]
@@ -509,8 +511,8 @@ class RegistrationMainWindow(QMainWindow):
             self.pc_gaussian_list_first.append(base_pc_first)
             self.pc_gaussian_list_second.append(base_pc_second)
 
-        self.pc_open3d_list_first.extend(result_data.list_gaussian_first)
-        self.pc_open3d_list_second.extend(result_data.list_gaussian_second)
+        self.pc_open3d_list_first.extend(result_data.list_open3d_first)
+        self.pc_open3d_list_second.extend(result_data.list_open3d_second)
         self.pc_gaussian_list_first.extend(result_data.list_gaussian_first)
         self.pc_gaussian_list_second.extend(result_data.list_gaussian_second)
 
