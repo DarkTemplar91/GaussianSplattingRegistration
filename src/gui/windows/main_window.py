@@ -127,7 +127,7 @@ class RegistrationMainWindow(QMainWindow):
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
-        self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.pop_visualizer)
+        self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.on_embed_button_pressed)
         self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 

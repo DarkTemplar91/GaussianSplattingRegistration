@@ -4,13 +4,16 @@ from subprocess import Popen, PIPE
 
 import numpy as np
 import open3d as o3d
-from PySide6.QtCore import Qt
+from PySide6 import QtWidgets, QtCore
+from PySide6.QtWidgets import QMainWindow
 
-if sys.platform.startswith('win'):
+platform = sys.platform
+if platform.startswith('win'):
     import win32gui
+    import win32con
 
-from PySide6 import QtGui, QtWidgets, QtCore
-from PySide6.QtWidgets import QMainWindow, QWidget
+if platform.startswith('linux'):
+    from Xlib import display, X
 
 
 class Open3DWindow(QMainWindow):
@@ -27,23 +30,17 @@ class Open3DWindow(QMainWindow):
 
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window()
-        self.is_embedded = True
+        self.is_embedded = False
+
+        self.parent_widget.setBaseSize(self.parent_widget.maximumSize())
 
         # Set background color to match theme
         background_color = (0.09803921568627451, 0.13725490196078433, 0.17647058823529413)
         opt = self.vis.get_render_option()
         opt.background_color = background_color
 
-        self.hwnd = None
-        platform = sys.platform
-        if platform.startswith("win"):
-            self.hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
-        elif platform.startswith("linux"):
-            self.hwnd = self.get_hwnd()
+        self.hwnd = self.get_hwnd()
 
-        self.window = QtGui.QWindow.fromWinId(self.hwnd)
-        self.window_container = self.createWindowContainer(self.window, self.parent_widget)
-        self.layout.addWidget(self.window_container, 0, 0)
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.update_vis)
         timer.start(1)
@@ -162,6 +159,16 @@ class Open3DWindow(QMainWindow):
     @staticmethod
     def get_hwnd():
         hwnd = None
+        if platform.startswith('win'):
+            hwnd = win32gui.FindWindowEx(0, 0, None, "Open3D")
+        elif platform.startswith('linux'):
+            hwnd = Open3DWindow.get_hwnd_linux()
+
+        return hwnd
+
+    @staticmethod
+    def get_hwnd_linux():
+        hwnd = None
         while hwnd is None:
             proc = Popen('wmctrl -l', stdin=None, stdout=PIPE, stderr=None, shell=True)
             out, err = proc.communicate()
@@ -191,15 +198,90 @@ class Open3DWindow(QMainWindow):
         view_control.convert_from_pinhole_camera_parameters(parameters)
         pass
 
-    def pop_visualizer(self):
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.is_embedded = self.embed_window()
+
+    def embed_window(self):
+        if platform.startswith('win'):
+            return self.__embed_window_win()
+
+        if platform.startswith('linux'):
+            return self.__embed_window_linux()
+
+    def pop_window(self):
+        if platform.startswith('win'):
+            return self.__pop_window_win()
+
+        if platform.startswith('linux'):
+            return self.__pop_window_linux()
+
+    def on_embed_button_pressed(self):
         if self.is_embedded:
-            self.layout.removeWidget(self.window_container)
-            self.window.setParent(None)
-            self.window.setFlags(Qt.WindowType.Window)
-            self.is_embedded = False
+            self.is_embedded = self.pop_window()
             return
 
-        self.window = QtGui.QWindow.fromWinId(self.hwnd)
-        self.window_container = self.createWindowContainer(self.window, self.parent_widget)
-        self.layout.addWidget(self.window_container, 0, 0)
-        self.is_embedded = True
+        self.is_embedded = self.embed_window()
+
+    def __embed_window_win(self):
+        if not self.hwnd:
+            return False
+
+        win32gui.SetWindowLong(
+            self.hwnd,
+            win32con.GWL_STYLE,
+            win32con.WS_VISIBLE | win32con.WS_CHILD
+        )
+
+        win32gui.SetParent(self.hwnd, self.parent_widget.winId())
+
+        # Resize and move the window to fit within the PySide6 window
+        rect = self.parent_widget.rect()
+        win32gui.MoveWindow(self.hwnd, rect.left(), rect.top(), rect.width(), rect.height(), True)
+
+        return True
+
+    def __embed_window_linux(self):
+        if not self.hwnd:
+            return False
+
+        dsp = display.Display()
+        app_window = dsp.create_resource_object('window', self.hwnd)
+        pyqt_window_id = self.parent_widget.winId()
+
+        app_window.reparent(pyqt_window_id, 0, 0)
+        app_window.map()
+
+        dsp.sync()
+
+        return True
+
+    def __pop_window_win(self):
+        if not self.hwnd:
+            return True
+
+        win32gui.SetWindowLong(
+            self.hwnd,
+            win32con.GWL_STYLE,
+            win32con.WS_VISIBLE | win32con.WS_OVERLAPPEDWINDOW
+        )
+
+        win32gui.SetParent(self.hwnd, win32gui.GetDesktopWindow())
+        win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
+
+        return False
+
+    def __pop_window_linux(self):
+        if not self.hwnd:
+            return True
+
+        dsp = display.Display()
+        app_window = dsp.create_resource_object('window', self.hwnd)
+
+        root = dsp.screen().root
+        app_window.reparent(root, 0, 0)
+
+        app_window.configure(stack_mode=X.Above)
+        dsp.sync()
+
+        return False
