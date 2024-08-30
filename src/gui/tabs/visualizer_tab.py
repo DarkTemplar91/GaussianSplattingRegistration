@@ -67,10 +67,12 @@ class VisualizerTab(QWidget):
         layout_form_color.addRow("Secondary debug color:", self.debug_color_dialog_second)
 
         view_group_widget = QGroupBox("View")
-        layout_group_box_view = QVBoxLayout(view_group_widget)
-        form_widget_view = QWidget()
-        layout_form_view = QFormLayout(form_widget_view)
+        layout_form_view = QFormLayout(view_group_widget)
         self.zoom_widget = SimpleInputField("1.0", 60, validator=double_validator)
+        zoom_layout = self.zoom_widget.layout()
+        margin = zoom_layout.getContentsMargins()
+        zoom_layout.setContentsMargins(margin[0], 0, margin[2], 0)
+        zoom_layout.setSpacing(0)
         self.front_widget = VectorWidget(3, [0, 0, -1], double_validator)
         self.lookat_widget = VectorWidget(3, [0, 0, 0], double_validator)
         self.up_widget = VectorWidget(3, [0, 1, 0], double_validator)
@@ -78,7 +80,6 @@ class VisualizerTab(QWidget):
         layout_form_view.addRow("Front:", self.front_widget)
         layout_form_view.addRow("Look at:", self.lookat_widget)
         layout_form_view.addRow("Up:", self.up_widget)
-        layout_group_box_view.addWidget(form_widget_view)
 
         button_apply = CustomPushButton("Apply", 90)
         button_apply.connect_to_clicked(self.apply_to_vis)
