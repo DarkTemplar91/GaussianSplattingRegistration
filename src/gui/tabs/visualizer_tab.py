@@ -1,7 +1,7 @@
 import numpy as np
 from PySide6 import QtCore
 from PySide6.QtCore import QLocale
-from PySide6.QtGui import QDoubleValidator
+from PySide6.QtGui import QDoubleValidator, Qt
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QGroupBox, QPushButton, QSizePolicy, \
     QStyle, QHBoxLayout
 
@@ -72,7 +72,6 @@ class VisualizerTab(QWidget):
         zoom_layout = self.zoom_widget.layout()
         margin = zoom_layout.getContentsMargins()
         zoom_layout.setContentsMargins(margin[0], 0, margin[2], 0)
-        zoom_layout.setSpacing(0)
         self.front_widget = VectorWidget(3, [0, 0, -1], double_validator)
         self.lookat_widget = VectorWidget(3, [0, 0, 0], double_validator)
         self.up_widget = VectorWidget(3, [0, 1, 0], double_validator)
@@ -89,6 +88,7 @@ class VisualizerTab(QWidget):
         layout.addWidget(titled_label_widget)
         layout.addWidget(self.form_widget_color)
         layout.addWidget(view_group_widget)
+        layout.addStretch()
         layout.addWidget(button_apply)
         layout.addWidget(button_copy)
 

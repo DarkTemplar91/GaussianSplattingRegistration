@@ -38,9 +38,10 @@ class VectorWidget(QWidget):
         self.values = np.zeros(cell_count, dtype=float)
 
         layout = QHBoxLayout(self)
-        margin = layout.getContentsMargins()
-        layout.setContentsMargins(margin[0], 0, margin[2],0 )
-        layout.setSpacing(0)
+        margin = layout.contentsMargins()
+        margin.setTop(0)
+        margin.setBottom(0)
+        layout.setContentsMargins(margin)
 
         for i in range(cell_count):
             line_edit = self.VectorCell(initial_values[i], i, validator)
