@@ -1,6 +1,7 @@
 import copy
 import sys
 from subprocess import Popen, PIPE
+from time import sleep
 
 import numpy as np
 import open3d as o3d
@@ -17,13 +18,13 @@ if platform.startswith('linux'):
 
 
 class Open3DWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, parent):
         super(Open3DWindow, self).__init__()
         self.pc1_copy = None
         self.pc2_copy = None
         self.pc1 = None
         self.pc2 = None
-
+        self.parent_window = parent
         self.parent_widget = QtWidgets.QWidget()
         self.layout = QtWidgets.QGridLayout(self.parent_widget)
         self.setCentralWidget(self.parent_widget)
@@ -251,6 +252,8 @@ class Open3DWindow(QMainWindow):
 
         app_window.reparent(pyqt_window_id, 0, 0)
         app_window.map()
+        rect = self.parent_widget.rect()
+        app_window.configure(width=rect.width(), height=rect.height())
 
         dsp.sync()
 

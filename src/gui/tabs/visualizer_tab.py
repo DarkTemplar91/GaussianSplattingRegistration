@@ -17,7 +17,6 @@ class VisualizerTab(QWidget):
     signal_get_current_view = QtCore.Signal()
     signal_pop_visualizer = QtCore.Signal()
 
-    # TODO: Consider not using QGroupBox
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
@@ -88,9 +87,9 @@ class VisualizerTab(QWidget):
         layout.addWidget(titled_label_widget)
         layout.addWidget(self.form_widget_color)
         layout.addWidget(view_group_widget)
-        layout.addStretch()
         layout.addWidget(button_apply)
         layout.addWidget(button_copy)
+        layout.addStretch()
 
     def apply_to_vis(self):
         use_debug_color = self.get_use_debug_color()

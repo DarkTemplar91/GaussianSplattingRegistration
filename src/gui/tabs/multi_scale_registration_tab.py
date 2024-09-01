@@ -15,7 +15,7 @@ class MultiScaleRegistrationTab(QWidget):
                                            list, list,
                                            KernelLossFunctionType, float, bool)
 
-    def __init__(self, input_path):
+    def __init__(self):
         super().__init__()
 
         registration_layout = QVBoxLayout()
@@ -63,8 +63,8 @@ class MultiScaleRegistrationTab(QWidget):
         layout_group_sparse = QFormLayout(self.widget_group_sparse)
 
         # File selectors for sparse input
-        self.fs_sparse1 = FileSelector(base_path=input_path)
-        self.fs_sparse2 = FileSelector(base_path=input_path)
+        self.fs_sparse1 = FileSelector()
+        self.fs_sparse2 = FileSelector()
 
         layout_group_sparse.addRow("First sparse input:", self.fs_sparse1)
         layout_group_sparse.addRow("Second sparse input:", self.fs_sparse2)

@@ -9,10 +9,9 @@ from src.gui.widgets.file_selector_widget import FileSelector
 class MergeTab(QWidget):
     signal_merge_point_clouds = QtCore.Signal(bool, str, str, str)
 
-    def __init__(self, merge_path="", input_path=""):
+    def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
 
         label_title = QLabel("Point cloud merging")
         label_title.setStyleSheet(
@@ -29,16 +28,15 @@ class MergeTab(QWidget):
         self.group_box_widget.toggled.connect(self.checkbox_changed)
         layout_group_box = QFormLayout(self.group_box_widget)
 
-        self.fs_input1 = FileSelector(input_path)
-        self.fs_input2 = FileSelector(input_path)
+        self.fs_input1 = FileSelector()
+        self.fs_input2 = FileSelector()
         layout_group_box.addRow("First point cloud:", self.fs_input1)
         layout_group_box.addRow("Second point cloud:", self.fs_input2)
 
         widget_save = QWidget()
         layout_save = QHBoxLayout(widget_save)
         label_save = QLabel("Save path:")
-        self.fs_merge = FileSelector(base_path=merge_path,
-                                     file_type=QFileDialog.FileMode.AnyFile)
+        self.fs_merge = FileSelector(file_type=QFileDialog.FileMode.AnyFile)
         layout_save.addWidget(label_save)
         layout_save.addWidget(self.fs_merge)
         bt_merge = CustomPushButton("Merge point clouds", 90)

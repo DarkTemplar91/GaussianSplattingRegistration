@@ -8,12 +8,12 @@ class ColorPicker(QWidget):
         super().__init__()
         self.color_debug = default_color
 
-        layout = QHBoxLayout()
-        self.setLayout(layout)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.color_box = QLineEdit()
         self.color_box.setFixedSize(QSize(20, 20))
-        self.color_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.color_box.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.color_box.setEnabled(False)
 
         x_arrstr = np.char.mod('%d', self.color_debug)

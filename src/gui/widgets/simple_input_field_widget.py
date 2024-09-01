@@ -7,8 +7,9 @@ class SimpleInputField(QWidget):
     def __init__(self, value, line_edit_width=60, validator=None):
         super().__init__()
 
-        layout = QHBoxLayout()
-        self.setLayout(layout)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
         self.lineedit = QLineEdit(value)
         self.lineedit.setFixedWidth(line_edit_width)
         self.lineedit.setValidator(validator)

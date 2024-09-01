@@ -7,8 +7,8 @@ class OptionalInputField(QWidget):
     def __init__(self, label_text, value, label_width=150, line_edit_width=60, validator=None):
         super().__init__()
 
-        layout = QHBoxLayout()
-        self.setLayout(layout)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.checkbox_optional = QCheckBox()
         self.checkbox_optional.setStyleSheet(

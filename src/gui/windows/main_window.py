@@ -2,12 +2,10 @@ import math
 import os
 
 import numpy as np
-from PySide6 import QtCore
-from PySide6.QtCore import Qt, QRect, QPoint
-from PySide6.QtWidgets import QMainWindow, QApplication, QVBoxLayout, QWidget, QSplitter, QGroupBox, \
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSplitter, QGroupBox, \
     QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
 
-from src.gui.tabs.cache_tab import CacheTab
 from src.gui.tabs.evaluation_tab import EvaluationTab
 from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
@@ -59,7 +57,6 @@ class RegistrationMainWindow(QMainWindow):
         self.local_registration_data = None
 
         # Tabs for the settings page
-        self.cache_tab = None
         self.input_tab = None
         self.merger_widget = None
         self.visualizer_widget = None
@@ -70,14 +67,9 @@ class RegistrationMainWindow(QMainWindow):
         # Image viewer
         self.raster_window = None
 
-        working_dir = os.getcwd()
-        self.cache_dir = os.path.join(working_dir, "cache")
-        self.input_dir = os.path.join(working_dir, "inputs")
-        self.output_dir = os.path.join(working_dir, "output")
-
         # Create splitter and two planes
         splitter = QSplitter(self)
-        self.pane_open3d = Open3DWindow()
+        self.pane_open3d = Open3DWindow(self)
         pane_data = QWidget()
 
         layout_pane = QVBoxLayout()
@@ -114,16 +106,15 @@ class RegistrationMainWindow(QMainWindow):
         tab_widget = QTabWidget()
         layout.addWidget(tab_widget)
 
-        self.input_tab = InputTab(self.input_dir)
-        self.cache_tab = CacheTab(self.cache_dir)
+        self.input_tab = InputTab()
         self.transformation_picker = Transformation3DPicker()
         self.visualizer_widget = VisualizerTab()
         self.rasterizer_tab = RasterizerTab()
-        self.merger_widget = MergeTab(self.output_dir, self.input_dir)
+        self.merger_widget = MergeTab()
 
         self.input_tab.signal_load_gaussian.connect(self.handle_gaussian_load)
         self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
-        self.cache_tab.signal_load_cached.connect(self.handle_cached_load)
+        self.input_tab.signal_load_cached.connect(self.handle_cached_load)
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
@@ -132,7 +123,6 @@ class RegistrationMainWindow(QMainWindow):
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
         tab_widget.addTab(self.input_tab, "I/O")
-        tab_widget.addTab(self.cache_tab, "Cache")
         tab_widget.addTab(self.transformation_picker, "Transformation")
         tab_widget.addTab(self.visualizer_widget, "Visualizer")
         tab_widget.addTab(self.rasterizer_tab, "Rasterizer")
@@ -154,7 +144,7 @@ class RegistrationMainWindow(QMainWindow):
         global_registration_widget.signal_do_ransac.connect(self.do_ransac_registration)
         global_registration_widget.signal_do_fgr.connect(self.do_fgr_registration)
 
-        multi_scale_registration_widget = MultiScaleRegistrationTab(self.input_dir)
+        multi_scale_registration_widget = MultiScaleRegistrationTab()
         multi_scale_registration_widget.signal_do_registration.connect(
             self.do_multiscale_registration)
 
@@ -188,7 +178,8 @@ class RegistrationMainWindow(QMainWindow):
         thread.start()
         progress_dialog.exec()
 
-    def handle_gaussian_load(self, gaussian_path_first, gaussian_path_second):
+    def handle_gaussian_load(self, gaussian_path_first, gaussian_path_second, save_o3d_pc):
+        # TODO: Save o3d point cloud
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
         worker = PointCloudLoaderGaussian(gaussian_path_first, gaussian_path_second)
         thread = move_worker_to_thread(worker, self.handle_result_gaussian, progress_handler=progress_dialog.setValue)

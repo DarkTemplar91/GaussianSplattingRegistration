@@ -85,6 +85,7 @@ class EvaluationTab(QWidget):
 
         layout.addWidget(input_group)
         layout.addWidget(evaluation_group)
+        layout.addStretch()
 
         self.button_load_cameras.connect_to_clicked(self.load_cameras_clicked)
         self.button_evaluate.connect_to_clicked(self.evaluate_registration)
