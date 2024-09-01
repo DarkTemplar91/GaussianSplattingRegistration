@@ -22,7 +22,7 @@ from src.gui.workers.qt_base_worker import move_worker_to_thread
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
 from src.gui.workers.qt_gaussian_mixture import GaussianMixtureWorker
-from src.gui.workers.qt_gaussian_saver import GaussianSaver
+from src.gui.workers.qt_gaussian_saver import GaussianSaverNormal, GaussianSaverUseCorresponding
 from src.gui.workers.qt_local_registrator import LocalRegistrator
 from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistratorVoxel, MultiScaleRegistratorMixture
 from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGaussian, PointCloudLoaderInput, \
@@ -246,38 +246,25 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_widget.set_visualizer_attributes(zoom, front, lookat, up)
 
     def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
-        pc_first = None
-        pc_second = None
-
-        # TODO: Move everything to worker...
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Saving merged point cloud...")
+        transformation = self.transformation_picker.transformation_matrix
         if use_corresponding_pc:
-            pc_first_ply = load_plyfile_pc(pc_path1)
-            pc_second_ply = load_plyfile_pc(pc_path2)
-            error_message = ("Importing one or both of the point clouds failed.\nPlease check that you entered the "
-                             "correct path and the point clouds selected are Gaussian point clouds!")
-            if (self.check_if_none_and_throw_error(pc_first_ply, pc_second_ply, error_message)
-                or not is_point_cloud_gaussian(pc_first_ply)) or not is_point_cloud_gaussian(pc_second_ply):
-                return
-
-            pc_first = GaussianModel(3)
-            pc_second = GaussianModel(3)
-            pc_first.from_ply(pc_first_ply)
-            pc_second.from_ply(pc_second_ply)
+            worker = GaussianSaverUseCorresponding(pc_path1, pc_path2, transformation, merge_path)
         elif len(self.pc_gaussian_list_second) != 0 and len(self.pc_gaussian_list_first) != 0:
             pc_first = self.pc_gaussian_list_first[self.current_index]
             pc_second = self.pc_gaussian_list_second[self.current_index]
-
-        error_message = ("There were no preloaded point clouds found! Load a Gaussian point cloud before merging, "
-                         "or check the \"corresponding inputs\" option and select the point clouds you wish to merge.")
-        if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
+            worker = GaussianSaverNormal(pc_first, pc_second, transformation, merge_path)
+        else:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("There were no preloaded point clouds found! Load a Gaussian point cloud before merging,"
+                               "or check the \"corresponding inputs\" option and select the point clouds you wish to "
+                               "merge.")
             return
 
-        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Saving merged point cloud...")
-        merged = GaussianModel.get_merged_gaussian_point_clouds(pc_first, pc_second,
-                                                                self.transformation_picker.transformation_matrix)
-
-        worker = GaussianSaver(merged, merge_path)
-        thread = move_worker_to_thread(worker, lambda *args: None, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(worker, lambda *args: None, error_handler=self.create_error_list_dialog,
+                                       progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 

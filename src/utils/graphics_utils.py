@@ -16,7 +16,7 @@ import torch
 
 
 def get_normals_from_covariance(covariance_mat):
-    eigen_values, eigen_vectors = torch.linalg.eigh(covariance_mat)
+    eigen_values, eigen_vectors = torch.linalg.eig(covariance_mat)
     min_eigenvalue_index = eigen_values.argsort()[:, 0]
     return eigen_vectors[torch.arange(eigen_values.shape[0]), :, min_eigenvalue_index]
 
