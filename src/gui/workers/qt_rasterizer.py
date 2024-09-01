@@ -2,7 +2,6 @@ import numpy as np
 import torch
 from PIL import Image
 from PySide6 import QtGui
-from PySide6.QtCore import QObject, Signal
 
 from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.cameras import Camera

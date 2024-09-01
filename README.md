@@ -27,9 +27,9 @@ There are three distinct types of point clouds supported. In the GUI application
     - Set up the view by hand or by using the "Copy current view" option
 3. At the registration group, you can select the registration type and their corresponding arguments.
     - For further information, please refer to the [Open3D documentation](https://www.open3d.org/docs/0.16.0/).
-5. Click start registration.
-6. Repeat the steps if necessary
-7. If needed, merge the point clouds.
+4. Click start registration.
+5. Repeat the steps if necessary
+6. If needed, merge the point clouds.
     - If the point clouds loaded are not Gaussian point clouds, you can select their corresponding point clouds and merge them using the transformation acquired via the registration.
 
 Initial | Global registration | Local registration

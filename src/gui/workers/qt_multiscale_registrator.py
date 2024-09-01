@@ -9,18 +9,15 @@ from src.utils.file_loader import load_sparse_pc
 from src.utils.local_registration_util import do_icp_registration
 
 
-# TODO: Use common base class
-class MultiScaleRegistratorVoxel(BaseWorker):
+class MultiScaleRegistratorBase(BaseWorker):
     class ResultData:
         def __init__(self, result, registration_data: MultiScaleRegistrationData):
             self.result = result
             self.registration_data = registration_data
 
-    def __init__(self, pc1, pc2, init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
-                 relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value):
+    def __init__(self, init_trans, use_corresponding, sparse_first, sparse_second, registration_type, relative_fitness,
+                 relative_rmse, voxel_values, iter_values, rejection_type, k_value):
         super().__init__()
-        self.pc1 = copy.deepcopy(pc1)
-        self.pc2 = copy.deepcopy(pc2)
         self.init_trans = init_trans
         self.use_corresponding = use_corresponding
         self.sparse_first_path = sparse_first
@@ -59,8 +56,20 @@ class MultiScaleRegistratorVoxel(BaseWorker):
             return
 
         registration_data = self.__create_dataclass_object(results)
-        self.signal_result.emit(MultiScaleRegistratorVoxel.ResultData(results, registration_data))
+        self.signal_result.emit(MultiScaleRegistratorBase.ResultData(results, registration_data))
         self.signal_finished.emit()
+
+    def update_progress(self):
+        self.current_progress += 1
+        new_percent = int(self.current_progress / self.max_progress * 100)
+        self.signal_progress.emit(new_percent)
+
+    def cancel(self):
+        self.signal_cancel = True
+
+    def emit_finished(self):
+        self.signal_finished.emit()
+        self.signal_progress.emit(100)
 
     def __register_sparse_point_clouds(self):
         sparse_pc1 = load_sparse_pc(self.sparse_first_path)
@@ -79,6 +88,25 @@ class MultiScaleRegistratorVoxel(BaseWorker):
 
         self.update_progress()
         return sparse_result.transformation
+
+    def __check_valid_data(self):
+        raise NotImplementedError
+
+    def __register_main_point_clouds(self, initial_transformation):
+        raise NotImplementedError
+
+    def __create_dataclass_object(self, results):
+        raise NotImplementedError
+
+
+class MultiScaleRegistratorVoxel(MultiScaleRegistratorBase):
+
+    def __init__(self, pc1, pc2, init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
+                 relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value):
+        super().__init__(init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
+                         relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value)
+        self.pc1 = copy.deepcopy(pc1)
+        self.pc2 = copy.deepcopy(pc2)
 
     def __check_valid_data(self):
         if len(self.iter_values) != len(self.voxel_values):
@@ -131,89 +159,16 @@ class MultiScaleRegistratorVoxel(BaseWorker):
                                           used_sparse_clouds=self.use_corresponding,
                                           used_gaussian_mixtures=False)
 
-    def update_progress(self):
-        self.current_progress += 1
-        new_percent = int(self.current_progress / self.max_progress * 100)
-        self.signal_progress.emit(new_percent)
 
-    def cancel(self):
-        self.signal_cancel = True
-
-    def emit_finished(self):
-        self.signal_finished.emit()
-        self.signal_progress.emit(100)
-
-
-class MultiScaleRegistratorMixture(BaseWorker):
-    class ResultData:
-        def __init__(self, result, registration_data: MultiScaleRegistrationData):
-            self.result = result
-            self.registration_data = registration_data
+class MultiScaleRegistratorMixture(MultiScaleRegistratorBase):
 
     def __init__(self, pc1_list, pc2_list, init_trans, use_corresponding, sparse_first, sparse_second,
                  registration_type,
                  relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value):
-        super().__init__()
+        super().__init__(init_trans, use_corresponding, sparse_first, sparse_second, registration_type,
+                         relative_fitness, relative_rmse, voxel_values, iter_values, rejection_type, k_value)
         self.pc1_list = pc1_list
         self.pc2_list = pc2_list
-        self.init_trans = init_trans
-        self.use_corresponding = use_corresponding
-        self.sparse_first_path = sparse_first
-        self.sparse_second_path = sparse_second
-        self.registration_type = registration_type
-        self.relative_fitness = relative_fitness
-        self.relative_rmse = relative_rmse
-        self.voxel_values = voxel_values
-        self.iter_values = iter_values
-        self.rejection_type = rejection_type
-        self.k_value = k_value
-
-        self.current_progress = 0
-        self.max_progress = len(iter_values)
-        self.max_progress += 1 if self.use_corresponding else 0
-        self.signal_cancel = False
-
-    def do_registration(self):
-        current_trans = self.init_trans
-
-        if self.__check_valid_data() is False:
-            self.emit_finished()
-            return
-
-        if self.use_corresponding:
-            current_trans = self.__register_sparse_point_clouds()
-
-        QtWidgets.QApplication.processEvents()
-        if self.signal_cancel:
-            self.emit_finished()
-            return
-
-        results = self.__register_main_point_clouds(current_trans)
-        if results is None:
-            self.emit_finished()
-            return
-
-        registration_data = self.__create_dataclass_object(results)
-        self.signal_result.emit(results, registration_data)
-        self.signal_finished.emit()
-
-    def __register_sparse_point_clouds(self):
-        sparse_pc1 = load_sparse_pc(self.sparse_first_path)
-        sparse_pc2 = load_sparse_pc(self.sparse_second_path)
-
-        if not sparse_pc1 or not sparse_pc2:
-            self.signal_error.emit(["Point clouds provided as sparse were of a different type"])
-            self.emit_finished()
-            return None
-
-        # Use first correspondence and iterations from list
-        sparse_result = do_icp_registration(sparse_pc1, sparse_pc2, self.init_trans, self.registration_type,
-                                            self.voxel_values[0], self.relative_fitness,
-                                            self.relative_rmse, self.iter_values[0],
-                                            self.rejection_type, self.k_value)
-
-        self.update_progress()
-        return sparse_result.transformation
 
     def __check_valid_data(self):
         if len(self.pc1_list) != len(self.pc2_list):
@@ -289,15 +244,3 @@ class MultiScaleRegistratorMixture(BaseWorker):
                                           voxel_values=self.voxel_values, iteration_values=self.iter_values,
                                           used_sparse_clouds=self.use_corresponding,
                                           used_gaussian_mixtures=True)
-
-    def update_progress(self):
-        self.current_progress += 1
-        new_percent = int(self.current_progress / self.max_progress * 100)
-        self.signal_progress.emit(new_percent)
-
-    def cancel(self):
-        self.signal_cancel = True
-
-    def emit_finished(self):
-        self.signal_finished.emit()
-        self.signal_progress.emit(100)

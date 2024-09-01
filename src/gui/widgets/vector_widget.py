@@ -1,13 +1,11 @@
 import numpy as np
 from PySide6 import QtCore
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit, QSizePolicy
-import src.utils.graphics_utils as graphic_util
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit
 
 
 class VectorWidget(QWidget):
     class VectorCell(QLineEdit):
-
         value_changed = QtCore.Signal(int, float)
 
         def __init__(self, value, cell_id, validator):

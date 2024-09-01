@@ -1,5 +1,4 @@
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit, QCheckBox
-import src.utils.graphics_utils as graphic_util
 
 
 class OptionalInputField(QWidget):
@@ -11,12 +10,6 @@ class OptionalInputField(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.checkbox_optional = QCheckBox()
-        self.checkbox_optional.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-        )
 
         label = QLabel(label_text)
         label.setFixedWidth(label_width)

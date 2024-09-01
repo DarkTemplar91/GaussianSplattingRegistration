@@ -1,8 +1,8 @@
 from PySide6 import QtCore
 from PySide6.QtCore import QLocale, QRegularExpression
 from PySide6.QtGui import QDoubleValidator, QRegularExpressionValidator
-from PySide6.QtWidgets import (QWidget, QLabel, QVBoxLayout, QComboBox, QCheckBox, QSizePolicy, QPushButton,
-                               QFrame, QScrollArea, QFormLayout, QGroupBox)
+from PySide6.QtWidgets import (QWidget, QLabel, QVBoxLayout, QComboBox, QSizePolicy, QFrame, QScrollArea, QFormLayout,
+                               QGroupBox)
 
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector

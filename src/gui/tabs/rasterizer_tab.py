@@ -1,12 +1,12 @@
 import numpy as np
-from PySide6.QtCore import Signal, QLocale
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QIntValidator, QDoubleValidator
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QRadioButton, QButtonGroup, \
     QHBoxLayout, QGroupBox, QFormLayout
 
 import src.utils.graphics_utils as graphic_util
-from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.color_picker_widget import ColorPicker
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 
@@ -15,16 +15,9 @@ class RasterizerTab(QWidget):
 
     def __init__(self):
         super().__init__()
-
-        locale = QLocale(QLocale.Language.C)
-        locale.setNumberOptions(QLocale.NumberOption.RejectGroupSeparator)
         int_validator = QIntValidator(0, 4096)
-        int_validator.setLocale(locale)
         double_validator = QDoubleValidator(0.0, 10.0, 10)
-        double_validator.setLocale(locale)
-
-        layout_main = QVBoxLayout()
-        self.setLayout(layout_main)
+        layout_main = QVBoxLayout(self)
 
         label_res = QLabel("Rasterization")
         label_res.setStyleSheet(

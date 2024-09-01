@@ -1,10 +1,9 @@
-from PySide6.QtCore import QLocale, Qt, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QDoubleValidator, QIntValidator
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy, QSlider, QLabel, QFormLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QSlider, QLabel, QFormLayout
 
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
-import src.utils.graphics_utils as graphic_util
 
 
 class GaussianMixtureTab(QWidget):
@@ -13,19 +12,9 @@ class GaussianMixtureTab(QWidget):
 
     def __init__(self):
         super().__init__()
-
-        locale = QLocale(QLocale.Language.C)
-        double_validator = QDoubleValidator()
-        double_validator.setLocale(locale)
-        double_validator.setRange(0.0, 9999.0)
-        double_validator.setDecimals(10)
-
-        int_validator = QIntValidator()
-        int_validator.setLocale(locale)
-        int_validator.setRange(0, 10)
-
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        double_validator = QDoubleValidator(0.0, 9999.0, 10)
+        int_validator = QIntValidator(0, 10)
+        layout = QVBoxLayout(self)
 
         self.hem_reduction_field = SimpleInputField("3.0", validator=double_validator)
         self.distance_field = SimpleInputField("3.0", validator=double_validator)

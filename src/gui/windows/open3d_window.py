@@ -1,7 +1,6 @@
 import copy
 import sys
 from subprocess import Popen, PIPE
-from time import sleep
 
 import numpy as np
 import open3d as o3d

@@ -1,5 +1,5 @@
 from PySide6 import QtCore
-from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QCheckBox, QErrorMessage, \
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QErrorMessage, \
     QFileDialog, QGroupBox, QFormLayout, QHBoxLayout
 
 from src.gui.widgets.custom_push_button import CustomPushButton

@@ -1,9 +1,9 @@
 import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import Qt, QLocale
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QDoubleValidator, QGuiApplication
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, \
-    QTableWidget, QGridLayout, QLineEdit
+    QGridLayout, QLineEdit
 
 from src.gui.widgets.custom_push_button import CustomPushButton
 
@@ -17,12 +17,7 @@ class Transformation3DPicker(QWidget):
 
         def __init__(self, value=0.0):
             super().__init__()
-
-            locale = QLocale(QLocale.Language.C)
-            double_validator = QDoubleValidator()
-            double_validator.setLocale(locale)
-            double_validator.setRange(-9999.0, 9999.0)
-            double_validator.setDecimals(10)
+            double_validator = QDoubleValidator(-9999.0, 9999.0, 10)
 
             self.row = int(Transformation3DPicker.MatrixCell.cell_number / 4)
             self.col = self.cell_number % 4
@@ -72,17 +67,14 @@ class Transformation3DPicker(QWidget):
             }"""
         )
 
-        self.matrix_table = QTableWidget(4, 4)
-
         self.matrix_widget = QWidget()
         grid_layout = QGridLayout(self.matrix_widget)
-
-        self.cells = []
         self.transformation_matrix = np.array([[1, 0, 0, 0],
                                                [0, 1, 0, 0],
                                                [0, 0, 1, 0],
                                                [0, 0, 0, 1]], dtype=float)
 
+        self.cells = []
         for iRow in range(4):
             for iCol in range(4):
                 cell = self.MatrixCell(self.transformation_matrix[iRow, iCol])
@@ -117,8 +109,7 @@ class Transformation3DPicker(QWidget):
         self.transformation_matrix_changed.emit(self.transformation_matrix)
 
     def reset_transformation(self):
-        tranformation_matrix = np.eye(4)
-        self.set_transformation(tranformation_matrix)
+        self.set_transformation(np.eye(4))
 
     def copy_to_clipboard(self):
         clipboard = QGuiApplication.clipboard()

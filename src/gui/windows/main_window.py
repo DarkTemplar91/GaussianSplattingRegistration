@@ -1,5 +1,4 @@
 import math
-import os
 
 import numpy as np
 from PySide6.QtCore import Qt
@@ -195,13 +194,11 @@ class RegistrationMainWindow(QMainWindow):
 
     def handle_result_sparse(self, sparse_result):
         self.transformation_picker.reset_transformation()
-        self.handle_point_cloud_loading(sparse_result.point_cloud_first, sparse_result.point_cloud_second,
-                                        False)
+        self.handle_point_cloud_loading(sparse_result.point_cloud_first, sparse_result.point_cloud_second)
 
     def handle_result_gaussian(self, gaussian_result, save_o3d_point_clouds):
         self.transformation_picker.reset_transformation()
         self.handle_point_cloud_loading(gaussian_result.o3d_point_cloud_first, gaussian_result.o3d_point_cloud_second,
-                                        False,
                                         gaussian_result.gaussian_point_cloud_first,
                                         gaussian_result.gaussian_point_cloud_second)
 
@@ -214,10 +211,9 @@ class RegistrationMainWindow(QMainWindow):
 
     def handle_result_cached(self, cached_result):
         self.transformation_picker.reset_transformation()
-        self.handle_point_cloud_loading(cached_result.point_cloud_first, cached_result.point_cloud_first,
-                                        False)
+        self.handle_point_cloud_loading(cached_result.point_cloud_first, cached_result.point_cloud_first)
 
-    def handle_point_cloud_loading(self, pc_first, pc_second, save_point_clouds, original1=None, original2=None):
+    def handle_point_cloud_loading(self, pc_first, pc_second, original1=None, original2=None):
         error_message = ('Importing one or both of the point clouds failed.\nPlease check that you entered the correct '
                          'path and the point clouds are of the appropriate type!')
         if self.check_if_none_and_throw_error(pc_first, pc_second, error_message):
@@ -237,10 +233,6 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_gaussian_list_second.append(original2)
         self.pc_open3d_list_first.append(pc_first)
         self.pc_open3d_list_second.append(pc_second)
-
-        if save_point_clouds:
-            worker = PointCloudSaver(pc_first, pc_second)
-            worker.start()
 
         self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
@@ -446,28 +438,6 @@ class RegistrationMainWindow(QMainWindow):
         thread.start()
         progress_dialog.exec()
 
-    def handle_evaluation_result(self, log_object):
-        message_dialog = QMessageBox()
-        message_dialog.setModal(True)
-        message_dialog.setWindowTitle("Evaluation finished")
-        message = "The evaluation finished with"
-        if not math.isnan(log_object.psnr):
-            message += " success.\n"
-            message += f"\nMSE:  {log_object.mse}"
-            message += f"\nRMSE: {log_object.rmse}"
-            message += f"\nSSIM: {log_object.ssim}"
-            message += f"\nPSNR: {log_object.psnr}"
-            message += f"\nLPIP: {log_object.lpips}"
-        else:
-            message += " error."
-
-        if log_object.error_list:
-            message += "\nClick \"Show details\" for any potential issues."
-            message_dialog.setDetailedText("\n".join(log_object.error_list))
-
-        message_dialog.setText(message)
-        message_dialog.exec()
-
     def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
         pc1 = pc2 = None
 
@@ -531,14 +501,6 @@ class RegistrationMainWindow(QMainWindow):
         self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True,
                                            self.transformation_picker.transformation_matrix, dc1, dc2)
 
-    def create_error_list_dialog(self, error_list):
-        message_dialog = QMessageBox()
-        message_dialog.setModal(True)
-        message_dialog.setWindowTitle("Error occurred")
-        message_dialog.setText("The following error(s) occurred.\n Click \"Show details\" for more information!")
-        message_dialog.setDetailedText("\n".join(error_list))
-        message_dialog.exec()
-
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:
             # TODO: Further error messages. Tracing?
@@ -553,3 +515,35 @@ class RegistrationMainWindow(QMainWindow):
     def closeEvent(self, event):
         self.pane_open3d.close()
         super(QMainWindow, self).closeEvent(event)
+
+    @staticmethod
+    def create_error_list_dialog(error_list):
+        message_dialog = QMessageBox()
+        message_dialog.setModal(True)
+        message_dialog.setWindowTitle("Error occurred")
+        message_dialog.setText("The following error(s) occurred.\n Click \"Show details\" for more information!")
+        message_dialog.setDetailedText("\n".join(error_list))
+        message_dialog.exec()
+
+    @staticmethod
+    def handle_evaluation_result(log_object):
+        message_dialog = QMessageBox()
+        message_dialog.setModal(True)
+        message_dialog.setWindowTitle("Evaluation finished")
+        message = "The evaluation finished with"
+        if not math.isnan(log_object.psnr):
+            message += " success.\n"
+            message += f"\nMSE:  {log_object.mse}"
+            message += f"\nRMSE: {log_object.rmse}"
+            message += f"\nSSIM: {log_object.ssim}"
+            message += f"\nPSNR: {log_object.psnr}"
+            message += f"\nLPIP: {log_object.lpips}"
+        else:
+            message += " error."
+
+        if log_object.error_list:
+            message += "\nClick \"Show details\" for any potential issues."
+            message_dialog.setDetailedText("\n".join(log_object.error_list))
+
+        message_dialog.setText(message)
+        message_dialog.exec()

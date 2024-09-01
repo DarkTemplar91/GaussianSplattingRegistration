@@ -49,12 +49,6 @@ class InputTab(QWidget):
         self.fs_pc2 = FileSelector()
         bt_gaussian = CustomPushButton("Import gaussian point clouds", 90)
         checkbox_cache = QCheckBox()
-        checkbox_cache.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-        )
 
         layout_input_form.addRow("First point cloud:", self.fs_pc1)
         layout_input_form.addRow("Second point cloud:", self.fs_pc2)

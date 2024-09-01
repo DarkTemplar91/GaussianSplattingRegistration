@@ -12,7 +12,6 @@
 import numpy as np
 import torch
 from plyfile import PlyElement, PlyData
-from torch import nn
 
 from src.models.gaussian_mixture_level import GaussianMixtureModel
 from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \

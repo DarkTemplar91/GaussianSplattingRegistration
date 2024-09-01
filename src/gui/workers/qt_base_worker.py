@@ -1,4 +1,4 @@
-from PySide6.QtCore import Signal, QObject, QRunnable, QThread
+from PySide6.QtCore import Signal, QObject, QThread
 
 
 class BaseWorker(QObject):

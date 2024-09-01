@@ -2,16 +2,15 @@ import json
 import os.path
 
 import torch
+import torchvision.transforms.functional as tf
 from PIL import Image
 from PySide6 import QtWidgets
-from PySide6.QtCore import QObject, Signal
-import torchvision.transforms.functional as tf
 
 from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.gaussian_model import GaussianModel
-from src.utils.rasterization_util import rasterize_image
 from src.submodules.lpips_pytorch import lpips
 from src.utils.evaluation_utils import ssim, psnr, mse
+from src.utils.rasterization_util import rasterize_image
 
 
 class RegistrationEvaluator(BaseWorker):

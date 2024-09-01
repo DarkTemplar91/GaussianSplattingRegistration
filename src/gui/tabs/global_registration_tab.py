@@ -1,11 +1,10 @@
-from PySide6.QtCore import QLocale, Signal, Qt
+from PySide6.QtCore import Signal
 from PySide6.QtGui import QDoubleValidator, QIntValidator
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QComboBox, QWidget, QCheckBox, QSizePolicy, \
-    QScrollArea, QPushButton, QStackedWidget, QHBoxLayout, QFormLayout, QGroupBox, QFrame
+    QScrollArea, QStackedWidget, QFormLayout, QGroupBox, QFrame
 from open3d.cpu.pybind.pipelines.registration import CorrespondenceCheckerBasedOnEdgeLength, \
     CorrespondenceCheckerBasedOnDistance, CorrespondenceCheckerBasedOnNormal
 
-import src.utils.graphics_utils as graphic_util
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.optional_value_widget import OptionalInputField
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
@@ -40,15 +39,8 @@ class GlobalRegistrationTab(QWidget):
         self.max_correspondence_ransac_widget = None
         self.checkbox_mutual = None
 
-        locale = QLocale(QLocale.Language.C)
-        self.double_validator = QDoubleValidator()
-        self.double_validator.setLocale(locale)
-        self.double_validator.setRange(0.0, 9999.0)
-        self.double_validator.setDecimals(10)
-
-        self.int_validator = QIntValidator()
-        self.int_validator.setLocale(locale)
-        self.int_validator.setRange(0, 999999999)
+        self.double_validator = QDoubleValidator(0.0, 9999.0, 10)
+        self.int_validator = QIntValidator(0, 999999999)
 
         registration_layout = QVBoxLayout(self)
 
@@ -57,16 +49,15 @@ class GlobalRegistrationTab(QWidget):
         scroll_widget.setFrameShape(QFrame.Shape.NoFrame)
         scroll_widget.setWidgetResizable(True)
 
-        layout = QVBoxLayout()
         inner_widget = QWidget()
-        inner_widget.setLayout(layout)
+        layout = QVBoxLayout(inner_widget)
         scroll_widget.setWidget(inner_widget)
 
         # Stack for switching between RANSAC and FGR
         self.stack = QStackedWidget()
         self.stack.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        widget_global = QWidget()
+        widget_global = QGroupBox()
         layout_global = QFormLayout(widget_global)
 
         self.combo_box_global = QComboBox()
@@ -123,12 +114,6 @@ class GlobalRegistrationTab(QWidget):
         options_widget = QGroupBox("Options")
         layout_options = QFormLayout(options_widget)
         self.checkbox_mutual = QCheckBox()
-        self.checkbox_mutual.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-        )
 
         self.max_correspondence_ransac_widget = SimpleInputField("5.0", validator=self.double_validator)
 
@@ -176,19 +161,7 @@ class GlobalRegistrationTab(QWidget):
 
         self.division_factor_widget = SimpleInputField("1.4", validator=self.double_validator)
         self.checkbox_use_absolute_scale = QCheckBox()
-        self.checkbox_use_absolute_scale.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-        )
         self.checkbox_decrease_mu = QCheckBox()
-        self.checkbox_decrease_mu.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-        )
         self.maximum_correspondence_fgr_widget = SimpleInputField("0.025", validator=self.double_validator)
         self.max_iterations_fgr_widget = SimpleInputField("64", validator=self.int_validator)
         self.tuple_scale_widget = SimpleInputField("0.95", validator=self.double_validator)
@@ -196,12 +169,6 @@ class GlobalRegistrationTab(QWidget):
 
         self.checkbox_tuple_test = QCheckBox()
         self.checkbox_tuple_test.setChecked(True)
-        self.checkbox_tuple_test.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-        )
 
         layout_options.addRow("Division factor:", self.division_factor_widget)
         layout_options.addRow("Use absolute scale:", self.checkbox_use_absolute_scale)

@@ -1,6 +1,6 @@
 import copy
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import Signal
 
 from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.registration_data import LocalRegistrationData

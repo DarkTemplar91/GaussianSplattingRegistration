@@ -1,5 +1,4 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
-import src.utils.graphics_utils as graphic_util
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit
 
 
 class SimpleInputField(QWidget):

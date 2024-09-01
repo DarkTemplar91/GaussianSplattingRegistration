@@ -1,7 +1,6 @@
-from PySide6 import QtCore, QtGui
-from PySide6.QtCore import QLocale
+from PySide6 import QtCore
 from PySide6.QtGui import QDoubleValidator, QIntValidator
-from PySide6.QtWidgets import QWidget, QPushButton, QVBoxLayout, QSizePolicy, \
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, \
     QComboBox, QScrollArea, QFrame, QFormLayout, QGroupBox, QStackedWidget, QLabel
 
 from src.gui.widgets.custom_push_button import CustomPushButton
@@ -15,17 +14,8 @@ class LocalRegistrationTab(QWidget):
 
     def __init__(self):
         super().__init__()
-
-        locale = QLocale(QLocale.Language.C)
-        double_validator = QDoubleValidator()
-        double_validator.setLocale(locale)
-        double_validator.setRange(0.0, 9999.0)
-        double_validator.setDecimals(10)
-
-        int_validator = QIntValidator()
-        int_validator.setLocale(locale)
-        int_validator.setRange(0, 9999)
-
+        double_validator = QDoubleValidator(0.0, 9999.0, 10)
+        int_validator = QIntValidator(0, 9999)
         registration_layout = QVBoxLayout(self)
 
         scroll_widget = QScrollArea()
@@ -33,9 +23,8 @@ class LocalRegistrationTab(QWidget):
         scroll_widget.setFrameShape(QFrame.Shape.NoFrame)
         scroll_widget.setWidgetResizable(True)
 
-        layout = QVBoxLayout()
         inner_widget = QWidget()
-        inner_widget.setLayout(layout)
+        layout = QVBoxLayout(inner_widget)
         scroll_widget.setWidget(inner_widget)
 
         self.combo_box_icp = QComboBox()
@@ -46,7 +35,7 @@ class LocalRegistrationTab(QWidget):
         # Max correspondence
         self.correspondence_widget = SimpleInputField("5.0", 60, double_validator)
 
-        widget_local = QWidget()
+        widget_local = QGroupBox()
         layout_local = QFormLayout(widget_local)
         layout_local.addRow("Local registration type:", self.combo_box_icp)
         layout_local.addRow("Max correspondence:", self.correspondence_widget)

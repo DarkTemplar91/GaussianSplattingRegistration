@@ -1,5 +1,4 @@
 import torch
-from PySide6.QtCore import QObject, Signal
 
 from src.gui.workers.qt_base_worker import BaseWorker
 

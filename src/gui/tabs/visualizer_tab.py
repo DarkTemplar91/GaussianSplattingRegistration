@@ -1,7 +1,6 @@
 import numpy as np
 from PySide6 import QtCore
-from PySide6.QtCore import QLocale
-from PySide6.QtGui import QDoubleValidator, Qt
+from PySide6.QtGui import QDoubleValidator
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QGroupBox, QPushButton, QSizePolicy, \
     QStyle, QHBoxLayout
 
@@ -19,14 +18,8 @@ class VisualizerTab(QWidget):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        locale = QLocale(QLocale.Language.C)
-        double_validator = QDoubleValidator()
-        double_validator.setLocale(locale)
-        double_validator.setRange(-9999.0, 9999.0)
-        double_validator.setDecimals(10)
+        layout = QVBoxLayout(self)
+        double_validator = QDoubleValidator(-9999.0, 9999.0, 10)
 
         label_title = QLabel("Visualization")
         label_title.setStyleSheet(
@@ -71,9 +64,9 @@ class VisualizerTab(QWidget):
         zoom_layout = self.zoom_widget.layout()
         margin = zoom_layout.getContentsMargins()
         zoom_layout.setContentsMargins(margin[0], 0, margin[2], 0)
-        self.front_widget = VectorWidget(3, [0, 0, -1], double_validator)
-        self.lookat_widget = VectorWidget(3, [0, 0, 0], double_validator)
-        self.up_widget = VectorWidget(3, [0, 1, 0], double_validator)
+        self.front_widget = VectorWidget(3, [0.0, 0.0, -1.0], double_validator)
+        self.lookat_widget = VectorWidget(3, [0.0, 0.0, 0.0], double_validator)
+        self.up_widget = VectorWidget(3, [0.0, 1.0, 0.0], double_validator)
         layout_form_view.addRow("Zoom:", self.zoom_widget)
         layout_form_view.addRow("Front:", self.front_widget)
         layout_form_view.addRow("Look at:", self.lookat_widget)

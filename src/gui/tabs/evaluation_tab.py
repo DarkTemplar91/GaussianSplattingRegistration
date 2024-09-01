@@ -3,15 +3,15 @@ import os.path
 
 import numpy as np
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, QSizePolicy, QFileDialog, QGroupBox, QHBoxLayout,
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QFileDialog, QGroupBox, QHBoxLayout,
                                QLabel, QSpinBox, QLineEdit, QErrorMessage, QCheckBox, QFormLayout)
 
+import src.utils.graphics_utils as graphic_util
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
 from src.models.cameras import Camera
 from src.utils.general_utils import convert_to_camera_transform
-import src.utils.graphics_utils as graphic_util
 
 
 class EvaluationTab(QWidget):
@@ -20,11 +20,18 @@ class EvaluationTab(QWidget):
 
     def __init__(self):
         super().__init__()
-
         self.error_message = None
         self.cameras_list = []
-
         layout = QVBoxLayout(self)
+
+        label_title = QLabel("Evaluation")
+        label_title.setStyleSheet(
+            """QLabel {
+                font-size: 12pt;
+                font-weight: bold;
+                padding-bottom: 0.5em;
+            }"""
+        )
 
         input_group = QGroupBox("Cameras")
         input_layout = QFormLayout(input_group)
@@ -66,15 +73,7 @@ class EvaluationTab(QWidget):
         self.fs_log = FileSelector(name_filter="Log files (*.txt *.log);;*.txt;;*.log",
                                    file_type=QFileDialog.FileMode.AnyFile)
         self.render_color = ColorPicker(np.zeros(3))
-
         self.checkbox_gpu = QCheckBox()
-        self.checkbox_gpu.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: 20px;"
-            f"    height: 20px;"
-            "}"
-        )
-
         self.button_evaluate = CustomPushButton("Evaluate", 100)
 
         evaluation_layout.addRow("Images folder:", self.fs_images)
@@ -83,6 +82,7 @@ class EvaluationTab(QWidget):
         evaluation_layout.addRow("Use GPU for evaluation:", self.checkbox_gpu)
         evaluation_layout.addRow(self.button_evaluate)
 
+        layout.addWidget(label_title)
         layout.addWidget(input_group)
         layout.addWidget(evaluation_group)
         layout.addStretch()
