@@ -179,10 +179,10 @@ class RegistrationMainWindow(QMainWindow):
         progress_dialog.exec()
 
     def handle_gaussian_load(self, gaussian_path_first, gaussian_path_second, save_o3d_pc):
-        # TODO: Save o3d point cloud
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
         worker = PointCloudLoaderGaussian(gaussian_path_first, gaussian_path_second)
-        thread = move_worker_to_thread(worker, self.handle_result_gaussian, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(worker, lambda result: self.handle_result_gaussian(result, save_o3d_pc),
+                                       progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -198,12 +198,19 @@ class RegistrationMainWindow(QMainWindow):
         self.handle_point_cloud_loading(sparse_result.point_cloud_first, sparse_result.point_cloud_second,
                                         False)
 
-    def handle_result_gaussian(self, gaussian_result):
+    def handle_result_gaussian(self, gaussian_result, save_o3d_point_clouds):
         self.transformation_picker.reset_transformation()
         self.handle_point_cloud_loading(gaussian_result.o3d_point_cloud_first, gaussian_result.o3d_point_cloud_second,
                                         False,
                                         gaussian_result.gaussian_point_cloud_first,
                                         gaussian_result.gaussian_point_cloud_second)
+
+        if save_o3d_point_clouds:
+            progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Saving open3D point clouds...")
+            worker = PointCloudSaver(gaussian_result.o3d_point_cloud_first, gaussian_result.o3d_point_cloud_first)
+            thread = move_worker_to_thread(worker, lambda *args: None, progress_handler=progress_dialog.setValue)
+            thread.start()
+            progress_dialog.exec()
 
     def handle_result_cached(self, cached_result):
         self.transformation_picker.reset_transformation()

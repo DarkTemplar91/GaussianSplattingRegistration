@@ -68,7 +68,7 @@ class PointCloudLoaderO3D(BaseWorker):
         self.signal_finished.emit()
 
 
-class PointCloudSaver(QThread):
+class PointCloudSaver(BaseWorker):
 
     def __init__(self, point_cloud1, point_cloud2):
         super().__init__()
@@ -77,3 +77,5 @@ class PointCloudSaver(QThread):
 
     def run(self):
         save_point_clouds_to_cache(self.point_cloud1, self.point_cloud2)
+        self.signal_progress.emit(100)
+        self.signal_finished.emit()
