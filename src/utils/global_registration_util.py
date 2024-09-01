@@ -14,7 +14,7 @@ class GlobalRegistrationType(Enum):
         self.instance_name = name
 
     RANSAC = "RANSAC"
-    FGR = "Fast global registration"
+    FGR = "FGR"
 
 
 class RANSACEstimationMethod(Enum):
@@ -29,8 +29,8 @@ class RANSACEstimationMethod(Enum):
 
     TransformationEstimationPointToPoint = "Point-To-Point"
     TransformationEstimationPointToPlane = "Point-To-Plane"
-    TransformationEstimationForGeneralizedICP = "For Generalized ICP"
-    TransformationEstimationForColoredICP = "For Colored ICP"
+    TransformationEstimationForGeneralizedICP = "For GICP"
+    TransformationEstimationForColoredICP = "For CICP"
 
 
 def get_estimation_method_from_enum(estimation_method):

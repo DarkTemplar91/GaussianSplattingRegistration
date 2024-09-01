@@ -2,23 +2,18 @@ import json
 import os.path
 
 import torch
-from PIL import Image
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QObject, pyqtSignal
 import torchvision.transforms.functional as tf
+from PIL import Image
+from PySide6 import QtWidgets
 
+from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.gaussian_model import GaussianModel
-from src.utils.rasterization_util import rasterize_image
 from src.submodules.lpips_pytorch import lpips
 from src.utils.evaluation_utils import ssim, psnr, mse
+from src.utils.rasterization_util import rasterize_image
 
 
-class RegistrationEvaluator(QObject):
-    signal_finished = pyqtSignal()
-    signal_evaluation_done = pyqtSignal(object)
-
-    signal_update_progress = pyqtSignal(int)
-
+class RegistrationEvaluator(BaseWorker):
     def __init__(self, pc1, pc2, transformation, cameras_list, images_path, log_path, color, registration_result,
                  use_gpu):
 
@@ -49,7 +44,7 @@ class RegistrationEvaluator(QObject):
         self.current_progress = 0
         self.max_progress = len(cameras_list)
 
-    def do_evaluation(self):
+    def run(self):
         point_cloud = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, self.transformation)
         point_cloud.move_to_device(self.device)
 
@@ -114,7 +109,8 @@ class RegistrationEvaluator(QObject):
         import gc
         gc.collect()
 
-        self.signal_evaluation_done.emit(log)
+        self.signal_result.emit(log)
+        self.signal_progress.emit(100)
         self.signal_finished.emit()
 
     def cancel_evaluation(self):
@@ -123,7 +119,7 @@ class RegistrationEvaluator(QObject):
     def update_progress(self):
         self.current_progress += 1
         new_percent = int(self.current_progress / self.max_progress * 100)
-        self.signal_update_progress.emit(new_percent)
+        self.signal_progress.emit(new_percent)
 
     def create_and_save_log_file(self, error_list):
         evaluation = self.EvaluationObject(self.registration_result, self.mean_mses, self.mean_rmses,

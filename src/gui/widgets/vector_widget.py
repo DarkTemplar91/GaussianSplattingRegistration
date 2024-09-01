@@ -1,22 +1,18 @@
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QLineEdit
-import src.utils.graphics_utils as graphic_util
+from PySide6 import QtCore
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLineEdit
 
 
 class VectorWidget(QWidget):
     class VectorCell(QLineEdit):
-
-        value_changed = QtCore.pyqtSignal(int, float)
+        value_changed = QtCore.Signal(int, float)
 
         def __init__(self, value, cell_id, validator):
             super().__init__()
-
             self.id = cell_id
-
-            self.setFixedWidth(int(60 * graphic_util.SIZE_SCALE_X))
-            self.setAlignment(Qt.AlignLeft)
+            self.setFixedWidth(60)
+            self.setAlignment(Qt.AlignmentFlag.AlignLeft)
             self.value = value
             self.setText(str(self.value))
             self.setValidator(validator)
@@ -29,24 +25,18 @@ class VectorWidget(QWidget):
             except ValueError:
                 pass
 
-    def __init__(self, label_text="", cell_count=3, initial_values=None, validator=None):
+    def __init__(self, cell_count=3, initial_values=None, validator=None):
         super().__init__()
 
         if len(initial_values) is not cell_count:
             initial_values = [0] * cell_count
-            assert True
 
         self.vector_length = cell_count
         self.cells = []
         self.values = np.zeros(cell_count, dtype=float)
 
-        layout = QHBoxLayout()
-        self.setLayout(layout)
-
-        label = QLabel(label_text)
-        label.setFixedWidth(int(50 * graphic_util.SIZE_SCALE_X))
-
-        layout.addWidget(label)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         for i in range(cell_count):
             line_edit = self.VectorCell(initial_values[i], i, validator)

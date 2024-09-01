@@ -1,77 +1,60 @@
-from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale, Qt
-from PyQt5.QtGui import QDoubleValidator, QIntValidator
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QPushButton, QSizePolicy, QSlider, QLabel
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QDoubleValidator, QIntValidator
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGroupBox, QSlider, QLabel, QFormLayout
 
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
-import src.utils.graphics_utils as graphic_util
 
 
 class GaussianMixtureTab(QWidget):
-    signal_create_mixture = QtCore.pyqtSignal(float, float, float, int)
-    signal_slider_changed = QtCore.pyqtSignal(int)
+    signal_create_mixture = Signal(float, float, float, int)
+    signal_slider_changed = Signal(int)
 
     def __init__(self):
         super().__init__()
+        double_validator = QDoubleValidator(0.0, 9999.0, 10)
+        int_validator = QIntValidator(0, 10)
+        layout = QVBoxLayout(self)
 
-        locale = QLocale(QLocale.English)
-        double_validator = QDoubleValidator()
-        double_validator.setLocale(locale)
-        double_validator.setRange(0.0, 9999.0)
-        double_validator.setDecimals(10)
-
-        int_validator = QIntValidator()
-        int_validator.setLocale(locale)
-        int_validator.setRange(0, 10)
-
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        self.hem_reduction_field = SimpleInputField("HEM reduction factor:", "3.0", validator=double_validator)
-        self.distance_field = SimpleInputField("Geometric distance delta:", "3.0", validator=double_validator)
-        self.color_field = SimpleInputField("Color distance delta:", "2.5", validator=double_validator)
-        self.cluster_level_field = SimpleInputField("Cluster level:", "3", validator=int_validator)
+        self.hem_reduction_field = SimpleInputField("3.0", validator=double_validator)
+        self.distance_field = SimpleInputField("3.0", validator=double_validator)
+        self.color_field = SimpleInputField("2.5", validator=double_validator)
+        self.cluster_level_field = SimpleInputField("3", validator=int_validator)
 
         slider_label = QLabel("Current mixture level")
         slider_label.setStyleSheet(
             "QLabel {"
-            "    font-size: 11pt;"
+            "    font-size: 12pt;"
             "    font-weight: bold;"
-            f"   padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
+            f"   padding-bottom: 0.5em;"
             "}"
         )
 
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(0)
         self.slider.setTickInterval(1)
         self.slider.setEnabled(False)
         self.slider.valueChanged.connect(self.value_changed)
 
-        option_widget = QGroupBox()
-        option_widget.setTitle("Inputs")
-        options_layout = QVBoxLayout()
-        option_widget.setLayout(options_layout)
+        widget_options = QGroupBox("Inputs")
+        layout_options = QFormLayout(widget_options)
 
-        options_layout.addWidget(self.hem_reduction_field)
-        options_layout.addWidget(self.distance_field)
-        options_layout.addWidget(self.color_field)
-        options_layout.addWidget(self.cluster_level_field)
-        options_layout.addStretch()
+        layout_options.addRow("HEM reduction factor:", self.hem_reduction_field)
+        layout_options.addRow("Geometric distance delta:", self.distance_field)
+        layout_options.addRow("Color distance delta:", self.color_field)
+        layout_options.addRow("Cluster level:", self.cluster_level_field)
 
-        bt_apply = QPushButton("Execute")
-        bt_apply.setStyleSheet(f"padding-left: 10px; padding-right: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-                               f"padding-top: 2px; padding-bottom: {int(graphic_util.SIZE_SCALE_X * 2)}px;")
-        bt_apply.setFixedHeight(int(30 * graphic_util.SIZE_SCALE_Y))
-        bt_apply.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        bt_apply = CustomPushButton("Execute", 100)
 
         layout.addWidget(slider_label)
         layout.addWidget(self.slider)
-        layout.addSpacing(int(graphic_util.SIZE_SCALE_Y * 20))
-        layout.addWidget(option_widget)
+        layout.addSpacing(20)
+        layout.addWidget(widget_options)
         layout.addWidget(bt_apply)
+        layout.addStretch()
 
-        bt_apply.clicked.connect(self.hem_execute_button_pressed)
+        bt_apply.connect_to_clicked(self.hem_execute_button_pressed)
 
     def hem_execute_button_pressed(self):
         hem_reduction = float(self.hem_reduction_field.lineedit.text())

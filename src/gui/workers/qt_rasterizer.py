@@ -1,18 +1,16 @@
 import numpy as np
 import torch
 from PIL import Image
-from PyQt5 import QtGui
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6 import QtGui
 
+from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.cameras import Camera
 from src.models.gaussian_model import GaussianModel
 from src.utils.graphics_utils import focal2fov, get_focal_from_intrinsics
 from src.utils.rasterization_util import rasterize_image
 
 
-class RasterizerWorker(QObject):
-    signal_finished = pyqtSignal()
-    signal_rasterization_done = pyqtSignal(object)
+class RasterizerWorker(BaseWorker):
 
     def __init__(self, pc1, pc2, transformation, extrinsic, intrinsic, scale, color, img_height, img_width):
         super().__init__()
@@ -34,7 +32,7 @@ class RasterizerWorker(QObject):
         self.fov_x = focal2fov(fx, img_width)
         self.fov_y = focal2fov(fy, img_height)
 
-    def do_rasterization(self):
+    def run(self):
         with torch.no_grad():
             point_cloud = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, self.transformation)
 
@@ -49,8 +47,9 @@ class RasterizerWorker(QObject):
 
             del point_cloud
             torch.cuda.empty_cache()
-            self.signal_rasterization_done.emit(pix)
+            self.signal_result.emit(pix)
 
+        self.signal_progress.emit(100)
         self.signal_finished.emit()
         torch.cuda.empty_cache()
 
@@ -62,6 +61,6 @@ class RasterizerWorker(QObject):
         img_save = img_save.convert("RGBA")
         data = img_save.tobytes("raw", "RGBA")
 
-        qim = QtGui.QImage(data, self.width, self.height, QtGui.QImage.Format_RGBA8888)
+        qim = QtGui.QImage(data, self.width, self.height, QtGui.QImage.Format.Format_RGBA8888)
         pix = QtGui.QPixmap.fromImage(qim)
         return pix

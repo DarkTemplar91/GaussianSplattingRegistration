@@ -1,14 +1,19 @@
 import copy
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import Signal
 
+from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.registration_data import LocalRegistrationData
 from src.utils.local_registration_util import do_icp_registration
 
 
-class LocalRegistrator(QObject):
-    signal_finished = pyqtSignal()
-    signal_registration_done = pyqtSignal(object, object)
+class LocalRegistrator(BaseWorker):
+    signal_registration_done = Signal(object, object)
+
+    class ResultData:
+        def __init__(self, result, registration_data: LocalRegistrationData):
+            self.result = result
+            self.registration_data = registration_data
 
     def __init__(self, pc1, pc2, init_trans, registration_type, max_correspondence,
                  relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
@@ -25,13 +30,14 @@ class LocalRegistrator(QObject):
         self.rejection_type = rejection_type
         self.k_value = k_value
 
-    def do_registration(self):
+    def run(self):
         results = do_icp_registration(self.pc1, self.pc2, self.init_trans, self.registration_type,
                                       self.max_correspondence, self.relative_fitness,
                                       self.relative_rmse, self.max_iteration, self.rejection_type, self.k_value)
 
         dataclass = self.create_dataclass_object(results)
-        self.signal_registration_done.emit(results, dataclass)
+        self.signal_result.emit(LocalRegistrator.ResultData(results, dataclass))
+        self.signal_progress.emit(100)
         self.signal_finished.emit()
 
     def create_dataclass_object(self, results):

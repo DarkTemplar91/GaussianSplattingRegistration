@@ -12,7 +12,6 @@
 import numpy as np
 import torch
 from plyfile import PlyElement, PlyData
-from torch import nn
 
 from src.models.gaussian_mixture_level import GaussianMixtureModel
 from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
@@ -125,8 +124,10 @@ class GaussianModel:
             rots[:, idx] = np.asarray(plydata.elements[0][attr_name])
 
         self._xyz = torch.tensor(xyz, dtype=torch.float, device=self.device_name)
-        self._features_dc = torch.tensor(features_dc, dtype=torch.float, device=self.device_name).transpose(1, 2).contiguous()
-        self._features_rest = torch.tensor(features_extra, dtype=torch.float, device=self.device_name).transpose(1, 2).contiguous()
+        self._features_dc = torch.tensor(features_dc, dtype=torch.float, device=self.device_name).transpose(1,
+                                                                                                            2).contiguous()
+        self._features_rest = torch.tensor(features_extra, dtype=torch.float, device=self.device_name).transpose(1,
+                                                                                                                 2).contiguous()
         self._opacity = torch.tensor(opacities, dtype=torch.float, device=self.device_name)
         self._scaling = torch.tensor(scales, dtype=torch.float, device=self.device_name)
         self._rotation = torch.tensor(rots, dtype=torch.float, device=self.device_name)
@@ -174,7 +175,8 @@ class GaussianModel:
         attributes = np.concatenate((xyz, normals, f_dc, f_rest, opacities, scale, rotation), axis=1)
         elements[:] = list(map(tuple, attributes))
         el = PlyElement.describe(elements, 'vertex')
-        PlyData([el]).write(path)
+        plydata = PlyData([el])
+        plydata.write(path)
 
     def clone_gaussian(self):
         new_model = GaussianModel(3)
@@ -196,15 +198,15 @@ class GaussianModel:
         self._xyz[:, 2] += transformation_matrix[2, 3]
 
         transformation = transformation_matrix[:3, :3]
-        transformed_covariances = transformation @ self.get_full_covariance_precomputed @ transformation.transpose(
+        """transformed_covariances = transformation @ self.get_full_covariance_precomputed @ transformation.transpose(
             0, 1)
-        self._covariance = strip_symmetric(transformed_covariances)
+        self._covariance = strip_symmetric(transformed_covariances)"""
 
         new_rotation = build_rotation(self._rotation)
         new_rotation = transformation @ new_rotation
-        self._rotation = matrices_to_quaternions(
-            new_rotation)  # FIXME: Due to limited precision, we sometimes get back inf values.
-
+        # FIXME: Due to limited precision, we sometimes get back inf values.
+        self._rotation = matrices_to_quaternions(new_rotation)
+        pass
 
     def move_to_device(self, device_name):
         if self.device_name == device_name:
@@ -250,12 +252,15 @@ class GaussianModel:
         return sorted_eigenvalues, sorted_eigenvectors
 
     @staticmethod
-    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix=None):
+    def get_merged_gaussian_point_clouds(gaussian1, gaussian2, transformation_matrix):
         merged_pc = GaussianModel(3)
-        gaussian1_copy = gaussian1.clone_gaussian()
+        gaussian1_copy = gaussian1
 
-        if transformation_matrix is not None:
-            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(gaussian1.device_name)
+        # If the transformation matrix is not an identity matrix
+        if not np.array_equal(transformation_matrix, np.eye(transformation_matrix.shape[0])):
+            gaussian1_copy = gaussian1.clone_gaussian()
+            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(
+                gaussian1.device_name)
             gaussian1_copy.transform_gaussian_model(transformation_matrix_tensor)
 
         merged_pc._xyz = torch.cat((gaussian1_copy._xyz, gaussian2._xyz))

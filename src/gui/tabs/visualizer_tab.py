@@ -1,47 +1,46 @@
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import QLocale, Qt
-from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtWidgets import QWidget, QLabel, QCheckBox, QPushButton, QVBoxLayout, QSizePolicy, QStyle, QHBoxLayout
+from PySide6 import QtCore
+from PySide6.QtGui import QDoubleValidator
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QGroupBox, QPushButton, QSizePolicy, \
+    QStyle, QHBoxLayout
 
 from src.gui.widgets.color_picker_widget import ColorPicker
+from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
 from src.gui.widgets.vector_widget import VectorWidget
-import src.utils.graphics_utils as graphic_util
 
 
 class VisualizerTab(QWidget):
-    signal_change_vis = QtCore.pyqtSignal(float, np.ndarray, np.ndarray, np.ndarray,
-                                          object, object)
-    signal_get_current_view = QtCore.pyqtSignal()
-    signal_pop_visualizer = QtCore.pyqtSignal()
+    signal_change_vis = QtCore.Signal(float, np.ndarray, np.ndarray, np.ndarray,
+                                      object, object)
+    signal_get_current_view = QtCore.Signal()
+    signal_pop_visualizer = QtCore.Signal()
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        double_validator = QDoubleValidator(-9999.0, 9999.0, 10)
 
-        locale = QLocale(QLocale.English)
-        double_validator = QDoubleValidator()
-        double_validator.setLocale(locale)
-        double_validator.setRange(-9999.0, 9999.0)
-        double_validator.setDecimals(10)
-
-        label_widget = QWidget()
-        label_layout = QHBoxLayout(label_widget)
         label_title = QLabel("Visualization")
         label_title.setStyleSheet(
-            "QLabel {"
-            "    font-size: 11pt;"
-            "    font-weight: bold;"
-            f"    padding: {int(graphic_util.SIZE_SCALE_X * 8)}px;"
-            "}"
+            """QLabel {
+                font-size: 12pt;
+                font-weight: bold;
+                padding-bottom: 0.5em;
+            }"""
         )
 
+        titled_label_widget = QWidget()
+        label_layout = QHBoxLayout(titled_label_widget)
+        label_layout.setContentsMargins(0, 0, 0, 0)
+        label_layout.setSpacing(0)
+
         self.pop_button = QPushButton(self)
-        self.pop_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.pop_button.setFixedSize(int(graphic_util.SIZE_SCALE_X * 20), int(graphic_util.SIZE_SCALE_Y * 20))
-        icon = self.style().standardIcon(QStyle.SP_TitleBarNormalButton)
+        self.pop_button.setCheckable(True)
+        self.pop_button.setChecked(False)
+        self.pop_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.pop_button.setFixedSize(20, 20)
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarNormalButton)
         self.pop_button.setIcon(icon)
 
         label_layout.addWidget(label_title)
@@ -49,57 +48,41 @@ class VisualizerTab(QWidget):
 
         self.pop_button.clicked.connect(self.pop_visualizer)
 
-        self.debug_color_checkbox = QCheckBox()
-        self.debug_color_checkbox.setText("Use debug colors")
-        self.debug_color_checkbox.setStyleSheet(
-            "QCheckBox::indicator {"
-            f"    width: {int(graphic_util.SIZE_SCALE_X * 20)}px;"
-            f"    height: {int(graphic_util.SIZE_SCALE_Y * 20)}px;"
-            "}"
-            "QCheckBox::indicator::text {"
-            f"    padding-left: {int(graphic_util.SIZE_SCALE_X * 10)}px;"
-            "}"
-        )
-        self.debug_color_checkbox.stateChanged.connect(self.checkbox_changed)
+        self.form_widget_color = QGroupBox("Debug color")
+        self.form_widget_color.setCheckable(True)
+        self.form_widget_color.setChecked(False)
+        layout_form_color = QFormLayout(self.form_widget_color)
 
-        self.debug_color_dialog_first = ColorPicker("Primary debug color: ")
-        self.debug_color_dialog_first.setEnabled(False)
-        self.debug_color_dialog_second = ColorPicker("Secondary debug color: ")
-        self.debug_color_dialog_second.setEnabled(False)
+        self.debug_color_dialog_first = ColorPicker()
+        self.debug_color_dialog_second = ColorPicker()
+        layout_form_color.addRow("Primary debug color:", self.debug_color_dialog_first)
+        layout_form_color.addRow("Secondary debug color:", self.debug_color_dialog_second)
 
-        self.zoom_widget = SimpleInputField("Zoom: ", "1.0", 50, 60, validator=double_validator)
+        view_group_widget = QGroupBox("View")
+        layout_form_view = QFormLayout(view_group_widget)
+        self.zoom_widget = SimpleInputField("1.0", 60, validator=double_validator)
+        zoom_layout = self.zoom_widget.layout()
+        margin = zoom_layout.getContentsMargins()
+        zoom_layout.setContentsMargins(margin[0], 0, margin[2], 0)
+        self.front_widget = VectorWidget(3, [0.0, 0.0, -1.0], double_validator)
+        self.lookat_widget = VectorWidget(3, [0.0, 0.0, 0.0], double_validator)
+        self.up_widget = VectorWidget(3, [0.0, 1.0, 0.0], double_validator)
+        layout_form_view.addRow("Zoom:", self.zoom_widget)
+        layout_form_view.addRow("Front:", self.front_widget)
+        layout_form_view.addRow("Look at:", self.lookat_widget)
+        layout_form_view.addRow("Up:", self.up_widget)
 
-        button_apply = QPushButton()
-        button_apply.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        button_apply.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        button_apply.setText("Apply")
-        button_apply.clicked.connect(self.apply_to_vis)
+        button_apply = CustomPushButton("Apply", 90)
+        button_apply.connect_to_clicked(self.apply_to_vis)
+        button_copy = CustomPushButton("Copy current view", 90)
+        button_copy.connect_to_clicked(self.get_current_view)
 
-        button_copy = QPushButton()
-        button_copy.setFixedSize(int(250 * graphic_util.SIZE_SCALE_X), int(30 * graphic_util.SIZE_SCALE_Y))
-        button_copy.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        button_copy.setText("Copy current view")
-        button_copy.clicked.connect(self.get_current_view)
-
-        self.front_widget = VectorWidget("Front: ", 3, [0, 0, -1], double_validator)
-        self.lookat_widget = VectorWidget("Look at: ", 3, [0, 0, 0], double_validator)
-        self.up_widget = VectorWidget("Up: ", 3, [0, 1, 0], double_validator)
-
-        layout.addWidget(label_widget)
-        layout.addWidget(self.debug_color_checkbox)
-        layout.addWidget(self.debug_color_dialog_first)
-        layout.addWidget(self.debug_color_dialog_second)
-        layout.addWidget(self.zoom_widget)
-        layout.addWidget(self.front_widget)
-        layout.addWidget(self.lookat_widget)
-        layout.addWidget(self.up_widget)
-        layout.addWidget(button_apply, alignment=Qt.AlignCenter)
-        layout.addWidget(button_copy, alignment=Qt.AlignCenter)
+        layout.addWidget(titled_label_widget)
+        layout.addWidget(self.form_widget_color)
+        layout.addWidget(view_group_widget)
+        layout.addWidget(button_apply)
+        layout.addWidget(button_copy)
         layout.addStretch()
-
-    def checkbox_changed(self, state):
-        self.debug_color_dialog_first.setEnabled(state)
-        self.debug_color_dialog_second.setEnabled(state)
 
     def apply_to_vis(self):
         use_debug_color = self.get_use_debug_color()
@@ -123,7 +106,7 @@ class VisualizerTab(QWidget):
         self.up_widget.set_values(up)
 
     def get_use_debug_color(self):
-        return self.debug_color_checkbox.isChecked()
+        return self.form_widget_color.isChecked()
 
     def get_debug_colors(self):
         return np.asarray(self.debug_color_dialog_first.color_debug), np.asarray(
