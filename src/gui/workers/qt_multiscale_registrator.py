@@ -38,7 +38,7 @@ class MultiScaleRegistratorBase(BaseWorker):
     def run(self):
         current_trans = self.init_trans
 
-        if self.__check_valid_data() is False:
+        if self._check_valid_data() is False:
             self.emit_finished()
             return
 
@@ -50,12 +50,12 @@ class MultiScaleRegistratorBase(BaseWorker):
             self.emit_finished()
             return
 
-        results = self.__register_main_point_clouds(current_trans)
+        results = self._register_main_point_clouds(current_trans)
         if results is None:
             self.emit_finished()
             return
 
-        registration_data = self.__create_dataclass_object(results)
+        registration_data = self._create_dataclass_object(results)
         self.signal_result.emit(MultiScaleRegistratorBase.ResultData(results, registration_data))
         self.signal_finished.emit()
 
@@ -89,13 +89,13 @@ class MultiScaleRegistratorBase(BaseWorker):
         self.update_progress()
         return sparse_result.transformation
 
-    def __check_valid_data(self):
+    def _check_valid_data(self):
         raise NotImplementedError
 
-    def __register_main_point_clouds(self, initial_transformation):
+    def _register_main_point_clouds(self, initial_transformation):
         raise NotImplementedError
 
-    def __create_dataclass_object(self, results):
+    def _create_dataclass_object(self, results):
         raise NotImplementedError
 
 
@@ -108,7 +108,7 @@ class MultiScaleRegistratorVoxel(MultiScaleRegistratorBase):
         self.pc1 = copy.deepcopy(pc1)
         self.pc2 = copy.deepcopy(pc2)
 
-    def __check_valid_data(self):
+    def _check_valid_data(self):
         if len(self.iter_values) != len(self.voxel_values):
             self.signal_error.emit(["The number of iteration and voxel values provided do not match."])
             self.emit_finished()
@@ -116,7 +116,7 @@ class MultiScaleRegistratorVoxel(MultiScaleRegistratorBase):
 
         return True
 
-    def __register_main_point_clouds(self, initial_transformation):
+    def _register_main_point_clouds(self, initial_transformation):
         current_trans = initial_transformation
         results = None
 
@@ -149,7 +149,7 @@ class MultiScaleRegistratorVoxel(MultiScaleRegistratorBase):
 
         return results
 
-    def __create_dataclass_object(self, results):
+    def _create_dataclass_object(self, results):
         return MultiScaleRegistrationData(registration_type=self.registration_type.instance_name,
                                           initial_transformation=self.init_trans,
                                           relative_fitness=self.relative_fitness, relative_rmse=self.relative_rmse,
@@ -170,7 +170,7 @@ class MultiScaleRegistratorMixture(MultiScaleRegistratorBase):
         self.pc1_list = pc1_list
         self.pc2_list = pc2_list
 
-    def __check_valid_data(self):
+    def _check_valid_data(self):
         if len(self.pc1_list) != len(self.pc2_list):
             self.signal_error.emit(["The two point cloud lists differ in size."])
             self.emit_finished()
@@ -194,7 +194,7 @@ class MultiScaleRegistratorMixture(MultiScaleRegistratorBase):
 
         return True
 
-    def __register_main_point_clouds(self, initial_transformation):
+    def _register_main_point_clouds(self, initial_transformation):
         QtWidgets.QApplication.processEvents()
         if self.signal_cancel:
             self.signal_finished.emit()
@@ -235,7 +235,7 @@ class MultiScaleRegistratorMixture(MultiScaleRegistratorBase):
 
         return results
 
-    def __create_dataclass_object(self, results):
+    def _create_dataclass_object(self, results):
         return MultiScaleRegistrationData(registration_type=self.registration_type.instance_name,
                                           initial_transformation=self.init_trans,
                                           relative_fitness=self.relative_fitness, relative_rmse=self.relative_rmse,

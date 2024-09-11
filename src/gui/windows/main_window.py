@@ -29,8 +29,6 @@ from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGauss
     PointCloudLoaderO3D
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
-from src.models.gaussian_model import GaussianModel
-from src.utils.file_loader import load_plyfile_pc, is_point_cloud_gaussian
 
 
 class RegistrationMainWindow(QMainWindow):
