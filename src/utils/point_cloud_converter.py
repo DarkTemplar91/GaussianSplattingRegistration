@@ -14,18 +14,17 @@ def convert_input_pc_to_open3d_pc(pc):
     # Convert coordinates
     vertices = pc["vertex"]
     points = np.vstack([vertices['x'], vertices['y'], vertices['z']]).T
-    o3d_pc.points.extend(points)
-    reds = list(map(lambda x: x / 255, vertices['red']))
-    greens = list(map(lambda x: x / 255, vertices['green']))
-    blues = list(map(lambda x: x / 255, vertices['blue']))
+    o3d_pc.points = o3d.utility.Vector3dVector(points)
+    reds = vertices['red'] / 255
+    greens = vertices['green'] / 255
+    blues = vertices['blue'] / 255
 
     # Convert color data
-    colors = np.vstack([reds, greens, blues]).T
-    o3d_pc.colors.extend(colors)
+    colors = np.column_stack([reds, greens, blues]).T
+    o3d_pc.colors = o3d.utility.Vector3dVector(colors)
 
     o3d_pc.estimate_normals()
-
-    o3d_pc.orient_normals_consistent_tangent_plane(30)
+    #o3d_pc.orient_normals_consistent_tangent_plane(30)
     return o3d_pc
 
 
