@@ -20,7 +20,7 @@ def convert_input_pc_to_open3d_pc(pc):
     blues = vertices['blue'] / 255
 
     # Convert color data
-    colors = np.column_stack([reds, greens, blues]).T
+    colors = np.column_stack([reds, greens, blues])
     o3d_pc.colors = o3d.utility.Vector3dVector(colors)
 
     o3d_pc.estimate_normals()
