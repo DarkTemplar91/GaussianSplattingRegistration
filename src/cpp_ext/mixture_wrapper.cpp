@@ -7,8 +7,8 @@
 using namespace hem;
 
 
-std::vector<MixtureLevel> MixtureCreator::CreateMixture(unsigned int clusterLevel, float hemReduction, float distanceDelta, float colorDelta, MixtureLevel &mixtureLevel) {
-    Mixture* mixture = new Mixture(mixtureLevel, hemReduction, distanceDelta, colorDelta);
+std::vector<MixtureLevel> MixtureCreator::CreateMixture(unsigned int clusterLevel, float hemReduction, float distanceDelta, float colorDelta, float decayRate, MixtureLevel &mixtureLevel) {
+    Mixture* mixture = new Mixture(mixtureLevel, hemReduction, distanceDelta, colorDelta, decayRate);
     mixture->CreateMixture(clusterLevel);
 
     auto result = mixture->GetResult();

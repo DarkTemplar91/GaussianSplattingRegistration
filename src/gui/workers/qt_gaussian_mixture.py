@@ -16,12 +16,13 @@ class GaussianMixtureWorker(BaseWorker):
             self.list_open3d_first = list_open3d_first
             self.list_open3d_second = list_open3d_second
 
-    def __init__(self, pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level):
+    def __init__(self, pc1, pc2, hem_reduction, distance_delta, color_delta, decay_rate, cluster_level):
         super().__init__()
 
         self.hem_reduction = hem_reduction
         self.distance_delta = distance_delta
         self.color_delta = color_delta
+        self.decay_rate = decay_rate
         self.cluster_level = cluster_level
 
         self.gaussian_pc_first = pc1
@@ -53,6 +54,7 @@ class GaussianMixtureWorker(BaseWorker):
 
         mixture_models_first = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction,
                                                                          self.distance_delta, self.color_delta,
+                                                                         self.decay_rate,
                                                                          mixture_level_first)
         self.update_progress()
         QtWidgets.QApplication.processEvents()
@@ -76,6 +78,7 @@ class GaussianMixtureWorker(BaseWorker):
 
         mixture_models_second = mixture_bind.MixtureCreator.CreateMixture(self.cluster_level, self.hem_reduction,
                                                                           self.distance_delta, self.color_delta,
+                                                                          self.decay_rate,
                                                                           mixture_level_second)
         self.update_progress()
         QtWidgets.QApplication.processEvents()

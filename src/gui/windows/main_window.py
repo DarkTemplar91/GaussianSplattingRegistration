@@ -171,14 +171,14 @@ class RegistrationMainWindow(QMainWindow):
     def handle_sparse_load(self, sparse_path_first, sparse_path_second):
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
         worker = PointCloudLoaderInput(sparse_path_first, sparse_path_second)
-        thread = move_worker_to_thread(worker, self.handle_result_sparse, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.handle_result_sparse, progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
     def handle_gaussian_load(self, gaussian_path_first, gaussian_path_second, save_o3d_pc):
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
         worker = PointCloudLoaderGaussian(gaussian_path_first, gaussian_path_second)
-        thread = move_worker_to_thread(worker, lambda result: self.handle_result_gaussian(result, save_o3d_pc),
+        thread = move_worker_to_thread(self, worker, lambda result: self.handle_result_gaussian(result, save_o3d_pc),
                                        progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
@@ -186,7 +186,7 @@ class RegistrationMainWindow(QMainWindow):
     def handle_cached_load(self, cached_path_first, cached_path_second):
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
         worker = PointCloudLoaderO3D(cached_path_first, cached_path_second)
-        thread = move_worker_to_thread(worker, self.handle_result_cached, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.handle_result_cached, progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -203,7 +203,7 @@ class RegistrationMainWindow(QMainWindow):
         if save_o3d_point_clouds:
             progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Saving open3D point clouds...")
             worker = PointCloudSaver(gaussian_result.o3d_point_cloud_first, gaussian_result.o3d_point_cloud_first)
-            thread = move_worker_to_thread(worker, lambda *args: None, progress_handler=progress_dialog.setValue)
+            thread = move_worker_to_thread(self, worker, lambda *args: None, progress_handler=progress_dialog.setValue)
             thread.start()
             progress_dialog.exec()
 
@@ -261,7 +261,7 @@ class RegistrationMainWindow(QMainWindow):
                                "merge.")
             return
 
-        thread = move_worker_to_thread(worker, lambda *args: None, error_handler=self.create_error_list_dialog,
+        thread = move_worker_to_thread(self, worker, lambda *args: None, error_handler=self.create_error_list_dialog,
                                        progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
@@ -279,7 +279,7 @@ class RegistrationMainWindow(QMainWindow):
                                   k_value)
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Registering point clouds...")
-        thread = move_worker_to_thread(worker, self.handle_registration_result_local,
+        thread = move_worker_to_thread(self, worker, self.handle_registration_result_local,
                                        progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
@@ -294,7 +294,7 @@ class RegistrationMainWindow(QMainWindow):
                                    estimation_method, ransac_n, checkers, max_iteration, confidence)
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Registering point clouds...")
-        thread = move_worker_to_thread(worker, self.handle_registration_result_global,
+        thread = move_worker_to_thread(self, worker, self.handle_registration_result_global,
                                        progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
@@ -310,7 +310,7 @@ class RegistrationMainWindow(QMainWindow):
                                 max_iterations, tuple_scale, max_tuple_count, tuple_test)
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Registering point clouds...")
-        thread = move_worker_to_thread(worker, self.handle_registration_result_global,
+        thread = move_worker_to_thread(self, worker, self.handle_registration_result_global,
                                        progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
@@ -337,7 +337,7 @@ class RegistrationMainWindow(QMainWindow):
                                                 rejection_type, k_value)
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Registering point clouds...")
-        thread = move_worker_to_thread(worker, self.handle_registration_result_local, self.create_error_list_dialog,
+        thread = move_worker_to_thread(self, worker, self.handle_registration_result_local, self.create_error_list_dialog,
                                        progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
@@ -391,7 +391,7 @@ class RegistrationMainWindow(QMainWindow):
         worker = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix,
                                   extrinsic, intrinsic, scale, color, height, width)
 
-        thread = move_worker_to_thread(worker, self.create_raster_window, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.create_raster_window, progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -419,11 +419,11 @@ class RegistrationMainWindow(QMainWindow):
                                        camera_list, image_path, log_path, color, self.local_registration_data,
                                        use_gpu)
         progress_dialog.canceled.connect(worker.cancel_evaluation)
-        thread = move_worker_to_thread(worker, self.handle_evaluation_result, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.handle_evaluation_result, progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
-    def create_mixture(self, hem_reduction, distance_delta, color_delta, cluster_level):
+    def create_mixture(self, hem_reduction, distance_delta, color_delta, decay_rate, cluster_level):
         pc1 = pc2 = None
 
         if len(self.pc_gaussian_list_first) != 0:
@@ -440,8 +440,8 @@ class RegistrationMainWindow(QMainWindow):
             return
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Creating Gaussian mixtures...")
-        worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, cluster_level)
-        thread = move_worker_to_thread(worker, self.handle_mixture_results, progress_handler=progress_dialog.setValue)
+        worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, decay_rate, cluster_level)
+        thread = move_worker_to_thread(self, worker, self.handle_mixture_results, progress_handler=progress_dialog.setValue)
         progress_dialog.canceled.connect(worker.cancel)
 
         thread.start()

@@ -40,6 +40,7 @@ def convert_gs_to_open3d_pc(gaussian):
     covariances_tensor = gaussian.get_full_covariance_precomputed
     o3d_pc.covariances = o3d.utility.Matrix3dVector(covariances_tensor.double().detach().cpu().numpy())
 
+    o3d_pc.estimate_normals()
     # TODO: Find better way to approx normals
     # normal_matrices = get_normals_from_covariance(covariances_tensor)
     # o3d_pc.normals = o3d.utility.Vector3dVector(normal_matrices.double().detach().cpu().numpy())

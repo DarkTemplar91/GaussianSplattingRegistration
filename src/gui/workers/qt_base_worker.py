@@ -14,8 +14,8 @@ class BaseWorker(QObject):
         raise NotImplementedError
 
 
-def move_worker_to_thread(worker: BaseWorker, result_handler, error_handler=None, progress_handler=None):
-    thread = QThread()
+def move_worker_to_thread(parent, worker: BaseWorker, result_handler, error_handler=None, progress_handler=None):
+    thread = QThread(parent)
     worker.moveToThread(thread)
     thread.started.connect(worker.run)
     worker.signal_result.connect(result_handler)

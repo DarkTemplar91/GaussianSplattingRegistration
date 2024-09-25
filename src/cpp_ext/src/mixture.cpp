@@ -11,10 +11,11 @@ namespace hem
 
 #pragma region Mixture
 
-	Mixture::Mixture(MixtureLevel &initialMixture, float hemReductionFactor, float distanceDelta, float colorDelta)
+	Mixture::Mixture(MixtureLevel &initialMixture, float hemReductionFactor, float distanceDelta, float colorDelta, float decayRate)
 		: hemReductionFactor(hemReductionFactor)
 		, distanceDelta( distanceDelta )
 		, colorDelta( colorDelta )
+		, decayRate( decayRate )
 		, mixtureList()
 		, featureSize(0)
 	{
@@ -50,9 +51,16 @@ namespace hem
 		return powf(f, child.weight);
 	}
 
-	float Mixture::hemLikelihoodOpacity(const Gaussian& child)
+	float Mixture::hemLikelihoodOpacity(const Gaussian& parent, const Gaussian& child)
     {
-	    return child.opacity * sqrtf(det(child.cov));
+        //TODO: Handle small distance differences
+        float distanceDiff = dist(parent.mean, child.mean);
+        float distWeight = exp(-distanceDiff * distanceDiff / (decayRate * decayRate));
+
+        float colorDiff = dist(parent.color, child.color);
+        float colorInfluence = expf(-colorDiff * colorDiff / (decayRate * decayRate));
+
+	    return distWeight * child.opacity * colorInfluence * sqrtf(det(child.cov));
     }
 
 	void Mixture::createClusterLevel(vector<Component>& parentMixture)
@@ -147,7 +155,7 @@ namespace hem
 				const float maxL = 1e8f;
 				const float minL = FLT_MIN;
 				//float wL_si = parent.weight * clamp(hemLikelihood(parent, parentMixture.at(i)), minL, maxL);
-				float wL_si = parent.weight * clamp(hemLikelihoodOpacity(parentMixture.at(i)), minL, maxL);
+				float wL_si = parent.weight * clamp(hemLikelihoodOpacity(parent, parentMixture.at(i)), minL, maxL);
 
 				// save likelihood contribution
 				wL_cache[s_][i_] = wL_si;
@@ -297,7 +305,6 @@ namespace hem
 			const float opacity = opacities[i];
 			const FeatureVector feature = features[i];
 			Component& c = initialMixture.at(i);
-
 
 			c.mean = mean;
 			c.color = color;

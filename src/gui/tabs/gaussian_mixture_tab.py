@@ -7,7 +7,7 @@ from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 
 class GaussianMixtureTab(QWidget):
-    signal_create_mixture = Signal(float, float, float, int)
+    signal_create_mixture = Signal(float, float, float, float, int)
     signal_slider_changed = Signal(int)
 
     def __init__(self):
@@ -19,6 +19,7 @@ class GaussianMixtureTab(QWidget):
         self.hem_reduction_field = SimpleInputField("3.0", validator=double_validator)
         self.distance_field = SimpleInputField("3.0", validator=double_validator)
         self.color_field = SimpleInputField("2.5", validator=double_validator)
+        self.gaussian_decay = SimpleInputField("1.0", validator=double_validator)
         self.cluster_level_field = SimpleInputField("3", validator=int_validator)
 
         slider_label = QLabel("Current mixture level")
@@ -43,6 +44,7 @@ class GaussianMixtureTab(QWidget):
         layout_options.addRow("HEM reduction factor:", self.hem_reduction_field)
         layout_options.addRow("Geometric distance delta:", self.distance_field)
         layout_options.addRow("Color distance delta:", self.color_field)
+        layout_options.addRow("Gaussian decay rate:", self.gaussian_decay)
         layout_options.addRow("Cluster level:", self.cluster_level_field)
 
         bt_apply = CustomPushButton("Execute", 100)
@@ -60,9 +62,10 @@ class GaussianMixtureTab(QWidget):
         hem_reduction = float(self.hem_reduction_field.lineedit.text())
         distance_delta = float(self.distance_field.lineedit.text())
         color_delta = float(self.color_field.lineedit.text())
+        decay_rate = float(self.gaussian_decay.lineedit.text())
         cluster_level = int(self.cluster_level_field.lineedit.text())
 
-        self.signal_create_mixture.emit(hem_reduction, distance_delta, color_delta, cluster_level)
+        self.signal_create_mixture.emit(hem_reduction, distance_delta, color_delta, decay_rate, cluster_level)
 
     def set_slider_range(self, value):
         self.slider.setRange(0, value)

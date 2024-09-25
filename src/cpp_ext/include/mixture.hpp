@@ -49,7 +49,7 @@ namespace hem
 	{
 	public:
 		Mixture();
-		Mixture(MixtureLevel &initialMixture, float hemReductionFactor, float distanceDelta, float colorDelta);
+		Mixture(MixtureLevel &initialMixture, float hemReductionFactor, float distanceDelta, float colorDelta, float decayRate);
 
 		void CreateMixture(uint clusterLevel);
 
@@ -57,7 +57,7 @@ namespace hem
 	protected:
 
 		float hemLikelihood(const Gaussian& parent, const Gaussian& child);
-		float hemLikelihoodOpacity(const Gaussian& child);
+		float hemLikelihoodOpacity(const Gaussian& parent, const Gaussian& child);
 		void createClusterLevel(vector<Component>& newComponents);
 		void initMixture(MixtureLevel &initialMixtureLevel);
 
@@ -65,6 +65,7 @@ namespace hem
 		float	distanceDelta;
 		float	colorDelta;
 		float	hemReductionFactor;
+		float   decayRate;
 
 		std::vector<Component> initialMixture;
 		std::vector<std::vector<Component>> mixtureList;
