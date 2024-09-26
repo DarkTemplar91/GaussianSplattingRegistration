@@ -86,9 +86,8 @@ class GaussianModel:
         if scaling_modifier == 1:
             return self._covariance
 
-        transformation_matrix = torch.Tensor([scaling_modifier] * 3, device=self._covariance.device)
-        transformed_covariances = transformation_matrix @ self.get_full_covariance_precomputed @ transformation_matrix.transpose(
-            0, 1)
+        transformation_matrix = torch.diag_embed(torch.tensor([scaling_modifier] * 3)).to(self._covariance.device)
+        transformed_covariances = transformation_matrix @ self.get_full_covariance_precomputed @ transformation_matrix.T
         return strip_symmetric(transformed_covariances)
 
     def from_ply(self, plydata):
@@ -124,10 +123,10 @@ class GaussianModel:
             rots[:, idx] = np.asarray(plydata.elements[0][attr_name])
 
         self._xyz = torch.tensor(xyz, dtype=torch.float, device=self.device_name)
-        self._features_dc = torch.tensor(features_dc, dtype=torch.float, device=self.device_name).transpose(1,
-                                                                                                            2).contiguous()
-        self._features_rest = torch.tensor(features_extra, dtype=torch.float, device=self.device_name).transpose(1,
-                                                                                                                 2).contiguous()
+        self._features_dc = (torch.tensor(features_dc, dtype=torch.float, device=self.device_name)
+                             .transpose(1, 2).contiguous())
+        self._features_rest = (torch.tensor(features_extra, dtype=torch.float, device=self.device_name).
+                               transpose(1, 2).contiguous())
         self._opacity = torch.tensor(opacities, dtype=torch.float, device=self.device_name)
         self._scaling = torch.tensor(scales, dtype=torch.float, device=self.device_name)
         self._rotation = torch.tensor(rots, dtype=torch.float, device=self.device_name)
@@ -190,12 +189,9 @@ class GaussianModel:
         return new_model
 
     def transform_gaussian_model(self, transformation_matrix):
-        points = torch.cat((self._xyz, torch.zeros(self._xyz.shape[0], 1,
-                                                   device=self._xyz.device)), 1)
-        self._xyz = torch.matmul(transformation_matrix, points.T).T[:, :3]
-        self._xyz[:, 0] += transformation_matrix[0, 3]
-        self._xyz[:, 1] += transformation_matrix[1, 3]
-        self._xyz[:, 2] += transformation_matrix[2, 3]
+        rotation_matrix = transformation_matrix[:3, :3]
+        self._xyz = torch.matmul(self._xyz, rotation_matrix.T)
+        self._xyz += transformation_matrix[:3, 3]
 
         transformation = transformation_matrix[:3, :3]
         """transformed_covariances = transformation @ self.get_full_covariance_precomputed @ transformation.transpose(
