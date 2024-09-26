@@ -98,3 +98,12 @@ def matrices_to_quaternions(rotation_matrices):
     y = (rotation_matrices[:, 0, 2] - rotation_matrices[:, 2, 0]) / (4 * w)
     z = (rotation_matrices[:, 1, 0] - rotation_matrices[:, 0, 1]) / (4 * w)
     return torch.stack((w, x, y, z), dim=-1)
+
+
+def matrix_to_quaternion(rotation_matrices):
+    trace = torch.sum(rotation_matrices.diagonal(dim1=-2, dim2=-1), dim=-1)
+    w = torch.sqrt(1 + trace) / 2
+    x = (rotation_matrices[2, 1] - rotation_matrices[1, 2]) / (4 * w)
+    y = (rotation_matrices[0, 2] - rotation_matrices[2, 0]) / (4 * w)
+    z = (rotation_matrices[1, 0] - rotation_matrices[0, 1]) / (4 * w)
+    return torch.stack((w, x, y, z), dim=-1)

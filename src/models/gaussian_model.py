@@ -15,7 +15,7 @@ from plyfile import PlyElement, PlyData
 
 from src.models.gaussian_mixture_level import GaussianMixtureModel
 from src.utils.general_utils import build_scaling_rotation, strip_symmetric, \
-    inverse_sigmoid, build_rotation, matrices_to_quaternions, rebuild_lowerdiag
+    inverse_sigmoid, build_rotation, matrices_to_quaternions, rebuild_lowerdiag, matrix_to_quaternion
 
 
 class GaussianModel:
@@ -188,20 +188,30 @@ class GaussianModel:
         new_model._opacity = self._opacity.clone().detach()
         return new_model
 
+    def quat_multiply(self, quaternion0, quaternion1):
+        w0, x0, y0, z0 = torch.chunk(quaternion0, 4, dim=-1)
+        w1, x1, y1, z1 = torch.chunk(quaternion1, 4, dim=-1)
+
+        return torch.cat((
+            -x1 * x0 - y1 * y0 - z1 * z0 + w1 * w0,
+            x1 * w0 + y1 * z0 - z1 * y0 + w1 * x0,
+            -x1 * z0 + y1 * w0 + z1 * x0 + w1 * y0,
+            x1 * y0 - y1 * x0 + z1 * w0 + w1 * z0
+        ), dim=-1)
+
     def transform_gaussian_model(self, transformation_matrix):
         rotation_matrix = transformation_matrix[:3, :3]
         self._xyz = torch.matmul(self._xyz, rotation_matrix.T)
         self._xyz += transformation_matrix[:3, 3]
 
         transformation = transformation_matrix[:3, :3]
-        """transformed_covariances = transformation @ self.get_full_covariance_precomputed @ transformation.transpose(
+        transformed_covariances = transformation @ self.get_full_covariance_precomputed @ transformation.transpose(
             0, 1)
-        self._covariance = strip_symmetric(transformed_covariances)"""
+        self._covariance = strip_symmetric(transformed_covariances)
 
-        new_rotation = build_rotation(self._rotation)
-        new_rotation = transformation @ new_rotation
-        # FIXME: Due to limited precision, we sometimes get back inf values.
-        self._rotation = matrices_to_quaternions(new_rotation)
+        quaternions = matrix_to_quaternion(rotation_matrix).unsqueeze(0).to(self._rotation.device)
+        rotations_from_quats = self.quat_multiply(self._rotation, quaternions)
+        self._rotation = rotations_from_quats / torch.norm(rotations_from_quats, p=2, dim=-1, keepdim=True)
         pass
 
     def move_to_device(self, device_name):
