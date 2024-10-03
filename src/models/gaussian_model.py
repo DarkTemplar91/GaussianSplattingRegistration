@@ -204,8 +204,7 @@ class GaussianModel:
         self._xyz = torch.matmul(self._xyz, rotation_matrix.T)
         self._xyz += transformation_matrix[:3, 3]
 
-        transformation = transformation_matrix[:3, :3]
-        transformed_covariances = transformation @ self.get_full_covariance_precomputed @ transformation.transpose(
+        transformed_covariances = rotation_matrix @ self.get_full_covariance_precomputed @ rotation_matrix.transpose(
             0, 1)
         self._covariance = strip_symmetric(transformed_covariances)
 
