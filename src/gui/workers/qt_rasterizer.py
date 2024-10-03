@@ -39,7 +39,7 @@ class RasterizerWorker(BaseWorker):
                             self.width, self.height)
 
             point_cloud.move_to_device(self.device)
-            image_tensor = rasterize_image(point_cloud, camera, self.scale, self.color, self.device, self.intrinsic, False)
+            image_tensor = rasterize_image(point_cloud, camera, self.scale, self.color, self.device, False)
             pix = get_pixmap_from_tensor(image_tensor)
 
             del point_cloud

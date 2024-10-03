@@ -37,7 +37,7 @@ def convert_gs_to_open3d_pc(gaussian):
     colors = sh2rgb(np.ascontiguousarray(gaussian.get_colors.double().detach().cpu().numpy()))
     o3d_pc.colors = o3d.utility.Vector3dVector(colors)
 
-    covariances_tensor = gaussian.get_full_covariance_precomputed
+    covariances_tensor = gaussian.get_full_covariance()
     o3d_pc.covariances = o3d.utility.Matrix3dVector(covariances_tensor.double().detach().cpu().numpy())
 
     o3d_pc.estimate_normals()

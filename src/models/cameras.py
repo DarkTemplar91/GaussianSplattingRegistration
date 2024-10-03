@@ -9,11 +9,13 @@ class Camera:
                  trans=np.array([0.0, 0.0, 0.0]), scale=1.0):
         super(Camera, self).__init__()
         self.image_name = image_name
+        self.position = torch.tensor(T, dtype=torch.float32)
+        self.rotation = torch.tensor(R, dtype=torch.float32)
         self.width = width
         self.height = height
         self.intrinsics = torch.tensor([
             [fx, 0, width / 2],
             [0, fy, height / 2],
             [0, 0, 1]
-        ], dtype=torch.float32, device='cuda:0')
-        self.viewmat = torch.tensor(getWorld2View2(R, T, trans, scale), device="cuda:0")[None, :, :]
+        ], dtype=torch.float32)[None, :, :]
+        self.viewmat = torch.tensor(getWorld2View2(R, T, trans, scale))[None, :, :]

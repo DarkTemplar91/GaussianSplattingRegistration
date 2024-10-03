@@ -6,23 +6,23 @@ import torchvision.transforms.functional as F
 from src.models.gaussian_model import GaussianModel
 
 
-def rasterize_image(point_cloud: GaussianModel, camera, scale, color, device, intrinsics, leave_on_gpu=True, ):
-    color_tensor = torch.tensor(color, dtype=torch.float32, device=device)
-    intrinsics_tensor = torch.tensor(intrinsics, dtype=torch.float32, device=device).view(1, 3, 3)
-    render_colors, render_alphas, meta = rasterization(
+def rasterize_image(point_cloud: GaussianModel, camera, scale, color, device, leave_on_gpu=True, ):
+    color_tensor = torch.tensor(color, dtype=torch.float32, device=device).view(1, -1)
+    covars = point_cloud.get_full_covariance(scale)
+    render_colors, _, _ = rasterization(
         point_cloud.get_xyz,
         point_cloud.get_rotation,
         point_cloud.get_scaling,
         point_cloud.get_opacity_with_activation.view(-1),
         point_cloud.get_features,
         camera.viewmat.cuda(),
-        intrinsics_tensor,
+        camera.intrinsics.cuda(),
         camera.width,
         camera.height,
         render_mode="RGB",
         sh_degree=3,
-        backgrounds=color_tensor.view(1, -1),
-        covars=point_cloud.get_full_covariance_precomputed
+        backgrounds=color_tensor,
+        covars=covars
     )
 
     return render_colors.detach() if leave_on_gpu else render_colors.cpu()
