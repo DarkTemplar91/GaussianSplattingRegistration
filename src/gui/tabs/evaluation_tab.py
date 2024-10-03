@@ -109,14 +109,12 @@ class EvaluationTab(QWidget):
             fy = camera_iter["fy"]
             height = camera_iter["height"]
             width = camera_iter["width"]
-            fov_x = graphic_util.focal2fov(fx, width)
-            fov_y = graphic_util.focal2fov(fy, height)
 
             rot = np.array([np.array(xi) for xi in camera_iter["rotation"]])
             pos = np.array([np.array(xi) for xi in camera_iter["position"]])
             R, T = convert_to_camera_transform(rot, pos)
             image_name = camera_iter["img_name"]
-            camera = Camera(R, T, fov_x, fov_y, image_name, width, height)
+            camera = Camera(R, T, fx, fy, image_name, width, height)
             self.cameras_list.append(camera)
 
         self.spinbox.setEnabled(True)
@@ -127,7 +125,7 @@ class EvaluationTab(QWidget):
     def current_camera_changed(self, camera_id):
         current_camera = self.cameras_list[camera_id - 1]
         self.current_image_name.setText(current_camera.image_name)
-        self.signal_camera_change.emit(current_camera.world_view_transform.detach().cpu().numpy().transpose())
+        self.signal_camera_change.emit(current_camera.viewmat)
 
     def evaluate_registration(self):
         image_path = self.fs_images.file_path

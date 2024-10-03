@@ -79,7 +79,7 @@ class RegistrationEvaluator(BaseWorker):
                 continue
 
             try:
-                image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
+                image_tensor = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
             except (OSError, IOError) as e:
                 error_list.append(str(e))
                 continue

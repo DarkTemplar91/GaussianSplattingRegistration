@@ -1,62 +1,12 @@
-import math
-
 import torch
 from PySide6 import QtGui
-from diff_gaussian_rasterization import GaussianRasterizer, GaussianRasterizationSettings
 from gsplat.rendering import rasterization
 import torchvision.transforms.functional as F
 
 from src.models.gaussian_model import GaussianModel
 
 
-def rasterize_image(point_cloud, camera, scale, color, device, leave_on_gpu=True):
-    # Create zero tensor. We will use it to make pytorch return gradients of the 2D (screen-space) means
-    screenspace_points = torch.zeros_like(point_cloud.get_xyz, dtype=point_cloud.get_xyz.dtype, requires_grad=False,
-                                          device=device) + 0
-
-    bg_color = torch.tensor(color, dtype=torch.float32, device=device)
-
-    # Set up rasterization configuration
-    tan_fov_x = math.tan(camera.FoVx * 0.5)
-    tan_fov_y = math.tan(camera.FoVy * 0.5)
-
-    raster_settings = GaussianRasterizationSettings(
-        image_height=int(camera.height),
-        image_width=int(camera.width),
-        tanfovx=tan_fov_x,
-        tanfovy=tan_fov_y,
-        bg=bg_color,
-        scale_modifier=scale,
-        viewmatrix=camera.world_view_transform,
-        projmatrix=camera.full_proj_transform,
-        sh_degree=3,
-        campos=camera.camera_center,
-        prefiltered=False,
-        debug=True
-    )
-
-    rasterizer = GaussianRasterizer(raster_settings=raster_settings)
-
-    means3D = point_cloud.get_xyz
-    means2D = screenspace_points
-    opacity = point_cloud.get_opacity_with_activation
-    cov3D_precomp = point_cloud.get_covariance(scale)
-    shs = point_cloud.get_features
-
-    image_tensor, radii = rasterizer(
-        means3D=means3D,
-        means2D=means2D,
-        shs=shs,
-        opacities=opacity,
-        cov3D_precomp=cov3D_precomp)
-
-    if leave_on_gpu:
-        return image_tensor.detach(), radii
-    else:
-        return image_tensor.detach().cpu(), radii
-
-
-def rasterize_image_gsplat(point_cloud: GaussianModel, camera, scale, color, device, intrinsics, leave_on_gpu=True, ):
+def rasterize_image(point_cloud: GaussianModel, camera, scale, color, device, intrinsics, leave_on_gpu=True, ):
     color_tensor = torch.tensor(color, dtype=torch.float32, device=device)
     intrinsics_tensor = torch.tensor(intrinsics, dtype=torch.float32, device=device).view(1, 3, 3)
     render_colors, render_alphas, meta = rasterization(
