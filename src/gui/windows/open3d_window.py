@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 import numpy as np
 import open3d as o3d
 from PySide6 import QtWidgets, QtCore
-from PySide6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow, QWidget
 
 platform = sys.platform
 if platform.startswith('win'):
@@ -16,7 +16,7 @@ if platform.startswith('linux'):
     from Xlib import display, X
 
 
-class Open3DWindow(QMainWindow):
+class Open3DWindow(QWidget):
     def __init__(self, parent):
         super(Open3DWindow, self).__init__()
         self.pc1_copy = None
@@ -24,15 +24,13 @@ class Open3DWindow(QMainWindow):
         self.pc1 = None
         self.pc2 = None
         self.parent_window = parent
-        self.parent_widget = QtWidgets.QWidget()
-        self.layout = QtWidgets.QGridLayout(self.parent_widget)
-        self.setCentralWidget(self.parent_widget)
+        self.layout = QtWidgets.QGridLayout(self)
 
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window()
         self.is_embedded = False
 
-        self.parent_widget.setBaseSize(self.parent_widget.maximumSize())
+        self.setBaseSize(self.maximumSize())
 
         # Set background color to match theme
         background_color = (0.09803921568627451, 0.13725490196078433, 0.17647058823529413)
@@ -88,8 +86,8 @@ class Open3DWindow(QMainWindow):
             self.vis.get_view_control().convert_from_pinhole_camera_parameters(camera_params)
 
     def closeEvent(self, event):
-        self.vis.destroy_window()
-        super(QMainWindow, self).closeEvent(event)
+        self.vis.close()
+        super().closeEvent(event)
 
     def update_transform(self, transformation, debug_color1=None, debug_color2=None):
         if not self.pc1 or not self.pc2:
@@ -233,10 +231,10 @@ class Open3DWindow(QMainWindow):
             win32con.WS_VISIBLE | win32con.WS_CHILD
         )
 
-        win32gui.SetParent(self.hwnd, self.parent_widget.winId())
+        win32gui.SetParent(self.hwnd, self.winId())
 
         # Resize and move the window to fit within the PySide6 window
-        rect = self.parent_widget.rect()
+        rect = self.rect()
         win32gui.MoveWindow(self.hwnd, rect.left(), rect.top(), rect.width(), rect.height(), True)
 
         return True
@@ -247,11 +245,11 @@ class Open3DWindow(QMainWindow):
 
         dsp = display.Display()
         app_window = dsp.create_resource_object('window', self.hwnd)
-        pyqt_window_id = self.parent_widget.winId()
+        pyqt_window_id = self.winId()
 
         app_window.reparent(pyqt_window_id, 0, 0)
         app_window.map()
-        rect = self.parent_widget.rect()
+        rect = self.rect()
         app_window.configure(width=rect.width(), height=rect.height())
 
         dsp.sync()

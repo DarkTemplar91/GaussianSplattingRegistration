@@ -1,16 +1,15 @@
 import numpy as np
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtCore
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QLabel, QVBoxLayout
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 
-class InteractiveImageViewer(QtWidgets.QWidget):
+class InteractiveImageViewer(QWidget):
     def __init__(self, point_cloud, camera):
         super().__init__()
         self.setWindowTitle('3D Viewer')
-        self.setFixedSize(1600, 900)
 
         self.point_cloud = point_cloud
         self.camera = camera
