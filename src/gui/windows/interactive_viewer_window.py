@@ -18,7 +18,6 @@ class InteractiveImageViewer(QWidget):
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_view)
-        self.timer.start(30)  # Refresh every 30ms
 
         self.last_mouse_position = None
         self.setMouseTracking(True)
@@ -82,6 +81,23 @@ class InteractiveImageViewer(QWidget):
         self.camera.update_view_matrix()
 
     def update_view(self):
+        if self.point_cloud is None:
+            return
+
+        """self.camera.width = self.width()
+        self.camera.height = self.height()"""
         image_tensor = rasterize_image(self.point_cloud, self.camera, 1, np.zeros(3), "cuda:0", False)
         pix = get_pixmap_from_tensor(image_tensor)
         self.render_label.setPixmap(pix)
+
+    def set_active(self, start):
+        if start:
+            self.timer.start(30)
+        else:
+            self.timer.stop()
+
+    def set_point_cloud(self, point_cloud):
+        self.point_cloud = point_cloud
+
+    def set_camera(self, camera):
+        self.camera = camera

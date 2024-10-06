@@ -2,7 +2,7 @@ import numpy as np
 from PySide6 import QtCore
 from PySide6.QtGui import QDoubleValidator
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QGroupBox, QPushButton, QSizePolicy, \
-    QStyle, QHBoxLayout
+    QStyle, QHBoxLayout, QCheckBox
 
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.custom_push_button import CustomPushButton
@@ -13,6 +13,7 @@ from src.gui.widgets.vector_widget import VectorWidget
 class VisualizerTab(QWidget):
     signal_change_vis = QtCore.Signal(float, np.ndarray, np.ndarray, np.ndarray,
                                       object, object)
+    signal_change_type = QtCore.Signal(int)
     signal_get_current_view = QtCore.Signal()
     signal_pop_visualizer = QtCore.Signal()
 
@@ -29,6 +30,10 @@ class VisualizerTab(QWidget):
                 padding-bottom: 0.5em;
             }"""
         )
+
+        self.checkbox = QCheckBox()
+        self.checkbox.setText("Use GSPLAT")
+        self.checkbox.toggled.connect(self.change_visualizer)
 
         titled_label_widget = QWidget()
         label_layout = QHBoxLayout(titled_label_widget)
@@ -78,6 +83,7 @@ class VisualizerTab(QWidget):
         button_copy.connect_to_clicked(self.get_current_view)
 
         layout.addWidget(titled_label_widget)
+        layout.addWidget(self.checkbox)
         layout.addWidget(self.form_widget_color)
         layout.addWidget(view_group_widget)
         layout.addWidget(button_apply)
@@ -119,3 +125,6 @@ class VisualizerTab(QWidget):
 
     def pop_visualizer(self):
         self.signal_pop_visualizer.emit()
+
+    def change_visualizer(self, visualizer_index):
+        self.signal_change_type.emit(visualizer_index)

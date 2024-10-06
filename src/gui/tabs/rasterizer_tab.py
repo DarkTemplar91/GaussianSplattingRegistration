@@ -42,7 +42,7 @@ class RasterizerTab(QWidget):
         layout_options.addRow("Background color:", self.background_color_widget)
 
         bt_rasterize = CustomPushButton("Rasterize", 90)
-        bt_rasterize.connect_to_clicked(self.button_clicked)
+        bt_rasterize.connect_to_clicked(self.rasterize_clicked)
 
         widget_fov_group_box = QGroupBox("FOV")
         layout_group_box = QFormLayout(widget_fov_group_box)
@@ -71,7 +71,7 @@ class RasterizerTab(QWidget):
         layout_main.addWidget(bt_rasterize)
         layout_main.addStretch()
 
-    def button_clicked(self):
+    def rasterize_clicked(self):
         width = int(self.image_width_widget.text())
         height = int(self.image_height_widget.text())
         scale = float(self.scale_widget.text())

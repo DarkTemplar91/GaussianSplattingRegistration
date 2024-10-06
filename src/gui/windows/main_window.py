@@ -3,7 +3,7 @@ import math
 import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSplitter, QGroupBox, \
-    QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
+    QTabWidget, QErrorMessage, QMessageBox, QSizePolicy, QStackedWidget
 
 from src.gui.tabs.evaluation_tab import EvaluationTab
 from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
@@ -17,6 +17,7 @@ from src.gui.tabs.visualizer_tab import VisualizerTab
 from src.gui.widgets.progress_dialog_factory import ProgressDialogFactory
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.windows.image_viewer_window import RasterImageViewer
+from src.gui.windows.interactive_viewer_window import InteractiveImageViewer
 from src.gui.windows.open3d_window import Open3DWindow
 from src.gui.workers.qt_base_worker import move_worker_to_thread
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
@@ -29,6 +30,9 @@ from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGauss
     PointCloudLoaderO3D
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
+from src.models.cameras import Camera
+from src.models.gaussian_model import GaussianModel
+from src.utils.graphics_utils import get_focal_from_intrinsics
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -66,7 +70,13 @@ class RegistrationMainWindow(QMainWindow):
 
         # Create splitter and two planes
         splitter = QSplitter(self)
+
+        self.vis_stack = QStackedWidget()
         self.pane_open3d = Open3DWindow(self)
+        self.interactive_viewer = InteractiveImageViewer(None, None)
+        self.vis_stack.addWidget(self.pane_open3d)
+        self.vis_stack.addWidget(self.interactive_viewer)
+        self.vis_stack.setCurrentIndex(0)
         pane_data = QWidget()
 
         layout_pane = QVBoxLayout()
@@ -83,7 +93,7 @@ class RegistrationMainWindow(QMainWindow):
         layout_pane.setStretch(0, 1)
         layout_pane.setStretch(1, 1)
 
-        splitter.addWidget(self.pane_open3d)
+        splitter.addWidget(self.vis_stack)
         splitter.addWidget(pane_data)
 
         splitter.setOrientation(Qt.Orientation.Horizontal)
@@ -114,6 +124,7 @@ class RegistrationMainWindow(QMainWindow):
         self.input_tab.signal_load_cached.connect(self.handle_cached_load)
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
+        self.visualizer_widget.signal_change_type.connect(self.change_vis_type)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.on_embed_button_pressed)
         self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
@@ -238,6 +249,26 @@ class RegistrationMainWindow(QMainWindow):
     def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
         self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.pane_open3d.update_visualizer(zoom, front, lookat, up)
+
+    def change_vis_type(self, type_index):
+        self.vis_stack.setCurrentIndex(type_index)
+        if type_index == 1:
+            # TODO: Refactor
+            extrinsic = self.pane_open3d.get_camera_extrinsic().astype(np.float32)
+            camera_mat = extrinsic.transpose()
+            intrinsic = self.pane_open3d.get_camera_intrinsic().astype(np.float32)
+            fx, fy = get_focal_from_intrinsics(intrinsic)
+            camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], fx, fy, "",
+                            1500, 1018)
+
+            pc1 = self.pc_gaussian_list_first[self.current_index] if self.pc_gaussian_list_first else None
+            pc2 = self.pc_gaussian_list_second[self.current_index] if self.pc_gaussian_list_second else None
+            gaussian_merged = GaussianModel.get_merged_gaussian_point_clouds(pc1, pc2, self.transformation_picker.transformation_matrix)
+            gaussian_merged.move_to_device("cuda:0")
+            self.interactive_viewer.set_active(True)
+            self.interactive_viewer.set_point_cloud(gaussian_merged)
+
+            self.interactive_viewer.set_camera(camera)
 
     def get_current_view(self):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
