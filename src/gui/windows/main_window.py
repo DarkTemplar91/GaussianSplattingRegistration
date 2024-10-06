@@ -232,8 +232,8 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_open3d_list_first.append(pc_first)
         self.pc_open3d_list_second.append(pc_second)
 
-        self.pane_open3d.vis.reset_view_point(True)
         self.pane_open3d.load_point_clouds(pc_first, pc_second)
+        self.pane_open3d.vis.reset_view_point(True)
 
     def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
         self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)

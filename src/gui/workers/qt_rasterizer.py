@@ -7,7 +7,7 @@ from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.cameras import Camera
 from src.models.gaussian_model import GaussianModel
 from src.utils.graphics_utils import focal2fov, get_focal_from_intrinsics
-from src.utils.rasterization_util import rasterize_image
+from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 
 class RasterizerWorker(BaseWorker):
@@ -28,39 +28,26 @@ class RasterizerWorker(BaseWorker):
         self.extrinsic = extrinsic
         self.intrinsic = intrinsic
 
-        fx, fy = get_focal_from_intrinsics(intrinsic)
-        self.fov_x = focal2fov(fx, img_width)
-        self.fov_y = focal2fov(fy, img_height)
+        self.fx, self.fy = get_focal_from_intrinsics(intrinsic)
 
     def run(self):
         with torch.no_grad():
             point_cloud = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, self.transformation)
 
             camera_mat = self.extrinsic.transpose()
-            camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fov_x, self.fov_y, "",
+            camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fx, self.fy, "",
                             self.width, self.height)
 
             point_cloud.move_to_device(self.device)
-            image_tensor, _ = rasterize_image(point_cloud, camera, self.scale, self.color, self.device, False)
-
-            pix = self.get_pixmap_from_tensor(image_tensor)
+            image_tensor = rasterize_image(point_cloud, camera, self.scale, self.color, self.device, False)
+            pix = get_pixmap_from_tensor(image_tensor)
 
             del point_cloud
             torch.cuda.empty_cache()
             self.signal_result.emit(pix)
 
         self.signal_progress.emit(100)
-        self.signal_finished.emit()
+        #self.signal_finished.emit()
         torch.cuda.empty_cache()
 
-    def get_pixmap_from_tensor(self, image_tensor):
-        numpy_image = (image_tensor * 255).clamp(0, 255).to(torch.uint8).permute(1, 2, 0).cpu().detach().numpy().astype(
-            dtype=np.uint8)
-        img_save = Image.fromarray(numpy_image)
 
-        img_save = img_save.convert("RGBA")
-        data = img_save.tobytes("raw", "RGBA")
-
-        qim = QtGui.QImage(data, self.width, self.height, QtGui.QImage.Format.Format_RGBA8888)
-        pix = QtGui.QPixmap.fromImage(qim)
-        return pix

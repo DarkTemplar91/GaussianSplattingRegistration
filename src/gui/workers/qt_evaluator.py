@@ -8,7 +8,7 @@ from PySide6 import QtWidgets
 
 from src.gui.workers.qt_base_worker import BaseWorker
 from src.models.gaussian_model import GaussianModel
-from src.submodules.lpips_pytorch import lpips
+import lpips
 from src.utils.evaluation_utils import ssim, psnr, mse
 from src.utils.rasterization_util import rasterize_image
 
@@ -79,7 +79,7 @@ class RegistrationEvaluator(BaseWorker):
                 continue
 
             try:
-                image_tensor, _ = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
+                image_tensor = rasterize_image(point_cloud, camera, 1, self.color, self.device, self.use_gpu)
             except (OSError, IOError) as e:
                 error_list.append(str(e))
                 continue

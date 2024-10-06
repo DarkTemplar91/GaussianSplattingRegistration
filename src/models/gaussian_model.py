@@ -78,16 +78,21 @@ class GaussianModel:
     def get_raw_opacity(self):
         return self._opacity
 
-    @property
-    def get_full_covariance_precomputed(self):
-        return rebuild_lowerdiag(self._covariance)
+    def get_full_covariance(self, scaling_modifier=1.0):
+        full_covariance = rebuild_lowerdiag(self._covariance)
+        if scaling_modifier == 1:
+            return full_covariance
+
+        transformation_matrix = torch.diag_embed(torch.tensor([scaling_modifier] * 3)).to(self._covariance.device)
+        return transformation_matrix @ full_covariance @ transformation_matrix.T
 
     def get_covariance(self, scaling_modifier=1):
         if scaling_modifier == 1:
             return self._covariance
 
         transformation_matrix = torch.diag_embed(torch.tensor([scaling_modifier] * 3)).to(self._covariance.device)
-        transformed_covariances = transformation_matrix @ self.get_full_covariance_precomputed @ transformation_matrix.T
+        transformed_covariances = (transformation_matrix @ self.get_full_covariance(scaling_modifier) @
+                                   transformation_matrix.T)
         return strip_symmetric(transformed_covariances)
 
     def from_ply(self, plydata):
@@ -204,7 +209,7 @@ class GaussianModel:
         self._xyz = torch.matmul(self._xyz, rotation_matrix.T)
         self._xyz += transformation_matrix[:3, 3]
 
-        transformed_covariances = rotation_matrix @ self.get_full_covariance_precomputed @ rotation_matrix.transpose(
+        transformed_covariances = rotation_matrix @ self.get_full_covariance() @ rotation_matrix.transpose(
             0, 1)
         self._covariance = strip_symmetric(transformed_covariances)
 
@@ -232,7 +237,7 @@ class GaussianModel:
     """
 
     def decompose_covariance_matrix(self):
-        eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance_precomputed)
+        eigenvalues, eigenvectors = torch.linalg.eigh(self.get_full_covariance())
 
         # Standard basis vectors for x, y, z axes
         x_axis = torch.tensor([1, 0, 0], dtype=torch.float32, device=self.device_name)
