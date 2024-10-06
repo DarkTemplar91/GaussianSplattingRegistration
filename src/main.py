@@ -27,10 +27,10 @@ if __name__ == '__main__':
     form.show()"""
 
     # D:\Egyetem\Szakdoga\TestData\Blender\lego_full\point_cloud\iteration_30000
-    _, point_cloud = load_gaussian_pc("C:/Users/szasz/Downloads/models/stump/point_cloud/iteration_30000/point_cloud.ply")
+    _, point_cloud = load_gaussian_pc("D:/Egyetem/Szakdoga/TestData/Blender/lego_full/point_cloud/iteration_30000/point_cloud.ply")
     point_cloud.move_to_device("cuda:0")
     mean = torch.mean(point_cloud.get_xyz, dim=0)
-    f = open("C:/Users/szasz/Downloads/models/stump/cameras.json")
+    f = open("D:/Egyetem/Szakdoga/TestData/Blender/lego_full/cameras.json")
     cameras_list = []
     data = json.load(f)
     for camera_iter in data:
