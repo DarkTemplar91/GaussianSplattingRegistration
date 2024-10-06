@@ -125,7 +125,7 @@ class EvaluationTab(QWidget):
     def current_camera_changed(self, camera_id):
         current_camera = self.cameras_list[camera_id - 1]
         self.current_image_name.setText(current_camera.image_name)
-        self.signal_camera_change.emit(current_camera.viewmat)
+        self.signal_camera_change.emit(current_camera.viewmat.squeeze())
 
     def evaluate_registration(self):
         image_path = self.fs_images.file_path
