@@ -7,12 +7,12 @@ from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 
 class InteractiveImageViewer(QWidget):
-    def __init__(self, point_cloud, camera):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle('3D Viewer')
 
-        self.point_cloud = point_cloud
-        self.camera = camera
+        self.point_cloud = None
+        self.camera = None
 
         self.render_label = None
 
@@ -20,9 +20,8 @@ class InteractiveImageViewer(QWidget):
         self.timer.timeout.connect(self.update_view)
 
         self.last_mouse_position = None
-        self.setMouseTracking(True)
-        self.middle_mouse_pressed = False
         self.left_mouse_pressed = False
+        self.setMouseTracking(True)
 
         self.rotation_speed = np.radians(1)
         self.zoom_factor = 0.01
@@ -38,42 +37,29 @@ class InteractiveImageViewer(QWidget):
         layout.setSpacing(0)
 
     def mouseMoveEvent(self, event):
-        if self.last_mouse_position is None:
-            return
-
-        if not self.middle_mouse_pressed and not self.left_mouse_pressed:
+        if self.last_mouse_position is None or not self.left_mouse_pressed:
             return
 
         dx = self.last_mouse_position.x() - event.x()
         dy = self.last_mouse_position.y() - event.y()
 
-        if self.middle_mouse_pressed:
-            if dy != 0:
-                self.camera.move_vertically(self.speed * (-1 if dy > 0 else 1))
-            if dx != 0:
-                self.camera.move_horizontally(-self.speed * (-1 if dx < 0 else 1))
-
-        elif self.left_mouse_pressed:
-            self.camera.rotate(dx * self.rotation_speed, dy * self.rotation_speed)
+        self.camera.rotate(dx * self.rotation_speed, dy * self.rotation_speed)
 
         self.last_mouse_position = event.pos()
         self.camera.update_view_matrix()
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.MiddleButton:
-            self.middle_mouse_pressed = True
-        elif event.button() == Qt.MouseButton.LeftButton:
-            self.left_mouse_pressed = True
-        else:
+        if event.button() != Qt.MouseButton.LeftButton:
             return
 
+        self.left_mouse_pressed = True
         self.last_mouse_position = event.pos()
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.MiddleButton:
-            self.middle_mouse_pressed = False
-        elif event.button() == Qt.MouseButton.LeftButton:
-            self.left_mouse_pressed = False
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
+
+        self.left_mouse_pressed = False
 
     def wheelEvent(self, event):
         delta = event.angleDelta().y()

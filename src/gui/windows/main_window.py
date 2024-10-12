@@ -73,7 +73,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.vis_stack = QStackedWidget()
         self.pane_open3d = Open3DWindow(self)
-        self.interactive_viewer = InteractiveImageViewer(None, None)
+        self.interactive_viewer = InteractiveImageViewer()
         self.vis_stack.addWidget(self.pane_open3d)
         self.vis_stack.addWidget(self.interactive_viewer)
         self.vis_stack.setCurrentIndex(0)
@@ -269,6 +269,13 @@ class RegistrationMainWindow(QMainWindow):
             self.interactive_viewer.set_point_cloud(gaussian_merged)
 
             self.interactive_viewer.set_camera(camera)
+            return
+
+        self.interactive_viewer.set_active(False)
+        self.interactive_viewer.set_point_cloud(None)
+        #self.pane_open3d.apply_camera_transformation(self.interactive_viewer.camera.viewmat)
+        self.interactive_viewer.set_camera(None)
+
 
     def get_current_view(self):
         zoom, front, lookat, up = self.pane_open3d.get_current_view()
