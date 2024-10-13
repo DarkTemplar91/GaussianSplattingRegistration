@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 
-class InteractiveImageViewer(QWidget):
+class RasterizationWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('3D Viewer')
@@ -14,7 +14,8 @@ class InteractiveImageViewer(QWidget):
         self.point_cloud = None
         self.camera = None
 
-        self.render_label = None
+        self.layout: QVBoxLayout = None
+        self.render_label: QLabel = None
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_view)
@@ -28,16 +29,21 @@ class InteractiveImageViewer(QWidget):
         self.speed = 0.01
 
         self.init_ui()
+        # For debugging
+        self.render_label.setText("Hello World!")
 
     def init_ui(self):
-        layout = QVBoxLayout(self)
+        self.layout = QVBoxLayout(self)
         self.render_label = QLabel()
-        layout.addWidget(self.render_label)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        self.layout.addWidget(self.render_label)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
 
     def mouseMoveEvent(self, event):
         if self.last_mouse_position is None or not self.left_mouse_pressed:
+            return
+
+        if self.camera is None:
             return
 
         dx = self.last_mouse_position.x() - event.x()
@@ -52,6 +58,9 @@ class InteractiveImageViewer(QWidget):
         if event.button() != Qt.MouseButton.LeftButton:
             return
 
+        if self.camera is None:
+            return
+
         self.left_mouse_pressed = True
         self.last_mouse_position = event.pos()
 
@@ -59,9 +68,15 @@ class InteractiveImageViewer(QWidget):
         if event.button() != Qt.MouseButton.LeftButton:
             return
 
+        if self.camera is None:
+            return
+
         self.left_mouse_pressed = False
 
     def wheelEvent(self, event):
+        if self.camera is None:
+            return
+
         delta = event.angleDelta().y()
         self.camera.zoom(delta * self.zoom_factor)
         self.camera.update_view_matrix()
@@ -70,20 +85,39 @@ class InteractiveImageViewer(QWidget):
         if self.point_cloud is None:
             return
 
+        if self.camera is None:
+            return
+
         """self.camera.width = self.width()
         self.camera.height = self.height()"""
         image_tensor = rasterize_image(self.point_cloud, self.camera, 1, np.zeros(3), "cuda:0", False)
         pix = get_pixmap_from_tensor(image_tensor)
         self.render_label.setPixmap(pix)
 
-    def set_active(self, start):
-        if start:
-            self.timer.start(30)
-        else:
-            self.timer.stop()
+    def set_active(self, active):
+        self.timer.start(1) if active else self.timer.stop()
 
     def set_point_cloud(self, point_cloud):
         self.point_cloud = point_cloud
 
     def set_camera(self, camera):
         self.camera = camera
+
+    # TODO: Implement if needed
+    def on_embed_button_pressed(self):
+        pass
+
+    def update_transform(self, transformation):
+        pass
+
+    def load_point_clouds(self, pc1, pc2, transformation):
+        pass
+
+    def get_current_view(self):
+        pass
+
+    def get_camera_model(self):
+        pass
+
+    def apply_camera_transformation(self, transformation):
+        pass

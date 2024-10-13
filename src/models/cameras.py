@@ -58,3 +58,6 @@ class Camera:
 
     def update_view_matrix(self):
         self.viewmat = torch.tensor(getWorld2View2(self.rotation.numpy(), self.position.numpy()))[None, :, :]
+
+    def set_intrinsics(self, intrinsics):
+        raise NotImplemented

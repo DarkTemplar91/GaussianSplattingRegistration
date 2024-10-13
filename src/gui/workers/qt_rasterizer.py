@@ -12,7 +12,7 @@ from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 class RasterizerWorker(BaseWorker):
 
-    def __init__(self, pc1, pc2, transformation, extrinsic, intrinsic, scale, color, img_height, img_width):
+    def __init__(self, pc1, pc2, transformation, camera, scale, color):
         super().__init__()
 
         self.device = torch.device("cuda:0")
@@ -20,26 +20,16 @@ class RasterizerWorker(BaseWorker):
         self.pc2 = pc2
 
         self.transformation = transformation
-        self.width = img_width
-        self.height = img_height
+        self.camera = camera
         self.scale = scale
         self.color = color
-
-        self.extrinsic = extrinsic
-        self.intrinsic = intrinsic
-
-        self.fx, self.fy = get_focal_from_intrinsics(intrinsic)
 
     def run(self):
         with torch.no_grad():
             point_cloud = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, self.transformation)
 
-            camera_mat = self.extrinsic.transpose()
-            camera = Camera(camera_mat[:3, :3], camera_mat[3, :3], self.fx, self.fy, "",
-                            self.width, self.height)
-
             point_cloud.move_to_device(self.device)
-            image_tensor = rasterize_image(point_cloud, camera, self.scale, self.color, self.device, False)
+            image_tensor = rasterize_image(point_cloud, self.camera, self.scale, self.color, self.device, False)
             pix = get_pixmap_from_tensor(image_tensor)
 
             del point_cloud

@@ -39,9 +39,8 @@ class Open3DWindow(QWidget):
 
         self.hwnd = self.get_hwnd()
 
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_vis)
-        timer.start(1)
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.update_vis)
 
         # Example data
         demo_icp_pcds = o3d.data.DemoICPPointClouds()
@@ -285,3 +284,9 @@ class Open3DWindow(QWidget):
         dsp.sync()
 
         return False
+
+    def set_active(self, active):
+        self.timer.start(1) if active else self.timer.stop()
+
+    def get_camera_model(self):
+        raise NotImplemented

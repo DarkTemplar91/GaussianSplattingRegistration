@@ -11,7 +11,7 @@ from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 
 class RasterizerTab(QWidget):
-    signal_rasterize = Signal(int, int, float, np.ndarray, object)
+    signal_rasterize = Signal(float, np.ndarray, object)
 
     def __init__(self):
         super().__init__()
@@ -78,7 +78,7 @@ class RasterizerTab(QWidget):
         color = np.asarray(self.background_color_widget.color_debug)
         value = float(self.fov_widget.lineedit.text())
         intrinsics = graphic_util.get_camera_intrinsics(width, height, value, self.button_group.checkedId())
-        self.signal_rasterize.emit(width, height, scale, color, intrinsics)
+        self.signal_rasterize.emit(scale, color, intrinsics)
 
     def fov_source_changed(self, button_id, checked):
         self.fov_widget.setEnabled(button_id != 0 and checked)
