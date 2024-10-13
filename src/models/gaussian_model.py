@@ -267,7 +267,7 @@ class GaussianModel:
         gaussian1_copy = gaussian1
 
         # If the transformation matrix is not an identity matrix
-        if not np.array_equal(transformation_matrix, np.eye(transformation_matrix.shape[0])):
+        if transformation_matrix is not None and not np.array_equal(transformation_matrix, np.eye(transformation_matrix.shape[0])):
             gaussian1_copy = gaussian1.clone_gaussian()
             transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(
                 gaussian1.device_name)

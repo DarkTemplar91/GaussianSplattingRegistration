@@ -31,7 +31,7 @@ from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGauss
     PointCloudLoaderO3D
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
-from src.models.cameras import Camera
+from src.models.camera import Camera
 from src.models.gaussian_model import GaussianModel
 from src.utils.graphics_utils import get_focal_from_intrinsics
 
@@ -377,7 +377,7 @@ class RegistrationMainWindow(QMainWindow):
                                f"RMSE: {inlier_rmse}\n")
         message_dialog.exec()
 
-    def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
+    def rasterize_gaussians(self, width, height, scale, color, fx_supplied, fy_supplied):
         pc1 = self.pc_gaussian_list_first[self.current_index] if self.pc_gaussian_list_first else None
         pc2 = self.pc_gaussian_list_second[self.current_index] if self.pc_gaussian_list_second else None
 
@@ -397,11 +397,16 @@ class RegistrationMainWindow(QMainWindow):
                                "Increase the FOV to continue!")
             return
 
-        camera = self.visualizer_window.get_current_camera()
-        camera.set_intrinsics(intrinsics_supplied)
+        visualizer_camera = self.visualizer_window.get_camera
+        fx, fy = fx_supplied, fy_supplied
+        if fx == 0 and fy == 0:
+            fx, fy = get_focal_from_intrinsics(self.visualizer_window.get_camera.intrinsics[0].numpy())
+
+        new_camera = Camera(visualizer_camera.rotation.numpy(), visualizer_camera.position.numpy(),
+                            fx, fy, "", width, height)
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Creating rasterized image...")
-        worker = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix, camera, scale, color)
+        worker = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix, new_camera, scale, color)
 
         thread = move_worker_to_thread(self, worker, self.create_raster_window, progress_handler=progress_dialog.setValue)
         thread.start()

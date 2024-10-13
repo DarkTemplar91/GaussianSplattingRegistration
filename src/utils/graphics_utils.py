@@ -71,6 +71,11 @@ def get_focal_from_intrinsics(intrinsics):
     return fx, fy
 
 
+def get_dimension_from_intrinsics(intrinsics):
+    width, height = intrinsics[:2, 2]
+    return int(width * 2), int(height * 2)
+
+
 def fov_x2fov_y(fov_x, aspect_ratio):
     return 2 * math.atan(math.tan(fov_x / 2) / aspect_ratio)
 
@@ -80,11 +85,24 @@ def sh2rgb(sh):
 
 
 def get_camera_intrinsics(width, height, value, fov_type):
+    fx, fy = get_focal_lengths(width, height, value, fov_type)
+
+    cx = width / 2
+    cy = height / 2
+    intrinsics = np.array([
+        [fx, 0, cx],
+        [0, fy, cy],
+        [0, 0, 1]
+    ])
+    return intrinsics
+
+
+def get_focal_lengths(width, height, value, fov_type):
     fx = 0.0
     fy = 0.0
     match fov_type:
         case 0:
-            return None
+            return fx, fy
         case 1:
             # if value is greate than pi, the user entered the fov in degrees
             if value > math.pi:
@@ -98,11 +116,4 @@ def get_camera_intrinsics(width, height, value, fov_type):
             fov_y = fov_x2fov_y(fov_x, width / height)
             fy = fov2focal(fov_y, height)
 
-    cx = width / 2
-    cy = height / 2
-    intrinsics = np.array([
-        [fx, 0, cx],
-        [0, fy, cy],
-        [0, 0, 1]
-    ])
-    return intrinsics
+    return fx, fy

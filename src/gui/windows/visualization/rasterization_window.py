@@ -1,11 +1,14 @@
 import numpy as np
+import torch
 from PySide6 import QtCore
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
+from src.models.gaussian_model import GaussianModel
 from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 
+# noinspection PyTypeChecker
 class RasterizationWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -30,7 +33,7 @@ class RasterizationWindow(QWidget):
 
         self.init_ui()
         # For debugging
-        self.render_label.setText("Hello World!")
+        #self.render_label.setText("Hello World!")
 
     def init_ui(self):
         self.layout = QVBoxLayout(self)
@@ -53,6 +56,7 @@ class RasterizationWindow(QWidget):
 
         self.last_mouse_position = event.pos()
         self.camera.update_view_matrix()
+        self.update_view()
 
     def mousePressEvent(self, event):
         if event.button() != Qt.MouseButton.LeftButton:
@@ -80,6 +84,7 @@ class RasterizationWindow(QWidget):
         delta = event.angleDelta().y()
         self.camera.zoom(delta * self.zoom_factor)
         self.camera.update_view_matrix()
+        self.update_view()
 
     def update_view(self):
         if self.point_cloud is None:
@@ -95,7 +100,15 @@ class RasterizationWindow(QWidget):
         self.render_label.setPixmap(pix)
 
     def set_active(self, active):
-        self.timer.start(1) if active else self.timer.stop()
+        if active:
+            self.point_cloud.move_to_device("cuda:0")
+            self.timer.start(30)
+            return
+
+        self.timer.stop()
+        self.point_cloud.move_to_device("cpu")
+        self.render_label.clear()
+        torch.cuda.empty_cache()
 
     def set_point_cloud(self, point_cloud):
         self.point_cloud = point_cloud
@@ -111,7 +124,7 @@ class RasterizationWindow(QWidget):
         pass
 
     def load_point_clouds(self, pc1, pc2, transformation):
-        pass
+        self.point_cloud = GaussianModel.get_merged_gaussian_point_clouds(pc1, pc2, transformation)
 
     def get_current_view(self):
         pass

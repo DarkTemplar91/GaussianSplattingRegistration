@@ -7,6 +7,9 @@ import open3d as o3d
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtWidgets import QMainWindow, QWidget
 
+from src.models.camera import Camera
+from src.utils.graphics_utils import get_focal_from_intrinsics, get_dimension_from_intrinsics
+
 platform = sys.platform
 if platform.startswith('win'):
     import win32gui
@@ -193,7 +196,6 @@ class Open3DWindow(QWidget):
         parameters = view_control.convert_to_pinhole_camera_parameters()
         parameters.extrinsic = extrinsics
         view_control.convert_from_pinhole_camera_parameters(parameters)
-        pass
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -289,4 +291,10 @@ class Open3DWindow(QWidget):
         self.timer.start(1) if active else self.timer.stop()
 
     def get_camera_model(self):
-        raise NotImplemented
+        camera_mat = self.get_camera_extrinsic().astype(np.float32).transpose()
+        R = camera_mat[:3, :3]
+        T = camera_mat[3, :3]
+        intrinsics = self.get_camera_intrinsic()
+        fx, fy = get_focal_from_intrinsics(intrinsics)
+        width, height = get_dimension_from_intrinsics(intrinsics)
+        return Camera(R, T, fx, fy, "", width, height)

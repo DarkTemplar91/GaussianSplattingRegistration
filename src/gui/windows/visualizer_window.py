@@ -17,7 +17,9 @@ class VisualizerWindow(QWidget):
 
         self.vis_stack = QStackedWidget()
         self.vis_open3d = Open3DWindow(self)
+        self.camera = self.vis_open3d.get_camera_model()
         self.vis_raster = RasterizationWindow()
+        self.vis_raster.camera = self.camera
         self.vis_stack.addWidget(self.vis_open3d)
         self.vis_stack.addWidget(self.vis_raster)
         self.vis_stack.setCurrentIndex(0)
@@ -29,6 +31,13 @@ class VisualizerWindow(QWidget):
         self.o3d_pc2 = self.vis_open3d.pc2
         self.gauss_pc1 = None
         self.gauss_pc2 = None
+
+    @property
+    def get_camera(self):
+        if self.vis_stack.currentIndex() == 0:
+            return self.vis_open3d.get_camera_model()
+
+        return self.camera
 
     def load_point_clouds(self, o3d_pc1, o3d_pc2, gauss_pc1=None, gauss_pc2=None, keep_view=False,
                           transformation_matrix=None, debug_color1=None, debug_color2=None):
@@ -54,10 +63,12 @@ class VisualizerWindow(QWidget):
 
     def vis_type_changed(self, index):
         if index == 0:
-            self.vis_open3d.set_active(True)
             self.vis_raster.set_active(False)
+            self.vis_open3d.camera = self.get_camera  # TODO: Change viewport
+            self.vis_open3d.set_active(True)
         else:
             self.vis_open3d.set_active(False)
+            self.vis_raster.camera = self.get_camera
             self.vis_raster.set_active(True)
 
         self.vis_stack.setCurrentIndex(index)
@@ -80,13 +91,6 @@ class VisualizerWindow(QWidget):
             return self.vis_open3d.is_ortho()
 
         return False
-
-    def get_current_camera(self):
-        if self.vis_stack.currentIndex() == 0:
-            self.vis_open3d.get_camera_model()
-            return
-
-        self.vis_raster.get_camera_model()
 
     def apply_camera_transformation(self, transformation):
         if self.vis_stack.currentIndex() == 0:

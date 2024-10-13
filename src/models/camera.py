@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from src.utils.graphics_utils import getWorld2View2
+from src.utils.graphics_utils import getWorld2View2, get_focal_from_intrinsics, get_dimension_from_intrinsics
 
 
 class Camera:
@@ -9,7 +9,7 @@ class Camera:
     up_vector = torch.tensor([0, 1, 0], dtype=torch.float32)
 
     def __init__(self, R, T, fx, fy, image_name, width, height,
-                 trans=np.array([0.0, 0.0, 0.0]), scale=1.0, target=torch.zeros(3, dtype=torch.float32)):
+                 trans=np.array([0.0, 0.0, 0.0]), scale=1.0):
         super(Camera, self).__init__()
         self.image_name = image_name
         self.position = torch.tensor(T, dtype=torch.float32)
@@ -58,6 +58,3 @@ class Camera:
 
     def update_view_matrix(self):
         self.viewmat = torch.tensor(getWorld2View2(self.rotation.numpy(), self.position.numpy()))[None, :, :]
-
-    def set_intrinsics(self, intrinsics):
-        raise NotImplemented

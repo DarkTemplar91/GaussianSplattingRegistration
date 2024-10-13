@@ -10,7 +10,7 @@ import src.utils.graphics_utils as graphic_util
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.models.cameras import Camera
+from src.models.camera import Camera
 from src.utils.general_utils import convert_to_camera_transform
 
 
