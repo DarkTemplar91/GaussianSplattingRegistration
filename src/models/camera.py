@@ -1,7 +1,8 @@
 import torch
 import numpy as np
 
-from src.utils.graphics_utils import getWorld2View2, get_focal_from_intrinsics, get_dimension_from_intrinsics
+from src.utils.graphics_utils import getWorld2View2, get_focal_from_intrinsics, get_dimension_from_intrinsics, \
+    getView2World2
 
 
 class Camera:
@@ -54,7 +55,14 @@ class Camera:
         self.rotation = self.rotation @ yaw_matrix @ pitch_matrix
 
     def zoom(self, delta):
-        self.position += -delta * torch.tensor([0, 0, 1], dtype=torch.float32)
+        self.position += delta * torch.tensor([0, 0, 1], dtype=torch.float32)
 
     def update_view_matrix(self):
         self.viewmat = torch.tensor(getWorld2View2(self.rotation.numpy(), self.position.numpy()))[None, :, :]
+
+    def set_viewmat(self, tranformation):
+        self.viewmat = tranformation[None, :, :]
+        R, T = getView2World2(tranformation.detach().cpu().numpy())
+
+        self.position = torch.tensor(T, dtype=torch.float32)
+        self.rotation = torch.tensor(R, dtype=torch.float32)

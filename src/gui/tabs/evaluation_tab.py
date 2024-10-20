@@ -45,7 +45,7 @@ class EvaluationTab(QWidget):
         label = QLabel("Snap to:")
 
         self.spinbox = QSpinBox()
-        self.spinbox.setFixedWidth(50)
+        self.spinbox.setFixedWidth(70)
         self.spinbox.setFixedHeight(30)
         self.spinbox.setRange(0, 0)
         self.spinbox.setKeyboardTracking(False)

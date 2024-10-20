@@ -268,9 +268,8 @@ class GaussianModel:
 
         # If the transformation matrix is not an identity matrix
         if transformation_matrix is not None and not np.array_equal(transformation_matrix, np.eye(transformation_matrix.shape[0])):
+            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(gaussian1.device_name)
             gaussian1_copy = gaussian1.clone_gaussian()
-            transformation_matrix_tensor = torch.from_numpy(transformation_matrix.astype(np.float32)).to(
-                gaussian1.device_name)
             gaussian1_copy.transform_gaussian_model(transformation_matrix_tensor)
 
         merged_pc._xyz = torch.cat((gaussian1_copy._xyz, gaussian2._xyz))

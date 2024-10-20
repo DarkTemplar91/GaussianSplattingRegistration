@@ -3,7 +3,7 @@ import math
 import numpy as np
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSplitter, QGroupBox, \
-    QTabWidget, QErrorMessage, QMessageBox, QSizePolicy, QStackedWidget
+    QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
 
 from src.gui.tabs.evaluation_tab import EvaluationTab
 from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
@@ -17,8 +17,6 @@ from src.gui.tabs.visualizer_tab import VisualizerTab
 from src.gui.widgets.progress_dialog_factory import ProgressDialogFactory
 from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.windows.visualization.image_viewer_window import RasterImageViewer
-from src.gui.windows.visualization.rasterization_window import RasterizationWindow
-from src.gui.windows.visualization.open3d_window import Open3DWindow
 from src.gui.windows.visualizer_window import VisualizerWindow
 from src.gui.workers.qt_base_worker import move_worker_to_thread
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
@@ -32,7 +30,6 @@ from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGauss
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
 from src.models.camera import Camera
-from src.models.gaussian_model import GaussianModel
 from src.utils.graphics_utils import get_focal_from_intrinsics
 
 
@@ -157,7 +154,7 @@ class RegistrationMainWindow(QMainWindow):
         self.hem_widget.signal_slider_changed.connect(self.active_pc_changed)
 
         evaluator_widget = EvaluationTab()
-        evaluator_widget.signal_camera_change.connect(self.visualizer_window.apply_camera_transformation)
+        evaluator_widget.signal_camera_change.connect(self.visualizer_window.apply_camera_view)
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
         registration_tab.addTab(global_registration_widget, "Global")

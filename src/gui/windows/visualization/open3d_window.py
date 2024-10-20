@@ -7,6 +7,7 @@ import open3d as o3d
 from PySide6 import QtWidgets, QtCore
 from PySide6.QtWidgets import QMainWindow, QWidget
 
+from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.camera import Camera
 from src.utils.graphics_utils import get_focal_from_intrinsics, get_dimension_from_intrinsics
 
@@ -19,7 +20,7 @@ if platform.startswith('linux'):
     from Xlib import display, X
 
 
-class Open3DWindow(QWidget):
+class Open3DWindow(ViewerInterface):
     def __init__(self, parent):
         super(Open3DWindow, self).__init__()
         self.pc1_copy = None
@@ -120,33 +121,20 @@ class Open3DWindow(QWidget):
         view_control.set_lookat(lookat)
         view_control.set_up(up)
 
-    def get_current_view(self):
+    def update_camera_view(self, camera):
+        extrinsic = np.eye(4)
+        extrinsic[:3, :3] = camera.rotation.T
+        extrinsic[:3, 3] = camera.position
+        self.apply_camera_view(extrinsic)
+
+    def get_current_view(self, aabb):
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
         extrinsic = parameters.extrinsic
 
-        up = -extrinsic[1:2, 0:3].transpose()
-        front = -extrinsic[2:3, 0:3].transpose()
-        eye = np.linalg.inv(extrinsic[0:3, 0:3]) @ (extrinsic[0:3, 3:4] * -1.0)
-
-        aabb = self.calculate_aabb()
-
         tan_half_fov = parameters.intrinsic.height / (parameters.intrinsic.intrinsic_matrix[1, 1] * 2.0)
-        fov_rad = np.arctan(tan_half_fov) * 2.0
-        fov = fov_rad * 180.0 / np.pi
-        fov = np.max([np.min([fov, 90.0]), 50.0])
 
-        bb_center = aabb.get_center()
-        subtracted = (eye.reshape(3) - bb_center)
-        ideal_distance = np.abs(subtracted.dot(front))[0]
-        ideal_zoom = ideal_distance * np.tan(fov * 0.5 / 180.0 * np.pi) / aabb.get_max_extent()
-
-        zoom = max([min([ideal_zoom, 2.0]), 0.02])
-        view_ratio = zoom * aabb.get_max_extent()
-        distance = view_ratio / np.tan(fov * 0.5 / 180.0 * np.pi)
-        lookat = eye - front * distance
-
-        return zoom, front.flatten(), lookat.flatten(), up.flatten()
+        return self.get_current_view_inner(extrinsic, tan_half_fov, aabb)
 
     def calculate_aabb(self):
         combined_vertices = o3d.utility.Vector3dVector()
@@ -191,7 +179,7 @@ class Open3DWindow(QWidget):
     def is_ortho(self):
         return self.vis.get_view_control().get_field_of_view() == 5
 
-    def apply_camera_transformation(self, extrinsics):
+    def apply_camera_view(self, extrinsics):
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
         parameters.extrinsic = extrinsics

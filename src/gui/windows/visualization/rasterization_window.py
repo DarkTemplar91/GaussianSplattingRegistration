@@ -2,19 +2,22 @@ import numpy as np
 import torch
 from PySide6 import QtCore
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QVBoxLayout
 
+from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.gaussian_model import GaussianModel
 from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 
 # noinspection PyTypeChecker
-class RasterizationWindow(QWidget):
+class RasterizationWindow(ViewerInterface):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('3D Viewer')
 
-        self.point_cloud = None
+        self.pc1 = None
+        self.pc2 = None
+        self.point_cloud_merged = None
         self.camera = None
 
         self.layout: QVBoxLayout = None
@@ -87,7 +90,7 @@ class RasterizationWindow(QWidget):
         self.update_view()
 
     def update_view(self):
-        if self.point_cloud is None:
+        if self.point_cloud_merged is None:
             return
 
         if self.camera is None:
@@ -95,42 +98,67 @@ class RasterizationWindow(QWidget):
 
         """self.camera.width = self.width()
         self.camera.height = self.height()"""
-        image_tensor = rasterize_image(self.point_cloud, self.camera, 1, np.zeros(3), "cuda:0", False)
+        image_tensor = rasterize_image(self.point_cloud_merged, self.camera, 1, np.zeros(3), "cuda:0", False)
         pix = get_pixmap_from_tensor(image_tensor)
         self.render_label.setPixmap(pix)
 
     def set_active(self, active):
         if active:
-            self.point_cloud.move_to_device("cuda:0")
+            self.point_cloud_merged.move_to_device("cuda:0")
             self.timer.start(30)
             return
 
         self.timer.stop()
-        self.point_cloud.move_to_device("cpu")
-        self.render_label.clear()
-        torch.cuda.empty_cache()
-
-    def set_point_cloud(self, point_cloud):
-        self.point_cloud = point_cloud
-
-    def set_camera(self, camera):
-        self.camera = camera
+        if self.point_cloud_merged is not None:
+            self.point_cloud_merged.move_to_device("cpu")
+            torch.cuda.empty_cache()
 
     # TODO: Implement if needed
     def on_embed_button_pressed(self):
         pass
 
     def update_transform(self, transformation):
-        pass
+        if self.pc1 is None or self.pc2 is None:
+            return
+
+        if self.point_cloud_merged is not None:
+            self.point_cloud_merged.move_to_device("cpu")
+            del self.point_cloud_merged
+            torch.cuda.empty_cache()
+
+        self.point_cloud_merged = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, transformation)
 
     def load_point_clouds(self, pc1, pc2, transformation):
-        self.point_cloud = GaussianModel.get_merged_gaussian_point_clouds(pc1, pc2, transformation)
+        if self.point_cloud_merged is not None:
+            self.point_cloud_merged.move_to_device("cpu")
+            del self.point_cloud_merged
+            torch.cuda.empty_cache()
 
-    def get_current_view(self):
-        pass
+        if self.pc1 is not None:
+            del self.pc1
+
+        if self.pc2 is not None:
+            del self.pc2
+
+        self.pc1 = pc1
+        self.pc2 = pc2
+
+        self.point_cloud_merged = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, transformation)
+
+    def get_current_view(self, aabb):
+        if self.camera is None:
+            return
+
+        extrinsics = self.camera.viewmat[0].detach().cpu().numpy()
+        tan_half_fov = self.camera.height / (self.camera.intrinsics[0, 1, 1].item() * 2.0)
+        return self.get_current_view_inner(extrinsics, tan_half_fov, aabb)
 
     def get_camera_model(self):
-        pass
+        return self.camera
 
-    def apply_camera_transformation(self, transformation):
-        pass
+    def apply_camera_view(self, transformation):
+        if self.camera is None:
+            return
+
+        self.camera.set_viewmat(transformation)
+
