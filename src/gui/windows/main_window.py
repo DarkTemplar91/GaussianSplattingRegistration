@@ -241,9 +241,8 @@ class RegistrationMainWindow(QMainWindow):
 
         self.visualizer_window.load_point_clouds(pc_first, pc_second, original1, original2)
         # TODO: Handle this
-        #self.pane_open3d.vis.reset_view_point(True)
+        self.visualizer_window.reset_view_point()
 
-    # TODO: Have different function for rasterizer as well
     def change_visualizer_settings_o3d(self, camera_view, dc1, dc2):
         self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
         self.visualizer_window.update_visualizer_settings_o3d(camera_view.zoom, camera_view.front, camera_view.lookat,

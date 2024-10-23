@@ -124,3 +124,16 @@ class VisualizerWindow(QWidget):
             return
 
         self.vis_raster.set_active(True)
+
+    def reset_view_point(self):
+        self.vis_open3d.set_active(False)
+        self.vis_raster.set_active(False)
+
+        self.vis_open3d.vis.reset_view_point(True)
+        self.vis_raster.apply_camera_view(torch.tensor(self.vis_open3d.get_camera_extrinsic(), dtype=torch.float32))
+
+        if self.vis_stack.currentIndex() == 0:
+            self.vis_open3d.set_active(True)
+            return
+
+        self.vis_raster.set_active(True)
