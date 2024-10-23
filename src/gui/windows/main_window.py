@@ -240,7 +240,6 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_open3d_list_second.append(pc_second)
 
         self.visualizer_window.load_point_clouds(pc_first, pc_second, original1, original2)
-        # TODO: Handle this
         self.visualizer_window.reset_view_point()
 
     def change_visualizer_settings_o3d(self, camera_view, dc1, dc2):
@@ -254,6 +253,14 @@ class RegistrationMainWindow(QMainWindow):
                                                                camera_view.up)
 
     def change_visualizer_type(self, type_index):
+        if type_index == 1 and len(self.pc_open3d_list_first) == 0:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("First load two 3DGS point clouds...")
+            self.visualizer_widget.checkbox.toggle()
+            return
+
         self.visualizer_window.vis_type_changed(type_index)
 
     def get_current_view(self):
