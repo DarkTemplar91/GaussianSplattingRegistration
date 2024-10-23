@@ -2,8 +2,9 @@ import numpy as np
 from PySide6 import QtCore
 from PySide6.QtGui import QDoubleValidator
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QFormLayout, QGroupBox, QPushButton, QSizePolicy, \
-    QStyle, QHBoxLayout, QCheckBox
+    QStyle, QHBoxLayout
 
+from gui.widgets.animated_toggle_widget import AnimatedToggle
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.simple_input_field_widget import SimpleInputField
@@ -41,9 +42,17 @@ class VisualizerTab(QWidget):
             }"""
         )
 
-        self.checkbox = QCheckBox()
-        self.checkbox.setText("Use GSPLAT")
+        checkbox_widget = QWidget()
+        checkbox_form = QFormLayout(checkbox_widget)
+        checkbox_form.setContentsMargins(0, 0, 0, 0)
+        self.checkbox = AnimatedToggle()
+        self.checkbox.setFixedSize(self.checkbox.sizeHint())
         self.checkbox.toggled.connect(self.change_visualizer)
+        checkbox_text = QLabel("Use GSPLAT:")
+        checkbox_text.setStyleSheet("""QLabel {
+                font-size: 10pt;
+            }""")
+        checkbox_form.addRow(checkbox_text, self.checkbox)
 
         titled_label_widget = QWidget()
         label_layout = QHBoxLayout(titled_label_widget)
@@ -93,7 +102,7 @@ class VisualizerTab(QWidget):
         button_copy.connect_to_clicked(self.get_current_view)
 
         layout.addWidget(titled_label_widget)
-        layout.addWidget(self.checkbox)
+        layout.addWidget(checkbox_widget)
         layout.addWidget(self.form_widget_color)
         layout.addWidget(view_group_widget)
         layout.addWidget(button_apply)
