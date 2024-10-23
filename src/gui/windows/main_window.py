@@ -116,7 +116,8 @@ class RegistrationMainWindow(QMainWindow):
         self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
         self.input_tab.signal_load_cached.connect(self.handle_cached_load)
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
-        self.visualizer_widget.signal_change_vis.connect(self.change_visualizer_settings_o3d)
+        self.visualizer_widget.signal_change_vis_settings_o3d.connect(self.change_visualizer_settings_o3d)
+        self.visualizer_widget.signal_change_vis_settings_3dgs.connect(self.change_visualizer_settings_3dgs)
         self.visualizer_widget.signal_change_type.connect(self.change_visualizer_type)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.visualizer_widget.signal_pop_visualizer.connect(self.visualizer_window.on_embed_button_pressed)
@@ -243,9 +244,15 @@ class RegistrationMainWindow(QMainWindow):
         #self.pane_open3d.vis.reset_view_point(True)
 
     # TODO: Have different function for rasterizer as well
-    def change_visualizer_settings_o3d(self, zoom, front, lookat, up, dc1, dc2):
+    def change_visualizer_settings_o3d(self, camera_view, dc1, dc2):
         self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
-        self.visualizer_window.update_visualizer_settings_o3d(zoom, front, lookat, up)
+        self.visualizer_window.update_visualizer_settings_o3d(camera_view.zoom, camera_view.front, camera_view.lookat,
+                                                              camera_view.up)
+
+    def change_visualizer_settings_3dgs(self, camera_view, background_color):
+        self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, None, None)
+        self.visualizer_window.update_visualizer_settings_3dgs(camera_view.zoom, camera_view.front, camera_view.lookat,
+                                                               camera_view.up)
 
     def change_visualizer_type(self, type_index):
         self.visualizer_window.vis_type_changed(type_index)
@@ -405,7 +412,8 @@ class RegistrationMainWindow(QMainWindow):
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Creating rasterized image...")
         worker = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix, new_camera, scale, color)
 
-        thread = move_worker_to_thread(self, worker, self.create_raster_window, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.create_raster_window,
+                                       progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -500,7 +508,8 @@ class RegistrationMainWindow(QMainWindow):
             dc1, dc2 = self.visualizer_widget.get_debug_colors()
 
         self.visualizer_window.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index],
-                                                 self.pc_gaussian_list_first[index], self.pc_gaussian_list_second[index],
+                                                 self.pc_gaussian_list_first[index],
+                                                 self.pc_gaussian_list_second[index],
                                                  True, self.transformation_picker.transformation_matrix, dc1, dc2)
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):

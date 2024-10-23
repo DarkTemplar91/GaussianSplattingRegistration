@@ -11,8 +11,18 @@ from src.gui.widgets.vector_widget import VectorWidget
 
 
 class VisualizerTab(QWidget):
-    signal_change_vis = QtCore.Signal(float, np.ndarray, np.ndarray, np.ndarray,
-                                      object, object)
+    class CameraView:
+        def __init__(self, zoom, front, lookat, up):
+            self.zoom = zoom
+            self.front = front
+            self.lookat = lookat
+            self.up = up
+
+    signal_change_vis_settings_o3d = QtCore.Signal(CameraView,
+                                                   object, object)
+
+    signal_change_vis_settings_3dgs = QtCore.Signal(CameraView, object)
+
     signal_change_type = QtCore.Signal(int)
     signal_get_current_view = QtCore.Signal()
     signal_pop_visualizer = QtCore.Signal()
@@ -91,15 +101,17 @@ class VisualizerTab(QWidget):
         layout.addStretch()
 
     def apply_to_vis(self):
-        use_debug_color = self.get_use_debug_color()
-        dc1 = dc2 = None
-        if use_debug_color:
-            dc1 = np.asarray(self.debug_color_dialog_first.color_debug)
-            dc2 = np.asarray(self.debug_color_dialog_second.color_debug)
+        if not self.checkbox.isChecked():
+            use_debug_color = self.get_use_debug_color()
+            dc1 = dc2 = None
+            if use_debug_color:
+                dc1 = np.asarray(self.debug_color_dialog_first.color_debug)
+                dc2 = np.asarray(self.debug_color_dialog_second.color_debug)
 
-        self.signal_change_vis.emit(float(self.zoom_widget.lineedit.text()),
-                                    self.front_widget.values, self.lookat_widget.values, self.up_widget.values,
-                                    dc1, dc2)
+            self.signal_change_vis_settings_o3d.emit(self.get_current_transformations(), dc1, dc2)
+            return
+
+        self.signal_change_vis_settings_3dgs.emit(self.get_current_transformations(), np.zeros(3))
 
     def get_current_view(self):
         self.signal_get_current_view.emit()
@@ -119,7 +131,7 @@ class VisualizerTab(QWidget):
             self.debug_color_dialog_second.color_debug)
 
     def get_current_transformations(self):
-        return (float(
+        return VisualizerTab.CameraView(float(
             self.zoom_widget.lineedit.text()), self.front_widget.values,
                 self.lookat_widget.values, self.up_widget.values)
 

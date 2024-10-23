@@ -1,3 +1,4 @@
+import torch
 from PySide6 import QtWidgets
 from PySide6.QtWidgets import QWidget, QStackedWidget
 import open3d as o3d
@@ -91,6 +92,12 @@ class VisualizerWindow(QWidget):
 
     def update_visualizer_settings_o3d(self, zoom, front, lookat, up):
         self.vis_open3d.update_visualizer(zoom, front, lookat, up)
+
+    def update_visualizer_settings_3dgs(self, zoom, front, lookat, up):
+        self.update_visualizer_settings_o3d(zoom, front, lookat, up)
+        self.vis_raster.set_active(False)
+        self.vis_raster.apply_camera_view(torch.tensor(self.vis_open3d.get_camera_extrinsic(), dtype=torch.float32))
+        self.vis_raster.set_active(True)
 
     def get_current_view(self):
         aabb = self.vis_open3d.calculate_aabb()
