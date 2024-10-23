@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from PySide6 import QtCore
 from PySide6.QtGui import Qt
-from PySide6.QtWidgets import QLabel, QVBoxLayout
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QScrollArea, QSizePolicy
 
 from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.gaussian_model import GaussianModel
@@ -21,6 +21,7 @@ class RasterizationWindow(ViewerInterface):
         self.camera = None
 
         self.layout: QVBoxLayout = None
+        self.scroll_area = None
         self.render_label: QLabel = None
 
         self.timer = QtCore.QTimer(self)
@@ -35,15 +36,28 @@ class RasterizationWindow(ViewerInterface):
         self.speed = 0.01
 
         self.init_ui()
-        # For debugging
-        #self.render_label.setText("Hello World!")
 
     def init_ui(self):
         self.layout = QVBoxLayout(self)
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setContentsMargins(0, 0, 0, 0)
+        self.scroll_area.setWidgetResizable(True)
+
         self.render_label = QLabel()
-        self.layout.addWidget(self.render_label)
+        self.render_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.render_label.setScaledContents(True)
+        self.scroll_area.setWidget(self.render_label)
+        self.layout.addWidget(self.scroll_area)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
+
+    def resizeEvent(self, event):
+        scroll_area_size = self.scroll_area.viewport().size()
+        scaled_pixmap = self.render_label.pixmap().scaled(scroll_area_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.render_label.setPixmap(scaled_pixmap)
+        self.render_label.resize(scaled_pixmap.size())
+
+        super().resizeEvent(event)
 
     def mouseMoveEvent(self, event):
         if self.last_mouse_position is None or not self.left_mouse_pressed:
@@ -96,8 +110,6 @@ class RasterizationWindow(ViewerInterface):
         if self.camera is None:
             return
 
-        """self.camera.width = self.width()
-        self.camera.height = self.height()"""
         image_tensor = rasterize_image(self.point_cloud_merged, self.camera, 1, np.zeros(3), "cuda:0", False)
         pix = get_pixmap_from_tensor(image_tensor)
         self.render_label.setPixmap(pix)
