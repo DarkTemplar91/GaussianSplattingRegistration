@@ -2,12 +2,13 @@ import torch
 import numpy as np
 
 from src.utils.graphics_utils import getWorld2View2, get_focal_from_intrinsics, get_dimension_from_intrinsics, \
-    getView2World2
+    getView2World2, focal2fov
 
 
 class Camera:
     right_vector = torch.tensor([1, 0, 0], dtype=torch.float32)
     up_vector = torch.tensor([0, 1, 0], dtype=torch.float32)
+    forward_vector = torch.tensor([0, 0, 1], dtype=torch.float32)
 
     def __init__(self, R, T, fx, fy, image_name, width, height,
                  trans=np.array([0.0, 0.0, 0.0]), scale=1.0):
@@ -25,12 +26,7 @@ class Camera:
 
         # Initial view matrix
         self.viewmat = torch.tensor(getWorld2View2(R, T, trans, scale))[None, :, :]
-
-    def move_horizontally(self, speed):
-        self.position += speed * self.right_vector
-
-    def move_vertically(self, speed):
-        self.position += speed * self.up_vector
+        self.target = None
 
     # TODO: Implement trackball like rotation around center point
     def rotate(self, yaw_change, pitch_change):
@@ -51,6 +47,23 @@ class Camera:
 
         self.rotation = self.rotation @ yaw_matrix @ pitch_matrix
 
+    def translate(self, dx, dy):
+        world_move = self.calc_pan_vector_world(dx, dy)
+        self.target = self.target + world_move
+        self.position += world_move
+
+    def calc_pan_vector_world(self, dx, dy):
+        units_per_px_x = 1.0 / self.intrinsics[0, 0, 0]
+        units_per_px_y = 1.0 / self.intrinsics[0, 1, 1]
+
+        # Calculate the movement vector
+        camera_local_move = torch.tensor([dx * units_per_px_x, dy * units_per_px_y, 0], dtype=torch.float32)
+
+        # Translate using the right and up vectors
+        world_move = (self.right_vector * camera_local_move[0]) + (self.up_vector * camera_local_move[1])
+
+        return world_move
+
     def zoom(self, delta):
         self.position += delta * torch.tensor([0, 0, 1], dtype=torch.float32)
 
@@ -63,3 +76,16 @@ class Camera:
 
         self.position = torch.tensor(T, dtype=torch.float32)
         self.rotation = torch.tensor(R, dtype=torch.float32)
+
+
+
+
+
+
+
+
+
+    # camera utils
+    def get_forward_vector(self):
+        forward_vector = -self.rotation[:, 2]
+        return forward_vector / torch.norm(forward_vector)

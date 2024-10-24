@@ -73,6 +73,8 @@ class VisualizerWindow(QWidget):
         else:
             self.vis_open3d.set_active(False)
             self.vis_3dgs.camera = self.get_camera
+            # TODO: I think open3d actually uses the screen center for this
+            self.vis_3dgs.camera.target = torch.tensor(self.vis_open3d.calculate_aabb().get_center(), dtype=torch.float)
             self.vis_3dgs.set_active(True)
 
         self.vis_stack.setCurrentIndex(index)

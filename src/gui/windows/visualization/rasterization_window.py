@@ -40,10 +40,11 @@ class GaussianSplatWindow(ViewerInterface):
         self.mouse_down_y = 0
         self.state = State.NONE
         self.original_rotation = None
+        self.original_position = None
 
         self.rotation_speed = np.radians(1)
         self.zoom_factor = 0.01
-        self.speed = 0.01
+        self.speed = 7
 
         # Approximate background color of the qdarkstyle theme
         self.background_color = np.array((0.09803921568627451, 0.13725490196078433, 0.17647058823529413))
@@ -92,6 +93,7 @@ class GaussianSplatWindow(ViewerInterface):
         self.mouse_down_x = event.x()
         self.mouse_down_y = event.y()
         self.original_rotation = self.camera.rotation.clone()
+        self.original_position = self.camera.position.clone()
 
         if event.button() == Qt.MouseButton.LeftButton:
             if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
@@ -110,9 +112,12 @@ class GaussianSplatWindow(ViewerInterface):
 
         if self.state == State.ROTATE:
             self.camera.rotation = self.original_rotation.clone()
+            #self.camera.position = self.original_position.clone()
             self.camera.rotate(dx * self.rotation_speed, dy * self.rotation_speed)
         elif self.state == State.TRANSLATE:
-            self.camera.translate(dx, dy)
+            self.camera.rotation = self.original_rotation.clone()
+            self.camera.position = self.original_position.clone()
+            self.camera.translate(dx * self.speed, dy * self.speed)
         elif self.state == State.ROLL:
             self.camera.roll(dx, dy)
 
