@@ -10,7 +10,7 @@ from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
 
 
 # noinspection PyTypeChecker
-class RasterizationWindow(ViewerInterface):
+class GaussianSplatWindow(ViewerInterface):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('3D Viewer')
@@ -35,6 +35,9 @@ class RasterizationWindow(ViewerInterface):
         self.zoom_factor = 0.01
         self.speed = 0.01
 
+        # Approximate background color of the qdarkstyle theme
+        self.background_color = np.array((0.09803921568627451, 0.13725490196078433, 0.17647058823529413))
+
         self.init_ui()
 
     def init_ui(self):
@@ -42,22 +45,38 @@ class RasterizationWindow(ViewerInterface):
         self.scroll_area = QScrollArea()
         self.scroll_area.setContentsMargins(0, 0, 0, 0)
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
         self.render_label = QLabel()
         self.render_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.render_label.setScaledContents(True)
+        self.render_label.setScaledContents(False)
+        self.render_label.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
         self.scroll_area.setWidget(self.render_label)
         self.layout.addWidget(self.scroll_area)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
 
+        self.set_background_color(self.background_color)
+
     def resizeEvent(self, event):
+        if self.render_label.pixmap() is None:
+            return
+
         scroll_area_size = self.scroll_area.viewport().size()
         scaled_pixmap = self.render_label.pixmap().scaled(scroll_area_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.render_label.setPixmap(scaled_pixmap)
         self.render_label.resize(scaled_pixmap.size())
 
         super().resizeEvent(event)
+
+    def set_background_color(self, rgb_array):
+        r_255 = int(rgb_array[0] * 255)
+        g_255 = int(rgb_array[1] * 255)
+        b_255 = int(rgb_array[2] * 255)
+
+        self.background_color = rgb_array
+        self.render_label.setStyleSheet(f'background-color: rgb({r_255}, {g_255}, {b_255})')
 
     def mouseMoveEvent(self, event):
         if self.last_mouse_position is None or not self.left_mouse_pressed:
@@ -110,7 +129,7 @@ class RasterizationWindow(ViewerInterface):
         if self.camera is None:
             return
 
-        image_tensor = rasterize_image(self.point_cloud_merged, self.camera, 1, np.zeros(3), "cuda:0", False)
+        image_tensor = rasterize_image(self.point_cloud_merged, self.camera, 1, self.background_color, "cuda:0", False)
         pix = get_pixmap_from_tensor(image_tensor)
         self.render_label.setPixmap(pix)
 

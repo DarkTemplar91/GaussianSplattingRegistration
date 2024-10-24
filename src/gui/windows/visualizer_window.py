@@ -3,7 +3,7 @@ from PySide6 import QtWidgets
 from PySide6.QtWidgets import QWidget, QStackedWidget
 import open3d as o3d
 
-from src.gui.windows.visualization.rasterization_window import RasterizationWindow
+from src.gui.windows.visualization.rasterization_window import GaussianSplatWindow
 from src.gui.windows.visualization.open3d_window import Open3DWindow
 
 
@@ -18,9 +18,9 @@ class VisualizerWindow(QWidget):
 
         self.vis_stack = QStackedWidget()
         self.vis_open3d = Open3DWindow(self)
-        self.vis_raster = RasterizationWindow()
+        self.vis_3dgs = GaussianSplatWindow()
         self.vis_stack.addWidget(self.vis_open3d)
-        self.vis_stack.addWidget(self.vis_raster)
+        self.vis_stack.addWidget(self.vis_3dgs)
         self.vis_stack.setCurrentIndex(0)
 
         self.layout.addWidget(self.vis_stack)
@@ -36,7 +36,7 @@ class VisualizerWindow(QWidget):
         if self.vis_stack.currentIndex() == 0:
             return self.vis_open3d.get_camera_model()
 
-        return self.vis_raster.get_camera_model()
+        return self.vis_3dgs.get_camera_model()
 
     def load_point_clouds(self, o3d_pc1, o3d_pc2, gauss_pc1=None, gauss_pc2=None, keep_view=False,
                           transformation_matrix=None, debug_color1=None, debug_color2=None):
@@ -46,65 +46,65 @@ class VisualizerWindow(QWidget):
         self.gauss_pc2 = gauss_pc2
 
         self.vis_open3d.set_active(False)
-        self.vis_raster.set_active(False)
+        self.vis_3dgs.set_active(False)
 
         self.vis_open3d.load_point_clouds(o3d_pc1, o3d_pc2, keep_view, transformation_matrix, debug_color1,
                                           debug_color2)
 
         if gauss_pc1 is not None:
-            self.vis_raster.load_point_clouds(gauss_pc1, gauss_pc2, transformation_matrix)
+            self.vis_3dgs.load_point_clouds(gauss_pc1, gauss_pc2, transformation_matrix)
 
-        self.vis_open3d.set_active(True) if self.vis_stack.currentIndex() == 0 else self.vis_raster.set_active(True)
+        self.vis_open3d.set_active(True) if self.vis_stack.currentIndex() == 0 else self.vis_3dgs.set_active(True)
 
     def on_embed_button_pressed(self):
         if self.vis_stack.currentIndex() == 0:
             self.vis_open3d.on_embed_button_pressed()
             return
 
-        self.vis_raster.on_embed_button_pressed()
+        self.vis_3dgs.on_embed_button_pressed()
 
     def vis_type_changed(self, index):
         if index == 0:
-            self.vis_raster.set_active(False)
+            self.vis_3dgs.set_active(False)
             self.vis_open3d.update_camera_view(self.get_camera)
             self.vis_open3d.set_active(True)
         elif self.vis_open3d.is_ortho():
             return
         else:
             self.vis_open3d.set_active(False)
-            self.vis_raster.camera = self.get_camera
-            self.vis_raster.set_active(True)
+            self.vis_3dgs.camera = self.get_camera
+            self.vis_3dgs.set_active(True)
 
         self.vis_stack.setCurrentIndex(index)
 
     def update_transform(self, transformation, dc1, dc2):
         self.vis_open3d.set_active(False)
-        self.vis_raster.set_active(False)
+        self.vis_3dgs.set_active(False)
 
         self.vis_open3d.update_transform(transformation, dc1, dc2)
-        self.vis_raster.update_transform(transformation)
+        self.vis_3dgs.update_transform(transformation)
 
         if self.vis_stack.currentIndex() == 0:
             self.vis_open3d.set_active(True)
             return
 
-        self.vis_raster.set_active(True)
+        self.vis_3dgs.set_active(True)
 
     def update_visualizer_settings_o3d(self, zoom, front, lookat, up):
         self.vis_open3d.update_visualizer(zoom, front, lookat, up)
 
     def update_visualizer_settings_3dgs(self, zoom, front, lookat, up):
         self.update_visualizer_settings_o3d(zoom, front, lookat, up)
-        self.vis_raster.set_active(False)
-        self.vis_raster.apply_camera_view(torch.tensor(self.vis_open3d.get_camera_extrinsic(), dtype=torch.float32))
-        self.vis_raster.set_active(True)
+        self.vis_3dgs.set_active(False)
+        self.vis_3dgs.apply_camera_view(torch.tensor(self.vis_open3d.get_camera_extrinsic(), dtype=torch.float32))
+        self.vis_3dgs.set_active(True)
 
     def get_current_view(self):
         aabb = self.vis_open3d.calculate_aabb()
         if self.vis_stack.currentIndex() == 0:
             return self.vis_open3d.get_current_view(aabb)
 
-        return self.vis_raster.get_current_view(aabb)
+        return self.vis_3dgs.get_current_view(aabb)
 
     def is_ortho(self):
         if self.vis_stack.currentIndex() == 0:
@@ -114,26 +114,26 @@ class VisualizerWindow(QWidget):
 
     def apply_camera_view(self, transformation):
         self.vis_open3d.set_active(False)
-        self.vis_raster.set_active(False)
+        self.vis_3dgs.set_active(False)
 
         self.vis_open3d.apply_camera_view(transformation)
-        self.vis_raster.apply_camera_view(transformation)
+        self.vis_3dgs.apply_camera_view(transformation)
 
         if self.vis_stack.currentIndex() == 0:
             self.vis_open3d.set_active(True)
             return
 
-        self.vis_raster.set_active(True)
+        self.vis_3dgs.set_active(True)
 
     def reset_view_point(self):
         self.vis_open3d.set_active(False)
-        self.vis_raster.set_active(False)
+        self.vis_3dgs.set_active(False)
 
         self.vis_open3d.vis.reset_view_point(True)
-        self.vis_raster.apply_camera_view(torch.tensor(self.vis_open3d.get_camera_extrinsic(), dtype=torch.float32))
+        self.vis_3dgs.apply_camera_view(torch.tensor(self.vis_open3d.get_camera_extrinsic(), dtype=torch.float32))
 
         if self.vis_stack.currentIndex() == 0:
             self.vis_open3d.set_active(True)
             return
 
-        self.vis_raster.set_active(True)
+        self.vis_3dgs.set_active(True)

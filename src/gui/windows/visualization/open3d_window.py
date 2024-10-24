@@ -5,7 +5,7 @@ from subprocess import Popen, PIPE
 import numpy as np
 import open3d as o3d
 from PySide6 import QtWidgets, QtCore
-from PySide6.QtWidgets import QMainWindow, QWidget
+from PySide6.QtWidgets import QMainWindow, QWidget, QScrollBar
 
 from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.camera import Camera
@@ -285,4 +285,6 @@ class Open3DWindow(ViewerInterface):
         intrinsics = self.get_camera_intrinsic()
         fx, fy = get_focal_from_intrinsics(intrinsics)
         width, height = get_dimension_from_intrinsics(intrinsics)
+        width -= 16
+        height -= 16
         return Camera(R, T, fx, fy, "", width, height)
