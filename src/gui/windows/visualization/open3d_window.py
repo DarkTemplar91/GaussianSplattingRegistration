@@ -285,6 +285,6 @@ class Open3DWindow(ViewerInterface):
         intrinsics = self.get_camera_intrinsic()
         fx, fy = get_focal_from_intrinsics(intrinsics)
         width, height = get_dimension_from_intrinsics(intrinsics)
-        width -= 16
-        height -= 16
+        width -= 10
+        height -= 10
         return Camera(R, T, fx, fy, "", width, height)

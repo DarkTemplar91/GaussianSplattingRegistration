@@ -26,16 +26,13 @@ class Camera:
         # Initial view matrix
         self.viewmat = torch.tensor(getWorld2View2(R, T, trans, scale))[None, :, :]
 
-        # Camera position and orientation
-        self.position = torch.tensor(T, dtype=torch.float32)
-        self.rotation = torch.tensor(R, dtype=torch.float32)
-
     def move_horizontally(self, speed):
         self.position += speed * self.right_vector
 
     def move_vertically(self, speed):
         self.position += speed * self.up_vector
 
+    # TODO: Implement trackball like rotation around center point
     def rotate(self, yaw_change, pitch_change):
         torch_yawn = torch.tensor(yaw_change)
         torch_pitch = torch.tensor(pitch_change)

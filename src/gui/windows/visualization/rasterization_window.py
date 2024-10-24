@@ -1,12 +1,20 @@
 import numpy as np
 import torch
 from PySide6 import QtCore
-from PySide6.QtGui import Qt
+from PySide6.QtGui import Qt, QMouseEvent
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QScrollArea, QSizePolicy
 
 from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.gaussian_model import GaussianModel
 from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
+
+
+class State:
+    NONE = 0
+    ROTATE = 1
+    TRANSLATE = 2
+    ROLL = 3
+    ZOOM = 4
 
 
 # noinspection PyTypeChecker
@@ -27,9 +35,11 @@ class GaussianSplatWindow(ViewerInterface):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_view)
 
-        self.last_mouse_position = None
-        self.left_mouse_pressed = False
-        self.setMouseTracking(True)
+        # Mouse state variables
+        self.mouse_down_x = 0
+        self.mouse_down_y = 0
+        self.state = State.NONE
+        self.original_rotation = None
 
         self.rotation_speed = np.radians(1)
         self.zoom_factor = 0.01
@@ -78,7 +88,45 @@ class GaussianSplatWindow(ViewerInterface):
         self.background_color = rgb_array
         self.render_label.setStyleSheet(f'background-color: rgb({r_255}, {g_255}, {b_255})')
 
-    def mouseMoveEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent):
+        self.mouse_down_x = event.x()
+        self.mouse_down_y = event.y()
+        self.original_rotation = self.camera.rotation.clone()
+
+        if event.button() == Qt.MouseButton.LeftButton:
+            if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+                self.state = State.ROLL  # Shift + Left Button: Roll
+            elif event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+                self.state = State.TRANSLATE  # Ctrl + Left Button: Translate
+            else:
+                self.state = State.ROTATE  # Left Button: Rotate
+
+        elif event.button() == Qt.MouseButton.MiddleButton:
+            self.state = State.TRANSLATE  # Middle Button: Translate
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        dx = event.x() - self.mouse_down_x
+        dy = event.y() - self.mouse_down_y
+
+        if self.state == State.ROTATE:
+            self.camera.rotation = self.original_rotation.clone()
+            self.camera.rotate(dx * self.rotation_speed, dy * self.rotation_speed)
+        elif self.state == State.TRANSLATE:
+            self.camera.translate(dx, dy)
+        elif self.state == State.ROLL:
+            self.camera.roll(dx, dy)
+
+        self.camera.update_view_matrix()  # TODO: Move to camera functions
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        self.state = State.NONE
+
+    def wheelEvent(self, event):
+        delta = event.angleDelta().y()
+        self.camera.zoom(delta)
+
+    # Old functions
+    """def mouseMoveEvent(self, event):
         if self.last_mouse_position is None or not self.left_mouse_pressed:
             return
 
@@ -120,7 +168,7 @@ class GaussianSplatWindow(ViewerInterface):
         delta = event.angleDelta().y()
         self.camera.zoom(delta * self.zoom_factor)
         self.camera.update_view_matrix()
-        self.update_view()
+        self.update_view()"""
 
     def update_view(self):
         if self.point_cloud_merged is None:
@@ -136,7 +184,7 @@ class GaussianSplatWindow(ViewerInterface):
     def set_active(self, active):
         if active:
             self.point_cloud_merged.move_to_device("cuda:0")
-            self.timer.start(30)
+            self.timer.start(1)
             return
 
         self.timer.stop()
@@ -192,4 +240,3 @@ class GaussianSplatWindow(ViewerInterface):
             return
 
         self.camera.set_viewmat(transformation)
-
