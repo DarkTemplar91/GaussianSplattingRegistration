@@ -188,6 +188,10 @@ class VisualizerTab(QWidget):
             self.checkbox.toggle()
             return
 
+        if self.pop_button.isChecked():
+            self.pop_button.setChecked(False)
+            self.pop_visualizer()
+
         self.stack_widget.setCurrentIndex(visualizer_index)
         current_widget = self.stack_widget.currentWidget()
         if current_widget is not None:
