@@ -108,7 +108,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.input_tab = InputTab()
         self.transformation_picker = Transformation3DPicker()
-        self.visualizer_widget = VisualizerTab()
+        self.visualizer_widget = VisualizerTab(self)
         self.rasterizer_tab = RasterizerTab()
         self.merger_widget = MergeTab()
 
@@ -118,7 +118,7 @@ class RegistrationMainWindow(QMainWindow):
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.visualizer_widget.signal_change_vis_settings_o3d.connect(self.change_visualizer_settings_o3d)
         self.visualizer_widget.signal_change_vis_settings_3dgs.connect(self.change_visualizer_settings_3dgs)
-        self.visualizer_widget.signal_change_type.connect(self.change_visualizer_type)
+        self.visualizer_widget.signal_change_type.connect(self.visualizer_window.vis_type_changed)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.visualizer_widget.signal_pop_visualizer.connect(self.visualizer_window.on_embed_button_pressed)
         self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
@@ -247,21 +247,14 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_window.update_visualizer_settings_o3d(camera_view.zoom, camera_view.front, camera_view.lookat,
                                                               camera_view.up)
 
-    def change_visualizer_settings_3dgs(self, camera_view, background_color):
+    def change_visualizer_settings_3dgs(self, camera_view, translate_speed, rotation_speed, roll_speed, background_color):
         self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, None, None)
+        self.visualizer_window.vis_3dgs.translate_speed = translate_speed
+        self.visualizer_window.vis_3dgs.rotation_speed = rotation_speed
+        self.visualizer_window.vis_3dgs.roll_speed = roll_speed
+        self.visualizer_window.vis_3dgs.background_color = background_color
         self.visualizer_window.update_visualizer_settings_3dgs(camera_view.zoom, camera_view.front, camera_view.lookat,
                                                                camera_view.up)
-
-    def change_visualizer_type(self, type_index):
-        if type_index == 1 and len(self.pc_open3d_list_first) == 0:
-            dialog = QErrorMessage(self)
-            dialog.setModal(True)
-            dialog.setWindowTitle("Error")
-            dialog.showMessage("First load two 3DGS point clouds...")
-            self.visualizer_widget.checkbox.toggle()
-            return
-
-        self.visualizer_window.vis_type_changed(type_index)
 
     def get_current_view(self):
         zoom, front, lookat, up = self.visualizer_window.get_current_view()

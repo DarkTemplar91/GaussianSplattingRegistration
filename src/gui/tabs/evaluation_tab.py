@@ -143,7 +143,7 @@ class EvaluationTab(QWidget):
             self.creat_error_box("Select a path for the log file!")
             return
 
-        color = np.asarray(self.render_color.color_debug)
+        color = np.asarray(self.render_color.color)
         use_gpu = self.checkbox_gpu.isChecked()
         self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file, color, use_gpu)
 

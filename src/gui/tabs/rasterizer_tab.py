@@ -75,7 +75,7 @@ class RasterizerTab(QWidget):
         width = int(self.image_width_widget.text())
         height = int(self.image_height_widget.text())
         scale = float(self.scale_widget.text())
-        color = np.asarray(self.background_color_widget.color_debug)
+        color = np.asarray(self.background_color_widget.color)
         value = float(self.fov_widget.lineedit.text())
         fx, fy = graphic_util.get_focal_lengths(width, height, value, self.button_group.checkedId())
         self.signal_rasterize.emit(width, height, scale, color, fx, fy)

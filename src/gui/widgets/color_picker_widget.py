@@ -4,9 +4,9 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QColorDialog, Q
 
 
 class ColorPicker(QWidget):
-    def __init__(self, default_color=np.ones(3, dtype=int) * 255):
+    def __init__(self, default_color=np.ones(3, dtype=int)):
         super().__init__()
-        self.color_debug = default_color
+        self.color = default_color
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -16,10 +16,11 @@ class ColorPicker(QWidget):
         self.color_box.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.color_box.setEnabled(False)
 
-        x_arrstr = np.char.mod('%d', self.color_debug)
-        color_str = ",".join(x_arrstr)
+        r_255 = int(self.color[0] * 255)
+        g_255 = int(self.color[1] * 255)
+        b_255 = int(self.color[2] * 255)
 
-        self.color_box.setStyleSheet(f"background:rgb({color_str});")
+        self.color_box.setStyleSheet(f'background-color: rgb({r_255}, {g_255}, {b_255})')
 
         button = QPushButton()
         button.setText("Pick color")
@@ -37,4 +38,8 @@ class ColorPicker(QWidget):
         color = QColorDialog.getColor()
         if color.isValid():
             self.color_box.setStyleSheet(f"background-color: {color.name()};")
-            self.color_debug = color.getRgbF()[0:3]
+            self.color = color.getRgbF()[0:3]
+
+    def sizeHint(self):
+        size = QWidget.sizeHint(self)
+        return QSize(size.width(), size.height() + 2)
