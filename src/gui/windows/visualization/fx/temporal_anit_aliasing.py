@@ -1,9 +1,7 @@
-from collections import deque
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QPainter
 
-from gui.windows.visualization.temporal_filter import TemporalFilter
+from gui.windows.visualization.fx.temporal_filter import TemporalFilter
 
 
 class TemporalAntiAliasing:

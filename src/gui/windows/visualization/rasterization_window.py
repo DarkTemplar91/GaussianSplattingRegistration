@@ -1,11 +1,11 @@
 import numpy as np
 import torch
 from PySide6 import QtCore
-from PySide6.QtGui import Qt, QMouseEvent, QPainter
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QScrollArea, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, \
+from PySide6.QtGui import Qt
+from PySide6.QtWidgets import QVBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, \
     QGraphicsSceneMouseEvent
 
-from gui.windows.visualization.temporal_anit_aliasing import TemporalAntiAliasing
+from gui.windows.visualization.fx.temporal_anit_aliasing import TemporalAntiAliasing
 from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.gaussian_model import GaussianModel
 from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
@@ -113,20 +113,19 @@ class GaussianSplatWindow(ViewerInterface):
         dx = event.screenPos().x() - self.mouse_down_x
         dy = event.screenPos().y() - self.mouse_down_y
 
+        self.camera.rotation = self.original_rotation.clone()
+        self.camera.position = self.original_position.clone()
+
         if self.state == State.ROTATE:
-            self.camera.rotation = self.original_rotation.clone()
-            self.camera.position = self.original_position.clone()
             self.camera.rotate(dx * self.rotation_speed, dy * self.rotation_speed)
         elif self.state == State.TRANSLATE:
-            self.camera.rotation = self.original_rotation.clone()
-            self.camera.position = self.original_position.clone()
             self.camera.translate(dx * self.translate_speed, dy * self.translate_speed)
         elif self.state == State.ROLL:
-            self.camera.rotation = self.original_rotation.clone()
             self.camera.roll(dx * self.roll_speed)
 
     def mouseReleaseEventScene(self, event: QGraphicsSceneMouseEvent):
         self.state = State.NONE
+        torch.cuda.empty_cache()
 
     def wheelEvent(self, event):
         delta = event.angleDelta().y()
