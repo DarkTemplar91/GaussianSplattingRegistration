@@ -24,7 +24,8 @@ def rasterize_image(point_cloud: GaussianModel, camera, scale, color, device, le
         sh_degree=3,
         backgrounds=color_tensor,
         covars=covars,
-        packed=False
+        packed=True,
+        radius_clip=3,
     )
 
     return render_colors.detach() if leave_on_gpu else render_colors.cpu()

@@ -1,9 +1,11 @@
 import numpy as np
 import torch
 from PySide6 import QtCore
-from PySide6.QtGui import Qt, QMouseEvent
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QScrollArea
+from PySide6.QtGui import Qt, QMouseEvent, QPainter
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QScrollArea, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, \
+    QGraphicsSceneMouseEvent
 
+from gui.windows.visualization.temporal_anit_aliasing import TemporalAntiAliasing
 from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.gaussian_model import GaussianModel
 from src.utils.rasterization_util import rasterize_image, get_pixmap_from_tensor
@@ -29,8 +31,9 @@ class GaussianSplatWindow(ViewerInterface):
         self.camera = None
 
         self.layout: QVBoxLayout = None
-        self.scroll_area = None
-        self.render_label: QLabel = None
+        self.graphics_view: QGraphicsView = None
+        self.scene: QGraphicsScene = None
+        self.pixmap_item: QGraphicsPixmapItem = None
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.update_view)
@@ -51,37 +54,30 @@ class GaussianSplatWindow(ViewerInterface):
         # Approximate background color of the qdarkstyle theme
         self.background_color = np.array((0.09803921568627451, 0.13725490196078433, 0.17647058823529413))
 
+        self.taa = TemporalAntiAliasing(0.3, 0.5)
+
         self.init_ui()
 
     def init_ui(self):
         self.layout = QVBoxLayout(self)
-        self.scroll_area = QScrollArea()
-        self.scroll_area.setContentsMargins(0, 0, 0, 0)
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-
-        self.render_label = QLabel()
-        self.render_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.render_label.setScaledContents(False)
-        self.render_label.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.scroll_area.setWidget(self.render_label)
-        self.layout.addWidget(self.scroll_area)
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
+
+        self.graphics_view = QGraphicsView()
+        self.scene = QGraphicsScene(self)
+        self.graphics_view.setMouseTracking(False)
+        self.graphics_view.setScene(self.scene)
+
+        self.layout.addWidget(self.graphics_view)
+        self.pixmap_item = QGraphicsPixmapItem()
+        self.scene.addItem(self.pixmap_item)
+
+        self.scene.mousePressEvent = self.mousePressEventScene
+        self.scene.mouseMoveEvent = self.mouseMoveEventScene
+        self.scene.mouseReleaseEvent = self.mouseReleaseEventScene
 
         self.set_background_color(self.background_color)
 
     def resizeEvent(self, event):
-        if self.render_label.pixmap() is None:
-            return
-
-        scroll_area_size = self.scroll_area.viewport().size()
-        scaled_pixmap = self.render_label.pixmap().scaled(scroll_area_size, Qt.AspectRatioMode.KeepAspectRatio,
-                                                          Qt.TransformationMode.SmoothTransformation)
-        self.render_label.setPixmap(scaled_pixmap)
-        self.render_label.resize(scaled_pixmap.size())
-
         super().resizeEvent(event)
 
     def set_background_color(self, rgb_array):
@@ -90,11 +86,12 @@ class GaussianSplatWindow(ViewerInterface):
         b_255 = int(rgb_array[2] * 255)
 
         self.background_color = rgb_array
-        self.render_label.setStyleSheet(f'background-color: rgb({r_255}, {g_255}, {b_255})')
+        self.graphics_view.setStyleSheet(f'background-color: rgb({r_255}, {g_255}, {b_255})')
 
-    def mousePressEvent(self, event: QMouseEvent):
-        self.mouse_down_x = event.x()
-        self.mouse_down_y = event.y()
+    def mousePressEventScene(self, event: QGraphicsSceneMouseEvent):
+        self.mouse_down_x = event.screenPos().x()
+        self.mouse_down_y = event.screenPos().y()
+
         self.original_rotation = self.camera.rotation.clone()
         self.original_position = self.camera.position.clone()
 
@@ -109,9 +106,12 @@ class GaussianSplatWindow(ViewerInterface):
         elif event.button() == Qt.MouseButton.MiddleButton:
             self.state = State.TRANSLATE  # Middle Button: Translate
 
-    def mouseMoveEvent(self, event: QMouseEvent):
-        dx = event.x() - self.mouse_down_x
-        dy = event.y() - self.mouse_down_y
+    def mouseMoveEventScene(self, event: QGraphicsSceneMouseEvent):
+        if self.state == State.NONE:
+            return
+
+        dx = event.screenPos().x() - self.mouse_down_x
+        dy = event.screenPos().y() - self.mouse_down_y
 
         if self.state == State.ROTATE:
             self.camera.rotation = self.original_rotation.clone()
@@ -125,7 +125,7 @@ class GaussianSplatWindow(ViewerInterface):
             self.camera.rotation = self.original_rotation.clone()
             self.camera.roll(dx * self.roll_speed)
 
-    def mouseReleaseEvent(self, event: QMouseEvent):
+    def mouseReleaseEventScene(self, event: QGraphicsSceneMouseEvent):
         self.state = State.NONE
 
     def wheelEvent(self, event):
@@ -145,7 +145,9 @@ class GaussianSplatWindow(ViewerInterface):
 
         image_tensor = rasterize_image(self.point_cloud_merged, self.camera, 1, self.background_color, "cuda:0", False)
         pix = get_pixmap_from_tensor(image_tensor)
-        self.render_label.setPixmap(pix)
+        pix = self.taa.apply_taa(pix)
+        self.pixmap_item.setPixmap(pix)
+        self.scene.setSceneRect(self.pixmap_item.pixmap().rect())
 
     def set_active(self, active):
         if active:

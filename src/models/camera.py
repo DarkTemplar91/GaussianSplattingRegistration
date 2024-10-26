@@ -51,7 +51,7 @@ class Camera:
     # TODO: Roll around center
     def roll(self, dx):
         radians = self.calc_rotate_z_radians(dx)
-        rotation_matrix = axis_angle_rotation(self.get_forward_vector(), radians)
+        rotation_matrix = axis_angle_rotation(self.forward, radians)
         self.rotation = self.rotation @ rotation_matrix
 
         self.update_view_matrix()
