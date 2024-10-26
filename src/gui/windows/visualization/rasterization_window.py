@@ -85,8 +85,8 @@ class GaussianSplatWindow(ViewerInterface):
         self.original_position = None
         self.aabb = None
 
-        self.rotation_speed = np.radians(1)
-        self.roll_speed = np.radians(5)
+        self.rotation_speed = 0.01
+        self.roll_speed = 0.1
         self.translate_speed = 7
         self.zoom_factor = 0.01
 

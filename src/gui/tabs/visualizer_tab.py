@@ -97,7 +97,7 @@ class VisualizerTab(QWidget):
         layout_3dgs_controls = QFormLayout(groupbox_3dgs_controls)
 
         self.translation_speed_widget = SimpleInputField("7.0", 60, double_validator)
-        self.rotation_speed_widget = SimpleInputField("0.1", 60, double_validator)
+        self.rotation_speed_widget = SimpleInputField("0.01", 60, double_validator)
         self.roll_speed_widget = SimpleInputField("0.1", 60, double_validator)
         self.background_color = ColorPicker(np.asarray([0.09803921568627451, 0.13725490196078433, 0.17647058823529413]))
         layout_3dgs_controls.addRow("Translation speed:", self.translation_speed_widget)
