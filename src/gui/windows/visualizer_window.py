@@ -73,8 +73,7 @@ class VisualizerWindow(QWidget):
         else:
             self.vis_open3d.set_active(False)
             self.vis_3dgs.camera = self.get_camera
-            # TODO: I think open3d actually uses the screen center for this
-            self.vis_3dgs.camera.target = torch.tensor(self.vis_open3d.calculate_aabb().get_center(), dtype=torch.float)
+            self.vis_3dgs.aabb = self.vis_open3d.get_aabb
             self.vis_3dgs.set_active(True)
 
         self.vis_stack.setCurrentIndex(index)
@@ -102,11 +101,10 @@ class VisualizerWindow(QWidget):
         self.vis_3dgs.set_active(True)
 
     def get_current_view(self):
-        aabb = self.vis_open3d.calculate_aabb()
         if self.vis_stack.currentIndex() == 0:
-            return self.vis_open3d.get_current_view(aabb)
+            return self.vis_open3d.get_current_view()
 
-        return self.vis_3dgs.get_current_view(aabb)
+        return self.vis_3dgs.get_current_view()
 
     def is_ortho(self):
         if self.vis_stack.currentIndex() == 0:

@@ -9,7 +9,7 @@ class ViewerInterface(QWidget):
     def load_point_clouds(self, pc1, pc2, transformation):
         raise NotImplementedError
 
-    def get_current_view(self, aabb):
+    def get_current_view(self):
         raise NotImplementedError
 
     def get_camera_model(self):
@@ -18,8 +18,12 @@ class ViewerInterface(QWidget):
     def apply_camera_view(self, transformation):
         raise NotImplementedError
 
-    @staticmethod
-    def get_current_view_inner(extrinsic, tan_half_fov, aabb):
+    @property
+    def get_aabb(self):
+        raise NotImplementedError
+
+    def get_current_view_inner(self, extrinsic, tan_half_fov):
+        aabb = self.get_aabb
         up = -extrinsic[1:2, 0:3].transpose()
         front = -extrinsic[2:3, 0:3].transpose()
         eye = np.linalg.inv(extrinsic[0:3, 0:3]) @ (extrinsic[0:3, 3:4] * -1.0)

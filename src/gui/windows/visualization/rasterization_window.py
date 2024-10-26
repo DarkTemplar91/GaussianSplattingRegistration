@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from PySide6 import QtCore
 from PySide6.QtGui import Qt, QMouseEvent
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QScrollArea, QSizePolicy
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QScrollArea
 
 from gui.windows.visualization.viewer_interface import ViewerInterface
 from src.models.gaussian_model import GaussianModel
@@ -41,10 +41,12 @@ class GaussianSplatWindow(ViewerInterface):
         self.state = State.NONE
         self.original_rotation = None
         self.original_position = None
+        self.aabb = None
 
         self.rotation_speed = np.radians(1)
+        self.roll_speed = np.radians(5)
+        self.translate_speed = 7
         self.zoom_factor = 0.01
-        self.speed = 7
 
         # Approximate background color of the qdarkstyle theme
         self.background_color = np.array((0.09803921568627451, 0.13725490196078433, 0.17647058823529413))
@@ -75,7 +77,8 @@ class GaussianSplatWindow(ViewerInterface):
             return
 
         scroll_area_size = self.scroll_area.viewport().size()
-        scaled_pixmap = self.render_label.pixmap().scaled(scroll_area_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        scaled_pixmap = self.render_label.pixmap().scaled(scroll_area_size, Qt.AspectRatioMode.KeepAspectRatio,
+                                                          Qt.TransformationMode.SmoothTransformation)
         self.render_label.setPixmap(scaled_pixmap)
         self.render_label.resize(scaled_pixmap.size())
 
@@ -112,68 +115,26 @@ class GaussianSplatWindow(ViewerInterface):
 
         if self.state == State.ROTATE:
             self.camera.rotation = self.original_rotation.clone()
-            #self.camera.position = self.original_position.clone()
+            self.camera.position = self.original_position.clone()
             self.camera.rotate(dx * self.rotation_speed, dy * self.rotation_speed)
         elif self.state == State.TRANSLATE:
             self.camera.rotation = self.original_rotation.clone()
             self.camera.position = self.original_position.clone()
-            self.camera.translate(dx * self.speed, dy * self.speed)
+            self.camera.translate(dx * self.translate_speed, dy * self.translate_speed)
         elif self.state == State.ROLL:
-            self.camera.roll(dx, dy)
-
-        self.camera.update_view_matrix()  # TODO: Move to camera functions
+            self.camera.rotation = self.original_rotation.clone()
+            self.camera.roll(dx * self.roll_speed)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
         self.state = State.NONE
 
     def wheelEvent(self, event):
         delta = event.angleDelta().y()
-        self.camera.zoom(delta)
+        self.camera.zoom(delta * self.zoom_factor, self.get_aabb)
 
-    # Old functions
-    """def mouseMoveEvent(self, event):
-        if self.last_mouse_position is None or not self.left_mouse_pressed:
-            return
-
-        if self.camera is None:
-            return
-
-        dx = self.last_mouse_position.x() - event.x()
-        dy = self.last_mouse_position.y() - event.y()
-
-        self.camera.rotate(dx * self.rotation_speed, dy * self.rotation_speed)
-
-        self.last_mouse_position = event.pos()
-        self.camera.update_view_matrix()
-        self.update_view()
-
-    def mousePressEvent(self, event):
-        if event.button() != Qt.MouseButton.LeftButton:
-            return
-
-        if self.camera is None:
-            return
-
-        self.left_mouse_pressed = True
-        self.last_mouse_position = event.pos()
-
-    def mouseReleaseEvent(self, event):
-        if event.button() != Qt.MouseButton.LeftButton:
-            return
-
-        if self.camera is None:
-            return
-
-        self.left_mouse_pressed = False
-
-    def wheelEvent(self, event):
-        if self.camera is None:
-            return
-
-        delta = event.angleDelta().y()
-        self.camera.zoom(delta * self.zoom_factor)
-        self.camera.update_view_matrix()
-        self.update_view()"""
+    @property
+    def get_aabb(self):
+        return self.aabb
 
     def update_view(self):
         if self.point_cloud_merged is None:
@@ -229,13 +190,13 @@ class GaussianSplatWindow(ViewerInterface):
 
         self.point_cloud_merged = GaussianModel.get_merged_gaussian_point_clouds(self.pc1, self.pc2, transformation)
 
-    def get_current_view(self, aabb):
+    def get_current_view(self):
         if self.camera is None:
             return
 
         extrinsics = self.camera.viewmat[0].detach().cpu().numpy()
         tan_half_fov = self.camera.height / (self.camera.intrinsics[0, 1, 1].item() * 2.0)
-        return self.get_current_view_inner(extrinsics, tan_half_fov, aabb)
+        return self.get_current_view_inner(extrinsics, tan_half_fov)
 
     def get_camera_model(self):
         return self.camera

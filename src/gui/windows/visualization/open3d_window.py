@@ -127,16 +127,17 @@ class Open3DWindow(ViewerInterface):
         extrinsic[:3, 3] = camera.position
         self.apply_camera_view(extrinsic)
 
-    def get_current_view(self, aabb):
+    def get_current_view(self):
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
         extrinsic = parameters.extrinsic
 
         tan_half_fov = parameters.intrinsic.height / (parameters.intrinsic.intrinsic_matrix[1, 1] * 2.0)
 
-        return self.get_current_view_inner(extrinsic, tan_half_fov, aabb)
+        return self.get_current_view_inner(extrinsic, tan_half_fov)
 
-    def calculate_aabb(self):
+    @property
+    def get_aabb(self):
         combined_vertices = o3d.utility.Vector3dVector()
         combined_vertices.extend(self.pc1_copy.points)
         combined_vertices.extend(self.pc2_copy.points)

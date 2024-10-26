@@ -83,3 +83,22 @@ def look_at(eye, lookat, up, zoom):
     ])
 
     return view_matrix
+
+
+def axis_angle_rotation(axis, angle):
+    """ Generate a rotation matrix from an axis and angle using Rodrigues' rotation formula. """
+    cos_angle = np.cos(angle)
+    sin_angle = np.sin(angle)
+    one_minus_cos = 1 - cos_angle
+
+    return torch.tensor([
+        [cos_angle + axis[0] ** 2 * one_minus_cos,
+         axis[0] * axis[1] * one_minus_cos - axis[2] * sin_angle,
+         axis[0] * axis[2] * one_minus_cos + axis[1] * sin_angle],
+        [axis[1] * axis[0] * one_minus_cos + axis[2] * sin_angle,
+         cos_angle + axis[1] ** 2 * one_minus_cos,
+         axis[1] * axis[2] * one_minus_cos - axis[0] * sin_angle],
+        [axis[2] * axis[0] * one_minus_cos - axis[1] * sin_angle,
+         axis[2] * axis[1] * one_minus_cos + axis[0] * sin_angle,
+         cos_angle + axis[2] ** 2 * one_minus_cos]
+    ], dtype=torch.float32)
