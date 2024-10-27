@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSplitter, QGroupBox, \
     QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
 
+from gui.tabs.plane_fitting_tab import PlaneFittingTab
 from src.gui.tabs.evaluation_tab import EvaluationTab
 from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
@@ -56,10 +57,7 @@ class RegistrationMainWindow(QMainWindow):
         self.local_registration_data = None
 
         # Tabs for the settings page
-        self.input_tab = None
-        self.merger_widget = None
         self.visualizer_widget = None
-        self.rasterizer_tab = None
         self.transformation_picker = None
         self.hem_widget = None
 
@@ -106,29 +104,29 @@ class RegistrationMainWindow(QMainWindow):
         tab_widget = QTabWidget()
         layout.addWidget(tab_widget)
 
-        self.input_tab = InputTab()
+        input_tab = InputTab()
         self.transformation_picker = Transformation3DPicker()
         self.visualizer_widget = VisualizerTab(self)
-        self.rasterizer_tab = RasterizerTab()
-        self.merger_widget = MergeTab()
+        rasterizer_tab = RasterizerTab()
+        merger_widget = MergeTab()
 
-        self.input_tab.signal_load_gaussian.connect(self.handle_gaussian_load)
-        self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
-        self.input_tab.signal_load_cached.connect(self.handle_cached_load)
+        input_tab.signal_load_gaussian.connect(self.handle_gaussian_load)
+        input_tab.signal_load_sparse.connect(self.handle_sparse_load)
+        input_tab.signal_load_cached.connect(self.handle_cached_load)
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
         self.visualizer_widget.signal_change_vis_settings_o3d.connect(self.change_visualizer_settings_o3d)
         self.visualizer_widget.signal_change_vis_settings_3dgs.connect(self.change_visualizer_settings_3dgs)
         self.visualizer_widget.signal_change_type.connect(self.visualizer_window.vis_type_changed)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
         self.visualizer_widget.signal_pop_visualizer.connect(self.visualizer_window.on_embed_button_pressed)
-        self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
-        self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
+        merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
+        rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
-        tab_widget.addTab(self.input_tab, "I/O")
+        tab_widget.addTab(input_tab, "I/O")
         tab_widget.addTab(self.transformation_picker, "Transformation")
         tab_widget.addTab(self.visualizer_widget, "Visualizer")
-        tab_widget.addTab(self.rasterizer_tab, "Rasterizer")
-        tab_widget.addTab(self.merger_widget, "Merging")
+        tab_widget.addTab(rasterizer_tab, "Rasterizer")
+        tab_widget.addTab(merger_widget, "Merging")
 
     def setup_registration_group(self, group_registration):
         group_registration.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -158,10 +156,14 @@ class RegistrationMainWindow(QMainWindow):
         evaluator_widget.signal_camera_change.connect(self.visualizer_window.apply_camera_view)
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
+        plane_fitting_tab = PlaneFittingTab()
+        plane_fitting_tab.signal_fit_plane.connect(self.fit_plane)
+
         registration_tab.addTab(global_registration_widget, "Global")
         registration_tab.addTab(local_registration_widget, "Local")
         registration_tab.addTab(multi_scale_registration_widget, "Multiscale")
         registration_tab.addTab(self.hem_widget, "Mixture")
+        registration_tab.addTab(plane_fitting_tab, "Plane fitting")
         registration_tab.addTab(evaluator_widget, "Evaluation")
         layout.addWidget(registration_tab)
 
@@ -495,6 +497,12 @@ class RegistrationMainWindow(QMainWindow):
         self.hem_widget.set_slider_range(len(self.pc_gaussian_list_first) - 1)
         self.hem_widget.set_slider_enabled(True)
         self.hem_widget.set_slider_to(0)
+
+    def fit_plane(self, iterations, threshold, min_sample_distance):
+        pass
+
+    def handle_fit_plane_result(self):
+        pass
 
     def active_pc_changed(self, index):
         if self.current_index == index:
