@@ -1,5 +1,6 @@
 import os
 import sys
+
 import qdarkstyle
 from PySide6.QtCore import QLocale
 from PySide6.QtWidgets import QApplication

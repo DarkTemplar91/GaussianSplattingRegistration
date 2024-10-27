@@ -16,8 +16,8 @@ from src.gui.tabs.rasterizer_tab import RasterizerTab
 from src.gui.tabs.visualizer_tab import VisualizerTab
 from src.gui.widgets.progress_dialog_factory import ProgressDialogFactory
 from src.gui.widgets.transformation_widget import Transformation3DPicker
-from src.gui.windows.image_viewer_window import RasterImageViewer
-from src.gui.windows.open3d_window import Open3DWindow
+from src.gui.windows.visualization.image_viewer_window import RasterImageViewer
+from src.gui.windows.visualizer_window import VisualizerWindow
 from src.gui.workers.qt_base_worker import move_worker_to_thread
 from src.gui.workers.qt_evaluator import RegistrationEvaluator
 from src.gui.workers.qt_fgr_registrator import FGRRegistrator
@@ -29,6 +29,8 @@ from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGauss
     PointCloudLoaderO3D
 from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
 from src.gui.workers.qt_rasterizer import RasterizerWorker
+from src.models.camera import Camera
+from src.utils.graphics_utils import get_focal_from_intrinsics
 
 
 class RegistrationMainWindow(QMainWindow):
@@ -66,7 +68,8 @@ class RegistrationMainWindow(QMainWindow):
 
         # Create splitter and two planes
         splitter = QSplitter(self)
-        self.pane_open3d = Open3DWindow(self)
+
+        self.visualizer_window = VisualizerWindow(self)
         pane_data = QWidget()
 
         layout_pane = QVBoxLayout()
@@ -83,7 +86,7 @@ class RegistrationMainWindow(QMainWindow):
         layout_pane.setStretch(0, 1)
         layout_pane.setStretch(1, 1)
 
-        splitter.addWidget(self.pane_open3d)
+        splitter.addWidget(self.visualizer_window)
         splitter.addWidget(pane_data)
 
         splitter.setOrientation(Qt.Orientation.Horizontal)
@@ -105,7 +108,7 @@ class RegistrationMainWindow(QMainWindow):
 
         self.input_tab = InputTab()
         self.transformation_picker = Transformation3DPicker()
-        self.visualizer_widget = VisualizerTab()
+        self.visualizer_widget = VisualizerTab(self)
         self.rasterizer_tab = RasterizerTab()
         self.merger_widget = MergeTab()
 
@@ -113,9 +116,11 @@ class RegistrationMainWindow(QMainWindow):
         self.input_tab.signal_load_sparse.connect(self.handle_sparse_load)
         self.input_tab.signal_load_cached.connect(self.handle_cached_load)
         self.transformation_picker.transformation_matrix_changed.connect(self.update_point_clouds)
-        self.visualizer_widget.signal_change_vis.connect(self.change_visualizer)
+        self.visualizer_widget.signal_change_vis_settings_o3d.connect(self.change_visualizer_settings_o3d)
+        self.visualizer_widget.signal_change_vis_settings_3dgs.connect(self.change_visualizer_settings_3dgs)
+        self.visualizer_widget.signal_change_type.connect(self.visualizer_window.vis_type_changed)
         self.visualizer_widget.signal_get_current_view.connect(self.get_current_view)
-        self.visualizer_widget.signal_pop_visualizer.connect(self.pane_open3d.on_embed_button_pressed)
+        self.visualizer_widget.signal_pop_visualizer.connect(self.visualizer_window.on_embed_button_pressed)
         self.merger_widget.signal_merge_point_clouds.connect(self.merge_point_clouds)
         self.rasterizer_tab.signal_rasterize.connect(self.rasterize_gaussians)
 
@@ -150,7 +155,7 @@ class RegistrationMainWindow(QMainWindow):
         self.hem_widget.signal_slider_changed.connect(self.active_pc_changed)
 
         evaluator_widget = EvaluationTab()
-        evaluator_widget.signal_camera_change.connect(self.pane_open3d.apply_camera_transformation)
+        evaluator_widget.signal_camera_change.connect(self.visualizer_window.apply_camera_view)
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
         registration_tab.addTab(global_registration_widget, "Global")
@@ -166,12 +171,13 @@ class RegistrationMainWindow(QMainWindow):
         if self.visualizer_widget.get_use_debug_color():
             dc1, dc2 = self.visualizer_widget.get_debug_colors()
 
-        self.pane_open3d.update_transform(transformation_matrix, dc1, dc2)
+        self.visualizer_window.update_transform(transformation_matrix, dc1, dc2)
 
     def handle_sparse_load(self, sparse_path_first, sparse_path_second):
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
         worker = PointCloudLoaderInput(sparse_path_first, sparse_path_second)
-        thread = move_worker_to_thread(self, worker, self.handle_result_sparse, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.handle_result_sparse,
+                                       progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -186,7 +192,8 @@ class RegistrationMainWindow(QMainWindow):
     def handle_cached_load(self, cached_path_first, cached_path_second):
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Loading point clouds...")
         worker = PointCloudLoaderO3D(cached_path_first, cached_path_second)
-        thread = move_worker_to_thread(self, worker, self.handle_result_cached, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.handle_result_cached,
+                                       progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -232,15 +239,25 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_open3d_list_first.append(pc_first)
         self.pc_open3d_list_second.append(pc_second)
 
-        self.pane_open3d.load_point_clouds(pc_first, pc_second)
-        self.pane_open3d.vis.reset_view_point(True)
+        self.visualizer_window.load_point_clouds(pc_first, pc_second, original1, original2)
+        self.visualizer_window.reset_view_point()
 
-    def change_visualizer(self, zoom, front, lookat, up, dc1, dc2):
-        self.pane_open3d.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
-        self.pane_open3d.update_visualizer(zoom, front, lookat, up)
+    def change_visualizer_settings_o3d(self, camera_view, dc1, dc2):
+        self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
+        self.visualizer_window.update_visualizer_settings_o3d(camera_view.zoom, camera_view.front, camera_view.lookat,
+                                                              camera_view.up)
+
+    def change_visualizer_settings_3dgs(self, camera_view, translate_speed, rotation_speed, roll_speed, background_color):
+        self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, None, None)
+        self.visualizer_window.vis_3dgs.translate_speed = translate_speed
+        self.visualizer_window.vis_3dgs.rotation_speed = rotation_speed
+        self.visualizer_window.vis_3dgs.roll_speed = roll_speed
+        self.visualizer_window.vis_3dgs.background_color = background_color
+        self.visualizer_window.update_visualizer_settings_3dgs(camera_view.zoom, camera_view.front, camera_view.lookat,
+                                                               camera_view.up)
 
     def get_current_view(self):
-        zoom, front, lookat, up = self.pane_open3d.get_current_view()
+        zoom, front, lookat, up = self.visualizer_window.get_current_view()
         self.visualizer_widget.set_visualizer_attributes(zoom, front, lookat, up)
 
     def merge_point_clouds(self, use_corresponding_pc, pc_path1, pc_path2, merge_path):
@@ -269,8 +286,8 @@ class RegistrationMainWindow(QMainWindow):
     # Registration
     def do_local_registration(self, registration_type, max_correspondence,
                               relative_fitness, relative_rmse, max_iteration, rejection_type, k_value):
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.visualizer_window.o3d_pc1
+        pc2 = self.visualizer_window.o3d_pc2
         init_trans = self.transformation_picker.transformation_matrix
 
         # Create worker for local registration
@@ -286,8 +303,8 @@ class RegistrationMainWindow(QMainWindow):
 
     def do_ransac_registration(self, voxel_size, mutual_filter, max_correspondence, estimation_method,
                                ransac_n, checkers, max_iteration, confidence):
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.visualizer_window.o3d_pc1
+        pc2 = self.visualizer_window.o3d_pc2
 
         worker = RANSACRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                    voxel_size, mutual_filter, max_correspondence,
@@ -301,8 +318,8 @@ class RegistrationMainWindow(QMainWindow):
 
     def do_fgr_registration(self, voxel_size, division_factor, use_absolute_scale, decrease_mu, maximum_correspondence,
                             max_iterations, tuple_scale, max_tuple_count, tuple_test):
-        pc1 = self.pane_open3d.pc1
-        pc2 = self.pane_open3d.pc2
+        pc1 = self.visualizer_window.o3d_pc1
+        pc2 = self.visualizer_window.o3d_pc2
 
         worker = FGRRegistrator(pc1, pc2, self.transformation_picker.transformation_matrix,
                                 voxel_size, division_factor, use_absolute_scale, decrease_mu,
@@ -328,8 +345,8 @@ class RegistrationMainWindow(QMainWindow):
                                                   relative_rmse, voxel_values, iter_values,
                                                   rejection_type, k_value)
         else:
-            pc1 = self.pane_open3d.pc1
-            pc2 = self.pane_open3d.pc2
+            pc1 = self.visualizer_window.o3d_pc1
+            pc2 = self.visualizer_window.o3d_pc2
             worker = MultiScaleRegistratorVoxel(pc1, pc2, self.transformation_picker.transformation_matrix,
                                                 use_corresponding, sparse_first, sparse_second,
                                                 registration_type, relative_fitness,
@@ -337,7 +354,8 @@ class RegistrationMainWindow(QMainWindow):
                                                 rejection_type, k_value)
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Registering point clouds...")
-        thread = move_worker_to_thread(self, worker, self.handle_registration_result_local, self.create_error_list_dialog,
+        thread = move_worker_to_thread(self, worker, self.handle_registration_result_local,
+                                       self.create_error_list_dialog,
                                        progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
@@ -362,7 +380,7 @@ class RegistrationMainWindow(QMainWindow):
                                f"RMSE: {inlier_rmse}\n")
         message_dialog.exec()
 
-    def rasterize_gaussians(self, width, height, scale, color, intrinsics_supplied):
+    def rasterize_gaussians(self, width, height, scale, color, fx_supplied, fy_supplied):
         pc1 = self.pc_gaussian_list_first[self.current_index] if self.pc_gaussian_list_first else None
         pc2 = self.pc_gaussian_list_second[self.current_index] if self.pc_gaussian_list_second else None
 
@@ -374,7 +392,7 @@ class RegistrationMainWindow(QMainWindow):
             dialog.showMessage(error_message)
             return
 
-        if self.pane_open3d.is_ortho():
+        if self.visualizer_window.is_ortho():
             dialog = QErrorMessage(self)
             dialog.setModal(True)
             dialog.setWindowTitle("Error")
@@ -382,16 +400,19 @@ class RegistrationMainWindow(QMainWindow):
                                "Increase the FOV to continue!")
             return
 
-        extrinsic = self.pane_open3d.get_camera_extrinsic().astype(np.float32)
-        intrinsic = intrinsics_supplied
-        if intrinsic is None:
-            intrinsic = self.pane_open3d.get_camera_intrinsic().astype(np.float32)
+        visualizer_camera = self.visualizer_window.get_camera
+        fx, fy = fx_supplied, fy_supplied
+        if fx == 0 and fy == 0:
+            fx, fy = get_focal_from_intrinsics(self.visualizer_window.get_camera.intrinsics[0].numpy())
+
+        new_camera = Camera(visualizer_camera.rotation.numpy(), visualizer_camera.position.numpy(),
+                            fx, fy, "", width, height)
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Creating rasterized image...")
-        worker = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix,
-                                  extrinsic, intrinsic, scale, color, height, width)
+        worker = RasterizerWorker(pc1, pc2, self.transformation_picker.transformation_matrix, new_camera, scale, color)
 
-        thread = move_worker_to_thread(self, worker, self.create_raster_window, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.create_raster_window,
+                                       progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -419,7 +440,8 @@ class RegistrationMainWindow(QMainWindow):
                                        camera_list, image_path, log_path, color, self.local_registration_data,
                                        use_gpu)
         progress_dialog.canceled.connect(worker.cancel_evaluation)
-        thread = move_worker_to_thread(self, worker, self.handle_evaluation_result, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.handle_evaluation_result,
+                                       progress_handler=progress_dialog.setValue)
         thread.start()
         progress_dialog.exec()
 
@@ -441,7 +463,8 @@ class RegistrationMainWindow(QMainWindow):
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Creating Gaussian mixtures...")
         worker = GaussianMixtureWorker(pc1, pc2, hem_reduction, distance_delta, color_delta, decay_rate, cluster_level)
-        thread = move_worker_to_thread(self, worker, self.handle_mixture_results, progress_handler=progress_dialog.setValue)
+        thread = move_worker_to_thread(self, worker, self.handle_mixture_results,
+                                       progress_handler=progress_dialog.setValue)
         progress_dialog.canceled.connect(worker.cancel)
 
         thread.start()
@@ -483,8 +506,10 @@ class RegistrationMainWindow(QMainWindow):
         if self.visualizer_widget.get_use_debug_color():
             dc1, dc2 = self.visualizer_widget.get_debug_colors()
 
-        self.pane_open3d.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index], True,
-                                           self.transformation_picker.transformation_matrix, dc1, dc2)
+        self.visualizer_window.load_point_clouds(self.pc_open3d_list_first[index], self.pc_open3d_list_second[index],
+                                                 self.pc_gaussian_list_first[index],
+                                                 self.pc_gaussian_list_second[index],
+                                                 True, self.transformation_picker.transformation_matrix, dc1, dc2)
 
     def check_if_none_and_throw_error(self, pc_first, pc_second, message):
         if not pc_first or not pc_second:
@@ -498,7 +523,7 @@ class RegistrationMainWindow(QMainWindow):
         return False
 
     def closeEvent(self, event):
-        self.pane_open3d.close()
+        self.visualizer_window.vis_open3d.close()
         super(QMainWindow, self).closeEvent(event)
 
     @staticmethod

@@ -53,3 +53,52 @@ def get_wigner_from_rotation(order, rotation_matrix):
     wigner_d = o3.wigner_D(order, rot_angles[0], rot_angles[1], rot_angles[2])
 
     return wigner_d.numpy()
+
+
+def look_at(eye, lookat, up, zoom):
+    # Normalize vectors
+    front = np.subtract(lookat, eye)
+    front = front / np.linalg.norm(front)
+
+    # Compute the new eye position based on zoom and front direction
+    eye = lookat - front * zoom
+
+    # Calculate the z-axis (negative front vector)
+    z_axis = (eye - lookat)
+    z_axis /= np.linalg.norm(z_axis)
+
+    # Calculate the x-axis (cross product of up and z-axis)
+    x_axis = np.cross(up, z_axis)
+    x_axis /= np.linalg.norm(x_axis)
+
+    # Calculate the y-axis (cross product of z-axis and x-axis)
+    y_axis = np.cross(z_axis, x_axis)
+
+    # Create the view matrix
+    view_matrix = np.array([
+        [x_axis[0], x_axis[1], x_axis[2], -np.dot(x_axis, eye)],
+        [y_axis[0], y_axis[1], y_axis[2], -np.dot(y_axis, eye)],
+        [z_axis[0], z_axis[1], z_axis[2], -np.dot(z_axis, eye)],
+        [0, 0, 0, 1]
+    ])
+
+    return view_matrix
+
+
+def axis_angle_rotation(axis, angle):
+    """ Generate a rotation matrix from an axis and angle using Rodrigues' rotation formula. """
+    cos_angle = np.cos(angle)
+    sin_angle = np.sin(angle)
+    one_minus_cos = 1 - cos_angle
+
+    return torch.tensor([
+        [cos_angle + axis[0] ** 2 * one_minus_cos,
+         axis[0] * axis[1] * one_minus_cos - axis[2] * sin_angle,
+         axis[0] * axis[2] * one_minus_cos + axis[1] * sin_angle],
+        [axis[1] * axis[0] * one_minus_cos + axis[2] * sin_angle,
+         cos_angle + axis[1] ** 2 * one_minus_cos,
+         axis[1] * axis[2] * one_minus_cos - axis[0] * sin_angle],
+        [axis[2] * axis[0] * one_minus_cos - axis[1] * sin_angle,
+         axis[2] * axis[1] * one_minus_cos + axis[0] * sin_angle,
+         cos_angle + axis[2] ** 2 * one_minus_cos]
+    ], dtype=torch.float32)

@@ -1,4 +1,5 @@
 import torch
+from PIL.ImageQt import ImageQt
 from PySide6 import QtGui
 from gsplat.rendering import rasterization
 import torchvision.transforms.functional as F
@@ -22,7 +23,9 @@ def rasterize_image(point_cloud: GaussianModel, camera, scale, color, device, le
         render_mode="RGB",
         sh_degree=3,
         backgrounds=color_tensor,
-        covars=covars
+        covars=covars,
+        packed=True,
+        radius_clip=3
     )
 
     return render_colors.detach() if leave_on_gpu else render_colors.cpu()
@@ -30,7 +33,6 @@ def rasterize_image(point_cloud: GaussianModel, camera, scale, color, device, le
 
 def get_pixmap_from_tensor(image_tensor):
     img_save = F.to_pil_image(image_tensor[0].permute(2, 0, 1).clamp(0, 1).detach().cpu())
-    data = img_save.tobytes("raw")
-    qim = QtGui.QImage(data, img_save.width, img_save.height, QtGui.QImage.Format.Format_RGB888)
+    qim = ImageQt(img_save)
     pix = QtGui.QPixmap.fromImage(qim)
     return pix

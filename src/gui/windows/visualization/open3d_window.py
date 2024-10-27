@@ -5,7 +5,11 @@ from subprocess import Popen, PIPE
 import numpy as np
 import open3d as o3d
 from PySide6 import QtWidgets, QtCore
-from PySide6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow, QWidget, QScrollBar
+
+from gui.windows.visualization.viewer_interface import ViewerInterface
+from src.models.camera import Camera
+from src.utils.graphics_utils import get_focal_from_intrinsics, get_dimension_from_intrinsics
 
 platform = sys.platform
 if platform.startswith('win'):
@@ -16,7 +20,7 @@ if platform.startswith('linux'):
     from Xlib import display, X
 
 
-class Open3DWindow(QMainWindow):
+class Open3DWindow(ViewerInterface):
     def __init__(self, parent):
         super(Open3DWindow, self).__init__()
         self.pc1_copy = None
@@ -24,15 +28,13 @@ class Open3DWindow(QMainWindow):
         self.pc1 = None
         self.pc2 = None
         self.parent_window = parent
-        self.parent_widget = QtWidgets.QWidget()
-        self.layout = QtWidgets.QGridLayout(self.parent_widget)
-        self.setCentralWidget(self.parent_widget)
+        self.layout = QtWidgets.QGridLayout(self)
 
         self.vis = o3d.visualization.Visualizer()
         self.vis.create_window()
         self.is_embedded = False
 
-        self.parent_widget.setBaseSize(self.parent_widget.maximumSize())
+        self.setBaseSize(self.maximumSize())
 
         # Set background color to match theme
         background_color = (0.09803921568627451, 0.13725490196078433, 0.17647058823529413)
@@ -41,9 +43,8 @@ class Open3DWindow(QMainWindow):
 
         self.hwnd = self.get_hwnd()
 
-        timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.update_vis)
-        timer.start(1)
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.update_vis)
 
         # Example data
         demo_icp_pcds = o3d.data.DemoICPPointClouds()
@@ -88,8 +89,8 @@ class Open3DWindow(QMainWindow):
             self.vis.get_view_control().convert_from_pinhole_camera_parameters(camera_params)
 
     def closeEvent(self, event):
-        self.vis.destroy_window()
-        super(QMainWindow, self).closeEvent(event)
+        self.vis.close()
+        super().closeEvent(event)
 
     def update_transform(self, transformation, debug_color1=None, debug_color2=None):
         if not self.pc1 or not self.pc2:
@@ -120,35 +121,23 @@ class Open3DWindow(QMainWindow):
         view_control.set_lookat(lookat)
         view_control.set_up(up)
 
+    def update_camera_view(self, camera):
+        extrinsic = np.eye(4)
+        extrinsic[:3, :3] = camera.rotation.T
+        extrinsic[:3, 3] = camera.position
+        self.apply_camera_view(extrinsic)
+
     def get_current_view(self):
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
         extrinsic = parameters.extrinsic
 
-        up = -extrinsic[1:2, 0:3].transpose()
-        front = -extrinsic[2:3, 0:3].transpose()
-        eye = np.linalg.inv(extrinsic[0:3, 0:3]) @ (extrinsic[0:3, 3:4] * -1.0)
-
-        aabb = self.calculate_aabb()
-
         tan_half_fov = parameters.intrinsic.height / (parameters.intrinsic.intrinsic_matrix[1, 1] * 2.0)
-        fov_rad = np.arctan(tan_half_fov) * 2.0
-        fov = fov_rad * 180.0 / np.pi
-        fov = np.max([np.min([fov, 90.0]), 50.0])
 
-        bb_center = aabb.get_center()
-        subtracted = (eye.reshape(3) - bb_center)
-        ideal_distance = np.abs(subtracted.dot(front))[0]
-        ideal_zoom = ideal_distance * np.tan(fov * 0.5 / 180.0 * np.pi) / aabb.get_max_extent()
+        return self.get_current_view_inner(extrinsic, tan_half_fov)
 
-        zoom = max([min([ideal_zoom, 2.0]), 0.02])
-        view_ratio = zoom * aabb.get_max_extent()
-        distance = view_ratio / np.tan(fov * 0.5 / 180.0 * np.pi)
-        lookat = eye - front * distance
-
-        return zoom, front.flatten(), lookat.flatten(), up.flatten()
-
-    def calculate_aabb(self):
+    @property
+    def get_aabb(self):
         combined_vertices = o3d.utility.Vector3dVector()
         combined_vertices.extend(self.pc1_copy.points)
         combined_vertices.extend(self.pc2_copy.points)
@@ -191,12 +180,11 @@ class Open3DWindow(QMainWindow):
     def is_ortho(self):
         return self.vis.get_view_control().get_field_of_view() == 5
 
-    def apply_camera_transformation(self, extrinsics):
+    def apply_camera_view(self, extrinsics):
         view_control = self.vis.get_view_control()
         parameters = view_control.convert_to_pinhole_camera_parameters()
         parameters.extrinsic = extrinsics
         view_control.convert_from_pinhole_camera_parameters(parameters)
-        pass
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -233,10 +221,10 @@ class Open3DWindow(QMainWindow):
             win32con.WS_VISIBLE | win32con.WS_CHILD
         )
 
-        win32gui.SetParent(self.hwnd, self.parent_widget.winId())
+        win32gui.SetParent(self.hwnd, self.winId())
 
         # Resize and move the window to fit within the PySide6 window
-        rect = self.parent_widget.rect()
+        rect = self.rect()
         win32gui.MoveWindow(self.hwnd, rect.left(), rect.top(), rect.width(), rect.height(), True)
 
         return True
@@ -247,11 +235,11 @@ class Open3DWindow(QMainWindow):
 
         dsp = display.Display()
         app_window = dsp.create_resource_object('window', self.hwnd)
-        pyqt_window_id = self.parent_widget.winId()
+        pyqt_window_id = self.winId()
 
         app_window.reparent(pyqt_window_id, 0, 0)
         app_window.map()
-        rect = self.parent_widget.rect()
+        rect = self.rect()
         app_window.configure(width=rect.width(), height=rect.height())
 
         dsp.sync()
@@ -287,3 +275,17 @@ class Open3DWindow(QMainWindow):
         dsp.sync()
 
         return False
+
+    def set_active(self, active):
+        self.timer.start(1) if active else self.timer.stop()
+
+    def get_camera_model(self):
+        camera_mat = self.get_camera_extrinsic().astype(np.float32).transpose()
+        R = camera_mat[:3, :3]
+        T = camera_mat[3, :3]
+        intrinsics = self.get_camera_intrinsic()
+        fx, fy = get_focal_from_intrinsics(intrinsics)
+        width, height = get_dimension_from_intrinsics(intrinsics)
+        width -= 10
+        height -= 10
+        return Camera(R, T, fx, fy, "", width, height)

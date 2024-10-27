@@ -12,7 +12,8 @@ A software used for global and local registration of Gaussian point clouds produ
 * Multiscale (Coarse-to-Fine) registration using voxel based downscaling and Gaussian Mixtures.
 * Downsaple the Gaussian Splats using a Hierarchical Expectation Maximization (Gaussian Mixtures).
 * Merge two Gaussian point clouds together.
-* Visualize them via the default viewport in point cloud form or use the rasterizer for displaying gaussian point clouds.
+* Visualize them via the default Open3D viewport in point cloud form or use the rasterizer for displaying gaussian point clouds.
+* Render out images in the render tab.
 * Evaluate the registration results.
 
 There are three distinct types of point clouds supported. In the GUI application the following terms are used:
@@ -74,21 +75,19 @@ conda activate GaussianSplattingRegistration
 ```
 
 The next step is installing pytorch. Please refer to https://pytorch.org/get-started/locally/ for further information\
-It was tested on CUDA 12.1 and pytorch 2.1, but it should work with other configurations as well.
+It was tested on CUDA 12.1 and PyTorch 2.1, but it should work with other configurations as well.
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 ```
 
-Install all other requirements
+Install [GSPLAT](https://github.com/nerfstudio-project/gsplat). Make sure that the installed version is compatible with your PyTorch and CUDA version.\
+I recommend using one of the pre-compiled wheels.
+
+Then install all other requirements
 ```
 pip install -r requirements.txt
 ```
 
-For the rasterization to work, we have to install the gaussian rasterisation package from the original paper.\
-For this, you should run the following command:
-```
-pip install .\src\submodules\diff-gaussian-rasterization\
-```
 Then finally, we have to compile the C++ files. This will allow us to use the HEM downsampler:
 ```
 python setup.py build_ext --inplace
@@ -116,10 +115,9 @@ The repository makes great use of the following repositories and libraries.
 * Converting point clouds to the Open3D format takes too much time.
 
 ## Planned features
-* GUI rehaul (Migrate to PySide6, make application responsive etc.)
-* Migrate to different rasterizer
-* Full Gaussian Splatting viewer integration
+* Refine the controls in the Gaussian Splat viewer
 * Train Gaussian Splats in the application
+* Add plane fitting algorithms
 * Improve the merging of Gaussian Splats: Post-processing, cleanup, possibly addition training passes.
 
 ## App gallery

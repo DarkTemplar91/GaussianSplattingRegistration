@@ -11,7 +11,7 @@ from src.gui.widgets.simple_input_field_widget import SimpleInputField
 
 
 class RasterizerTab(QWidget):
-    signal_rasterize = Signal(int, int, float, np.ndarray, object)
+    signal_rasterize = Signal(int, int, float, np.ndarray, float, float)
 
     def __init__(self):
         super().__init__()
@@ -42,7 +42,7 @@ class RasterizerTab(QWidget):
         layout_options.addRow("Background color:", self.background_color_widget)
 
         bt_rasterize = CustomPushButton("Rasterize", 90)
-        bt_rasterize.connect_to_clicked(self.button_clicked)
+        bt_rasterize.connect_to_clicked(self.rasterize_clicked)
 
         widget_fov_group_box = QGroupBox("FOV")
         layout_group_box = QFormLayout(widget_fov_group_box)
@@ -71,14 +71,14 @@ class RasterizerTab(QWidget):
         layout_main.addWidget(bt_rasterize)
         layout_main.addStretch()
 
-    def button_clicked(self):
+    def rasterize_clicked(self):
         width = int(self.image_width_widget.text())
         height = int(self.image_height_widget.text())
         scale = float(self.scale_widget.text())
-        color = np.asarray(self.background_color_widget.color_debug)
+        color = np.asarray(self.background_color_widget.color)
         value = float(self.fov_widget.lineedit.text())
-        intrinsics = graphic_util.get_camera_intrinsics(width, height, value, self.button_group.checkedId())
-        self.signal_rasterize.emit(width, height, scale, color, intrinsics)
+        fx, fy = graphic_util.get_focal_lengths(width, height, value, self.button_group.checkedId())
+        self.signal_rasterize.emit(width, height, scale, color, fx, fy)
 
     def fov_source_changed(self, button_id, checked):
         self.fov_widget.setEnabled(button_id != 0 and checked)

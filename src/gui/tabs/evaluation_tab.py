@@ -10,7 +10,7 @@ import src.utils.graphics_utils as graphic_util
 from src.gui.widgets.color_picker_widget import ColorPicker
 from src.gui.widgets.custom_push_button import CustomPushButton
 from src.gui.widgets.file_selector_widget import FileSelector
-from src.models.cameras import Camera
+from src.models.camera import Camera
 from src.utils.general_utils import convert_to_camera_transform
 
 
@@ -45,7 +45,7 @@ class EvaluationTab(QWidget):
         label = QLabel("Snap to:")
 
         self.spinbox = QSpinBox()
-        self.spinbox.setFixedWidth(50)
+        self.spinbox.setFixedWidth(70)
         self.spinbox.setFixedHeight(30)
         self.spinbox.setRange(0, 0)
         self.spinbox.setKeyboardTracking(False)
@@ -143,7 +143,7 @@ class EvaluationTab(QWidget):
             self.creat_error_box("Select a path for the log file!")
             return
 
-        color = np.asarray(self.render_color.color_debug)
+        color = np.asarray(self.render_color.color)
         use_gpu = self.checkbox_gpu.isChecked()
         self.signal_evaluate_registration.emit(self.cameras_list, image_path, log_file, color, use_gpu)
 
