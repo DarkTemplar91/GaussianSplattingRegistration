@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSplitter, QGro
     QTabWidget, QErrorMessage, QMessageBox, QSizePolicy
 
 from gui.tabs.plane_fitting_tab import PlaneFittingTab
+from gui.workers.downsampling.qt_plane_fitting import PlaneFittingWorker
 from src.gui.tabs.evaluation_tab import EvaluationTab
 from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
@@ -20,16 +21,16 @@ from src.gui.widgets.transformation_widget import Transformation3DPicker
 from src.gui.windows.visualization.image_viewer_window import RasterImageViewer
 from src.gui.windows.visualizer_window import VisualizerWindow
 from src.gui.workers.qt_base_worker import move_worker_to_thread
-from src.gui.workers.qt_evaluator import RegistrationEvaluator
-from src.gui.workers.qt_fgr_registrator import FGRRegistrator
-from src.gui.workers.qt_gaussian_mixture import GaussianMixtureWorker
-from src.gui.workers.qt_gaussian_saver import GaussianSaverNormal, GaussianSaverUseCorresponding
-from src.gui.workers.qt_local_registrator import LocalRegistrator
-from src.gui.workers.qt_multiscale_registrator import MultiScaleRegistratorVoxel, MultiScaleRegistratorMixture
-from src.gui.workers.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGaussian, PointCloudLoaderInput, \
+from gui.workers.graphics.qt_evaluator import RegistrationEvaluator
+from gui.workers.registration.qt_fgr_registrator import FGRRegistrator
+from gui.workers.downsampling.qt_gaussian_mixture import GaussianMixtureWorker
+from gui.workers.io.qt_gaussian_saver import GaussianSaverNormal, GaussianSaverUseCorresponding
+from gui.workers.registration.qt_local_registrator import LocalRegistrator
+from gui.workers.registration.qt_multiscale_registrator import MultiScaleRegistratorVoxel, MultiScaleRegistratorMixture
+from gui.workers.io.qt_pc_loaders import PointCloudSaver, PointCloudLoaderGaussian, PointCloudLoaderInput, \
     PointCloudLoaderO3D
-from src.gui.workers.qt_ransac_registrator import RANSACRegistrator
-from src.gui.workers.qt_rasterizer import RasterizerWorker
+from gui.workers.registration.qt_ransac_registrator import RANSACRegistrator
+from gui.workers.graphics.qt_rasterizer import RasterizerWorker
 from src.models.camera import Camera
 from src.utils.graphics_utils import get_focal_from_intrinsics
 
@@ -249,7 +250,8 @@ class RegistrationMainWindow(QMainWindow):
         self.visualizer_window.update_visualizer_settings_o3d(camera_view.zoom, camera_view.front, camera_view.lookat,
                                                               camera_view.up)
 
-    def change_visualizer_settings_3dgs(self, camera_view, translate_speed, rotation_speed, roll_speed, background_color):
+    def change_visualizer_settings_3dgs(self, camera_view, translate_speed, rotation_speed, roll_speed,
+                                        background_color):
         self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, None, None)
         self.visualizer_window.vis_3dgs.translate_speed = translate_speed
         self.visualizer_window.vis_3dgs.rotation_speed = rotation_speed
@@ -499,10 +501,20 @@ class RegistrationMainWindow(QMainWindow):
         self.hem_widget.set_slider_to(0)
 
     def fit_plane(self, iterations, threshold, min_sample_distance):
-        pass
+        pc1 = self.visualizer_window.o3d_pc1
+        pc2 = self.visualizer_window.o3d_pc2
 
-    def handle_fit_plane_result(self):
-        pass
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Plane fitting in progress...")
+        worker = PlaneFittingWorker(pc1, pc2, iterations, threshold, min_sample_distance)
+        thread = move_worker_to_thread(self, worker, self.handle_fit_plane_result,
+                                       progress_handler=progress_dialog.setValue)
+
+        thread.start()
+        progress_dialog.exec()
+
+    def handle_fit_plane_result(self, result_data: PlaneFittingWorker.ResultData):
+        self.visualizer_window.add_plane(result_data.plane_first)
+        self.visualizer_window.add_plane(result_data.plane_second)
 
     def active_pc_changed(self, index):
         if self.current_index == index:

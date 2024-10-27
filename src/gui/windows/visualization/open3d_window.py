@@ -289,3 +289,7 @@ class Open3DWindow(ViewerInterface):
         width -= 10
         height -= 10
         return Camera(R, T, fx, fy, "", width, height)
+
+
+    def add_plane(self, plane):
+        self.vis.add_geometry(plane)

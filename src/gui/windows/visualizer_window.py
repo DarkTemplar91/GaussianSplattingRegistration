@@ -142,3 +142,11 @@ class VisualizerWindow(QWidget):
             return
 
         self.vis_3dgs.set_active(True)
+
+    def add_plane(self, plane):
+        if self.vis_stack.currentIndex() == 0:
+            self.vis_open3d.add_plane(plane)
+
+
+        # TODO: Visualize plane in raster mode
+
