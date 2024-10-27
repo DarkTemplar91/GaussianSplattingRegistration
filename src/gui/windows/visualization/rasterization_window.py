@@ -3,7 +3,7 @@ import torch
 from PySide6 import QtCore
 from PySide6.QtGui import Qt
 from PySide6.QtWidgets import QVBoxLayout, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, \
-    QGraphicsSceneMouseEvent, QDialog, QMainWindow, QWidget, QSizePolicy
+    QGraphicsSceneMouseEvent, QMainWindow, QWidget, QSizePolicy
 
 from gui.windows.visualization.fx.temporal_anit_aliasing import TemporalAntiAliasing
 from gui.windows.visualization.viewer_interface import ViewerInterface
@@ -199,7 +199,6 @@ class GaussianSplatWindow(ViewerInterface):
             self.point_cloud_merged.move_to_device("cpu")
             torch.cuda.empty_cache()
 
-    # TODO: Implement if needed
     def on_embed_button_pressed(self):
         if not self.is_embedded:
             # Move back to main window

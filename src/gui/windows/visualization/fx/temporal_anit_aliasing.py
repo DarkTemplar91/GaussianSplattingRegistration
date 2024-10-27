@@ -26,7 +26,7 @@ class TemporalAntiAliasing:
             return self.accumulated_frame
 
         faded_frame = QPixmap(self.accumulated_frame.size())
-        faded_frame.fill(Qt.transparent)
+        faded_frame.fill(Qt.QPtransparent)
         painter = QPainter(faded_frame)
         painter.setOpacity(self.decay)  # Apply decay to accumulated frame
         painter.drawPixmap(0, 0, self.accumulated_frame)

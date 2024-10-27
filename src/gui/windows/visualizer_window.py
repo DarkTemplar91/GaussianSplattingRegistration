@@ -66,7 +66,12 @@ class VisualizerWindow(QWidget):
     def vis_type_changed(self, index):
         if index == 0:
             self.vis_3dgs.set_active(False)
-            self.vis_open3d.update_camera_view(self.get_camera)
+
+            # If the o3d camera is orthogonal, there is no need for a camera update, because 3DGS view is not allowed.
+            # Due to this, the camera pose could not change.
+            if not self.vis_open3d.is_ortho():
+                self.vis_open3d.update_camera_view(self.get_camera)
+
             self.vis_open3d.set_active(True)
         elif self.vis_open3d.is_ortho():
             return

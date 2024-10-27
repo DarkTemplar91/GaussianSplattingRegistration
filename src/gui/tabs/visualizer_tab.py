@@ -188,6 +188,14 @@ class VisualizerTab(QWidget):
             self.checkbox.toggle()
             return
 
+        if visualizer_index and self.parent_window.visualizer_window.is_ortho():
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("Orthogonal view is not supported!")
+            self.checkbox.toggle()
+            return
+
         if self.pop_button.isChecked():
             self.pop_button.setChecked(False)
             self.pop_visualizer()
