@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QSplitter, QGro
 
 from gui.tabs.plane_fitting_tab import PlaneFittingTab
 from gui.workers.downsampling.qt_plane_fitting import PlaneFittingWorker
+from gui.workers.downsampling.qt_plane_merging import PlaneMergingWorker
 from src.gui.tabs.evaluation_tab import EvaluationTab
 from src.gui.tabs.gaussian_mixture_tab import GaussianMixtureTab
 from src.gui.tabs.global_registration_tab import GlobalRegistrationTab
@@ -166,6 +167,7 @@ class RegistrationMainWindow(QMainWindow):
         plane_fitting_tab = PlaneFittingTab()
         plane_fitting_tab.signal_fit_plane.connect(self.fit_planes)
         plane_fitting_tab.signal_clear_plane.connect(self.clear_planes)
+        plane_fitting_tab.signal_merge_plane.connect(self.merge_planes)
 
         registration_tab.addTab(global_registration_widget, "Global")
         registration_tab.addTab(local_registration_widget, "Local")
@@ -481,7 +483,7 @@ class RegistrationMainWindow(QMainWindow):
         thread.start()
         progress_dialog.exec()
 
-    def handle_mixture_results(self, result_data: GaussianMixtureWorker.ResultData):
+    def handle_mixture_results(self, result_data):
 
         if len(self.pc_gaussian_list_first) > 1:
             base_pc_first = self.pc_gaussian_list_first[0]
@@ -531,24 +533,56 @@ class RegistrationMainWindow(QMainWindow):
 
         self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
 
+    def merge_planes(self):
+        pc1 = pc2 = None
+
+        if len(self.pc_gaussian_list_first) != 0:
+            pc1 = self.pc_gaussian_list_first[0]
+        if len(self.pc_gaussian_list_second) != 0:
+            pc2 = self.pc_gaussian_list_second[0]
+
+        if not pc1 or not pc2:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("There are no gaussian point clouds loaded!"
+                               "Please load two point clouds to create Gaussian mixtures.")
+            return
+
+        if len(self.first_plane_indices) == 0:
+            dialog = QErrorMessage(self)
+            dialog.setModal(True)
+            dialog.setWindowTitle("Error")
+            dialog.showMessage("There are no fitted planes to merge!"
+                               "Please run plane fitting to merge the inlier points.")
+            return
+
+        progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Merging planes...")
+        worker = PlaneMergingWorker(pc1, pc2, self.first_plane_indices, self.second_plane_indices)
+        thread = move_worker_to_thread(self, worker, self.handle_mixture_results,
+                                       progress_handler=progress_dialog.setValue)
+
+        thread.start()
+        progress_dialog.exec()
+
     def handle_fit_plane_result(self, result_data: PlaneFittingWorker.ResultData):
         self.first_plane_indices.clear()
         self.second_plane_indices.clear()
         self.first_plane_coefficients.clear()
         self.second_plane_coefficients.clear()
 
-        self.first_plane_indices.extend(result_data.planes_pc1)
-        self.second_plane_indices.extend(result_data.planes_pc2)
-        self.first_plane_coefficients.extend(result_data.indices_pc1)
-        self.second_plane_coefficients.extend(result_data.indices_pc2)
+        self.first_plane_indices.extend(result_data.indices_pc1)
+        self.second_plane_indices.extend(result_data.indices_pc2)
+        self.first_plane_coefficients.extend(result_data.coefficients_pc1)
+        self.second_plane_coefficients.extend(result_data.coefficients_pc2)
 
         pc1 = self.pc_gaussian_list_first[0]
         pc2 = self.pc_gaussian_list_second[0]
 
-        for i in range(len(result_data.planes_pc1)):
-            self.visualizer_window.add_plane(result_data.planes_pc1[i], pc1.get_xyz[result_data.indices_pc1[i]],
+        for i in range(len(result_data.coefficients_pc1)):
+            self.visualizer_window.add_plane(result_data.coefficients_pc1[i], pc1.get_xyz[result_data.indices_pc1[i]],
                                              [0.1, 0.8, 0.1])
-            self.visualizer_window.add_plane(result_data.planes_pc2[i], pc2.get_xyz[result_data.indices_pc2[i]],
+            self.visualizer_window.add_plane(result_data.coefficients_pc2[i], pc2.get_xyz[result_data.indices_pc2[i]],
                                              [0.8, 0.1, 0.1])
 
     def active_pc_changed(self, index):

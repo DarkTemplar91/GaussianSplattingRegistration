@@ -10,6 +10,7 @@ from src.gui.widgets.simple_input_field_widget import SimpleInputField
 class PlaneFittingTab(QWidget):
     signal_fit_plane = Signal(int, int, float, float)
     signal_clear_plane = Signal()
+    signal_merge_plane = Signal()
 
     def __init__(self):
         super().__init__()
@@ -42,14 +43,15 @@ class PlaneFittingTab(QWidget):
         layout_plane_fitting.addRow("Min sample distance:", self.min_distance_widget)
         layout_plane_fitting.addRow(bt_fit_plane)
 
-        #bt_merge = CustomPushButton("DEBUG MERGE", 90)
-        #bt_merge.connect_to_clicked(self.signal_clear_plane.emit)
+        bt_merge = CustomPushButton("DEBUG MERGE", 90)
+        bt_merge.connect_to_clicked(self.signal_merge_plane.emit)
 
         bt_clear_plane = CustomPushButton("Clear plane(s)", 90)
         bt_clear_plane.connect_to_clicked(self.signal_clear_plane.emit)
 
         layout_main.addWidget(label_res)
         layout_main.addWidget(plane_fitting_box)
+        layout_main.addWidget(bt_merge)
         layout_main.addWidget(bt_clear_plane)
         layout_main.addStretch()
 

@@ -5,9 +5,9 @@ from utils.plane_fitting_util import fit_plane, get_o3d_plane, fit_multiple_plan
 class PlaneFittingWorker(BaseWorker):
     class ResultData:
         def __init__(self, planes_pc1, indices_pc1, planes_pc2, indices_pc2):
-            self.planes_pc1 = planes_pc1
+            self.coefficients_pc1 = planes_pc1
             self.indices_pc1 = indices_pc1
-            self.planes_pc2 = planes_pc2
+            self.coefficients_pc2 = planes_pc2
             self.indices_pc2 = indices_pc2
 
     def __init__(self, pc1, pc2, plane_count, iterations, threshold, min_sample_distance):
@@ -33,4 +33,6 @@ class PlaneFittingWorker(BaseWorker):
             planes_pc1, indices_pc1, planes_pc2, indices_pc2
         ))
         self.signal_finished.emit()
+
+
 
