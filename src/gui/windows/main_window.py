@@ -52,6 +52,12 @@ class RegistrationMainWindow(QMainWindow):
         self.pc_open3d_list_first = []
         self.pc_open3d_list_second = []
 
+        # Plane coefficients and indices
+        self.first_plane_coefficients = []
+        self.second_plane_coefficients = []
+        self.first_plane_indices = []
+        self.second_plane_indices = []
+
         self.current_index = 0
 
         # Dataclass that stores the results and parameters of the last local registration
@@ -158,7 +164,8 @@ class RegistrationMainWindow(QMainWindow):
         evaluator_widget.signal_evaluate_registration.connect(self.evaluate_registration)
 
         plane_fitting_tab = PlaneFittingTab()
-        plane_fitting_tab.signal_fit_plane.connect(self.fit_plane)
+        plane_fitting_tab.signal_fit_plane.connect(self.fit_planes)
+        plane_fitting_tab.signal_clear_plane.connect(self.clear_planes)
 
         registration_tab.addTab(global_registration_widget, "Global")
         registration_tab.addTab(local_registration_widget, "Local")
@@ -500,21 +507,49 @@ class RegistrationMainWindow(QMainWindow):
         self.hem_widget.set_slider_enabled(True)
         self.hem_widget.set_slider_to(0)
 
-    def fit_plane(self, iterations, threshold, min_sample_distance):
+    def fit_planes(self, plane_count, iterations, threshold, min_sample_distance):
         pc1 = self.visualizer_window.o3d_pc1
         pc2 = self.visualizer_window.o3d_pc2
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Plane fitting in progress...")
-        worker = PlaneFittingWorker(pc1, pc2, iterations, threshold, min_sample_distance)
+        worker = PlaneFittingWorker(pc1, pc2, plane_count, iterations, threshold, min_sample_distance)
         thread = move_worker_to_thread(self, worker, self.handle_fit_plane_result,
                                        progress_handler=progress_dialog.setValue)
 
         thread.start()
         progress_dialog.exec()
 
+    def clear_planes(self):
+        self.first_plane_indices.clear()
+        self.second_plane_indices.clear()
+        self.first_plane_coefficients.clear()
+        self.second_plane_coefficients.clear()
+
+        dc1, dc2 = None, None
+        if self.visualizer_widget.get_use_debug_color():
+            dc1, dc2 = self.visualizer_widget.get_debug_colors()
+
+        self.visualizer_window.update_transform(self.transformation_picker.transformation_matrix, dc1, dc2)
+
     def handle_fit_plane_result(self, result_data: PlaneFittingWorker.ResultData):
-        self.visualizer_window.add_plane(result_data.plane_first)
-        self.visualizer_window.add_plane(result_data.plane_second)
+        self.first_plane_indices.clear()
+        self.second_plane_indices.clear()
+        self.first_plane_coefficients.clear()
+        self.second_plane_coefficients.clear()
+
+        self.first_plane_indices.extend(result_data.planes_pc1)
+        self.second_plane_indices.extend(result_data.planes_pc2)
+        self.first_plane_coefficients.extend(result_data.indices_pc1)
+        self.second_plane_coefficients.extend(result_data.indices_pc2)
+
+        pc1 = self.pc_gaussian_list_first[0]
+        pc2 = self.pc_gaussian_list_second[0]
+
+        for i in range(len(result_data.planes_pc1)):
+            self.visualizer_window.add_plane(result_data.planes_pc1[i], pc1.get_xyz[result_data.indices_pc1[i]],
+                                             [0.1, 0.8, 0.1])
+            self.visualizer_window.add_plane(result_data.planes_pc2[i], pc2.get_xyz[result_data.indices_pc2[i]],
+                                             [0.8, 0.1, 0.1])
 
     def active_pc_changed(self, index):
         if self.current_index == index:

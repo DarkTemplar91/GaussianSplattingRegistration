@@ -5,6 +5,7 @@ import open3d as o3d
 
 from src.gui.windows.visualization.rasterization_window import GaussianSplatWindow
 from src.gui.windows.visualization.open3d_window import Open3DWindow
+from utils.plane_fitting_util import get_o3d_plane
 
 
 class VisualizerWindow(QWidget):
@@ -143,10 +144,10 @@ class VisualizerWindow(QWidget):
 
         self.vis_3dgs.set_active(True)
 
-    def add_plane(self, plane):
-        if self.vis_stack.currentIndex() == 0:
-            self.vis_open3d.add_plane(plane)
-
-
+    def add_plane(self, plane_coefficient, pos_tensor, color):
         # TODO: Visualize plane in raster mode
+        if self.vis_stack.currentIndex() != 0:
+            return
+
+        self.vis_open3d.add_plane(get_o3d_plane(plane_coefficient, pos_tensor, color))
 
