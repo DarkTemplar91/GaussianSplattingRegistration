@@ -1,4 +1,5 @@
 import mixture_bind
+import numpy as np
 from PySide6 import QtWidgets
 
 from src.gui.workers.qt_base_worker import BaseWorker
@@ -14,32 +15,6 @@ def initialize_mixture_storage(cluster_level):
             [[] for _ in range(cluster_level)],  # opacities
             [[] for _ in range(cluster_level)],  # covariance
             [[] for _ in range(cluster_level)])  # features
-
-
-def process_all_planes(pc, plane_indices_list, xyz, colors, opacities, covariance, features,
-                       cluster_level, hem_reduction, distance_delta, color_delta, decay_rate,
-                       update_progress, signal_cancel):
-    """Process all planes in a point cloud."""
-    for indices in plane_indices_list:
-        mixture_level = process_plane(pc, indices)
-        mixture_models = mixture_bind.MixtureCreator.CreateMixture(
-            cluster_level, hem_reduction, distance_delta, color_delta, decay_rate, mixture_level
-        )
-
-        # Append data for each depth
-        for depth, mixture in enumerate(mixture_models):
-            xyz_d, colors_d, opacities_d, covariance_d, features_d = mixture_bind.MixtureLevel.CreatePythonLists(
-                mixture)
-            xyz[depth].extend(xyz_d)
-            colors[depth].extend(colors_d)
-            opacities[depth].extend(opacities_d)
-            covariance[depth].extend(covariance_d)
-            features[depth].extend(features_d)
-
-        update_progress()
-        QtWidgets.QApplication.processEvents()
-        if signal_cancel:
-            return
 
 
 def create_models_from_mixture(xyz_list, colors_list, opacities_list, covariance_list, features_list):
@@ -108,7 +83,7 @@ class PlaneMergingWorker(BaseWorker):
         self.gaussian_pc_second = pc2
 
         self.current_progress = 0
-        self.max_progress = 6
+        self.max_progress = 1 + len(first_plane_indices) * 2
         self.signal_cancel = False
 
     def run(self):
@@ -117,31 +92,22 @@ class PlaneMergingWorker(BaseWorker):
             self.signal_finished.emit()
             return
 
-        print("Processing planes for the first point cloud.")
-        xyz_first, colors_first, opacities_first, covariance_first, features_first = initialize_mixture_storage(
-            self.cluster_level)
+        selected_indices_first = np.concatenate(self.first_plane_indices)
+        selected_indices_second = np.concatenate(self.second_plane_indices)
 
-        # Process the first point cloud
-        process_all_planes(
-            self.gaussian_pc_first,
-            self.first_plane_indices,
-            xyz_first, colors_first, opacities_first, covariance_first, features_first,
-            self.cluster_level, self.hem_reduction, self.distance_delta, self.color_delta, self.decay_rate,
-            self.update_progress, self.signal_cancel
-        )
+        all_indices_first = np.array(range(self.gaussian_pc_first.get_xyz.shape[0]))
+        all_indices_second = np.array(range(self.gaussian_pc_second.get_xyz.shape[0]))
+
+        unselected_indices_first = np.setdiff1d(all_indices_first, selected_indices_first)
+        unselected_indices_second = np.setdiff1d(all_indices_second, selected_indices_second)
+
+        print("Processing planes for the first point cloud.")
+        xyz_first, colors_first, opacities_first, covariance_first, features_first = (
+            self.create_mixtures_from_indices(self.gaussian_pc_first, unselected_indices_first, self.first_plane_indices))
 
         print("Processing planes for the second point cloud.")
-        xyz_second, colors_second, opacities_second, covariance_second, features_second = initialize_mixture_storage(
-            self.cluster_level)
-
-        # Process the second point cloud
-        process_all_planes(
-            self.gaussian_pc_second,
-            self.second_plane_indices,
-            xyz_second, colors_second, opacities_second, covariance_second, features_second,
-            self.cluster_level, self.hem_reduction, self.distance_delta, self.color_delta, self.decay_rate,
-            self.update_progress, self.signal_cancel
-        )
+        xyz_second, colors_second, opacities_second, covariance_second, features_second = (
+            self.create_mixtures_from_indices(self.gaussian_pc_second, unselected_indices_second, self.second_plane_indices))
 
         print("Creating final Gaussian models.")
         list_gaussian_first, list_open3d_first = create_models_from_mixture(xyz_first, colors_first, opacities_first,
@@ -149,7 +115,7 @@ class PlaneMergingWorker(BaseWorker):
         list_gaussian_second, list_open3d_second = create_models_from_mixture(xyz_second, colors_second,
                                                                               opacities_second, covariance_second,
                                                                               features_second)
-
+        self.signal_progress.emit(100)
         self.signal_result.emit(PlaneMergingWorker.ResultData(
             list_gaussian_first, list_gaussian_second,
             list_open3d_first, list_open3d_second
@@ -163,3 +129,53 @@ class PlaneMergingWorker(BaseWorker):
 
     def cancel(self):
         self.signal_cancel = True
+
+    def process_all_planes(self, pc, plane_indices_list, xyz, colors, opacities, covariance, features,
+                           cluster_level, hem_reduction, distance_delta, color_delta, decay_rate):
+        """Process all planes in a point cloud."""
+        for indices in plane_indices_list:
+            mixture_level = process_plane(pc, indices)
+            mixture_models = mixture_bind.MixtureCreator.CreateMixture(
+                cluster_level, hem_reduction, distance_delta, color_delta, decay_rate, mixture_level
+            )
+
+            # Append data for each depth
+            for depth, mixture in enumerate(mixture_models):
+                xyz_d, colors_d, opacities_d, covariance_d, features_d = mixture_bind.MixtureLevel.CreatePythonLists(
+                    mixture)
+                xyz[depth].extend(xyz_d)
+                colors[depth].extend(colors_d)
+                opacities[depth].extend(opacities_d)
+                covariance[depth].extend(covariance_d)
+                features[depth].extend(features_d)
+
+            self.update_progress()
+            QtWidgets.QApplication.processEvents()
+            if self.signal_cancel:
+                return
+
+    def create_mixtures_from_indices(self, pc, unselected_indices_list, plane_indices_list):
+        xyz, colors, opacities, covariance, features = initialize_mixture_storage(
+            self.cluster_level)
+
+        first_unselected_xyz = pc.get_xyz[unselected_indices_list].tolist()
+        first_unselected_colors = pc.get_colors[unselected_indices_list].tolist()
+        first_unselected_opacities = pc.get_raw_opacity[unselected_indices_list].flatten().tolist()
+        first_unselected_covariance = pc._covariance[unselected_indices_list].tolist()
+        first_unselected_features = pc.get_spherical_harmonics[unselected_indices_list].tolist()
+        for level in range(self.cluster_level):
+            xyz[level].extend(first_unselected_xyz)
+            colors[level].extend(first_unselected_colors)
+            opacities[level].extend(first_unselected_opacities)
+            covariance[level].extend(first_unselected_covariance)
+            features[level].extend(first_unselected_features)
+
+        # Process the first point cloud
+        self.process_all_planes(
+            pc,
+            plane_indices_list,
+            xyz, colors, opacities, covariance, features,
+            self.cluster_level, self.hem_reduction, self.distance_delta, self.color_delta, self.decay_rate
+        )
+
+        return xyz, colors, opacities, covariance, features

@@ -290,6 +290,17 @@ class Open3DWindow(ViewerInterface):
         height -= 10
         return Camera(R, T, fx, fy, "", width, height)
 
-
     def add_plane(self, plane):
         self.vis.add_geometry(plane)
+
+    def paint_inliers(self, indices, color, pc_index):
+        pc = self.pc1_copy if pc_index == 0 else self.pc2_copy
+        colors = np.asarray(pc.colors)
+        for idx in indices:
+            colors[idx] = color
+
+        # Update the colors in the point cloud
+        pc.colors = o3d.utility.Vector3dVector(colors)
+
+        # Visualize the point cloud
+        self.vis.update_geometry(pc)

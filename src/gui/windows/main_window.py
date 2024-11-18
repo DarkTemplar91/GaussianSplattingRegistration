@@ -581,9 +581,9 @@ class RegistrationMainWindow(QMainWindow):
 
         for i in range(len(result_data.coefficients_pc1)):
             self.visualizer_window.add_plane(result_data.coefficients_pc1[i], pc1.get_xyz[result_data.indices_pc1[i]],
-                                             [0.1, 0.8, 0.1])
+                                             result_data.indices_pc1[i], [0.1, 0.8, 0.1], 0)
             self.visualizer_window.add_plane(result_data.coefficients_pc2[i], pc2.get_xyz[result_data.indices_pc2[i]],
-                                             [0.8, 0.1, 0.1])
+                                             result_data.indices_pc2[i], [0.8, 0.1, 0.1], 1)
 
     def active_pc_changed(self, index):
         if self.current_index == index:

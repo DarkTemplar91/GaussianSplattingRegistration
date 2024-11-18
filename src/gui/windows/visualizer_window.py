@@ -144,10 +144,11 @@ class VisualizerWindow(QWidget):
 
         self.vis_3dgs.set_active(True)
 
-    def add_plane(self, plane_coefficient, pos_tensor, color):
+    def add_plane(self, plane_coefficient, pos_tensor, indices, color, pc_index):
         # TODO: Visualize plane in raster mode
         if self.vis_stack.currentIndex() != 0:
             return
 
-        self.vis_open3d.add_plane(get_o3d_plane(plane_coefficient, pos_tensor, color))
+        self.vis_open3d.paint_inliers(indices, color, pc_index)
+        #self.vis_open3d.add_plane(get_o3d_plane(plane_coefficient, pos_tensor, color))
 

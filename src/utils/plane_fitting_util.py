@@ -11,6 +11,7 @@ def fit_plane(point_cloud: o3d.geometry.PointCloud, iterations, threshold, min_s
 
 def fit_multiple_planes(point_cloud: o3d.geometry.PointCloud, plane_count, iterations, threshold, min_sample_distance):
     points_tensor = torch.from_numpy(np.array(point_cloud.points, dtype=np.float32))
+    original_indices = torch.arange(points_tensor.shape[0])  # Track original indices
     plane_coefficients = []
     inlier_indices_list = []
 
@@ -18,10 +19,13 @@ def fit_multiple_planes(point_cloud: o3d.geometry.PointCloud, plane_count, itera
         best_plane, best_inliers = _fit_single_plane(points_tensor, iterations, threshold, min_sample_distance)
         if best_plane is not None:
             plane_coefficients.append(best_plane)
-            inlier_indices_list.append(best_inliers)
+            inlier_indices_list.append(original_indices[best_inliers])
+
             mask = torch.ones(points_tensor.shape[0], dtype=torch.bool)
             mask[best_inliers] = False
+
             points_tensor = points_tensor[mask]
+            original_indices = original_indices[mask]
         else:
             break
 
