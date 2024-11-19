@@ -559,7 +559,7 @@ class RegistrationMainWindow(QMainWindow):
 
         progress_dialog = ProgressDialogFactory.get_progress_dialog("Loading", "Merging planes...")
         worker = PlaneMergingWorker(pc1, pc2, self.first_plane_indices, self.second_plane_indices)
-        thread = move_worker_to_thread(self, worker, self.handle_mixture_results,
+        thread = move_worker_to_thread(self, worker, self.handle_plane_merge_results,
                                        progress_handler=progress_dialog.setValue)
 
         thread.start()
@@ -584,6 +584,14 @@ class RegistrationMainWindow(QMainWindow):
                                              result_data.indices_pc1[i], [0.1, 0.8, 0.1], 0)
             self.visualizer_window.add_plane(result_data.coefficients_pc2[i], pc2.get_xyz[result_data.indices_pc2[i]],
                                              result_data.indices_pc2[i], [0.8, 0.1, 0.1], 1)
+
+    def handle_plane_merge_results(self, result_data: PlaneMergingWorker.ResultData):
+        self.first_plane_indices.clear()
+        self.second_plane_indices.clear()
+        self.first_plane_coefficients.clear()
+        self.second_plane_coefficients.clear()
+        self.handle_mixture_results(result_data)
+        self.update_point_clouds(self.transformation_picker.transformation_matrix)
 
     def active_pc_changed(self, index):
         if self.current_index == index:

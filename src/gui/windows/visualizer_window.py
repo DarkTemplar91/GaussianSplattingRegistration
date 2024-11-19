@@ -150,5 +150,5 @@ class VisualizerWindow(QWidget):
             return
 
         self.vis_open3d.paint_inliers(indices, color, pc_index)
-        #self.vis_open3d.add_plane(get_o3d_plane(plane_coefficient, pos_tensor, color))
+        self.vis_open3d.add_plane(get_o3d_plane(plane_coefficient, pos_tensor, color))
 
